@@ -3,6 +3,7 @@ package ai.qimia.vertxtest;
 import graphql.GraphQL;
 import graphql.schema.*;
 import io.reactivex.Flowable;
+import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
@@ -25,6 +26,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class GraphQLServer extends AbstractVerticle {
+
+  public static void main(String[] args) {
+    Launcher.executeCommand("run", GraphQLServer.class.getName());
+  }
 
   @SuppressWarnings("rawtypes")
   private static Map<String, DataFetcher> getDataFetcherMap(Set<String> keys, DataFetcher dataFetcher) {
@@ -123,7 +128,10 @@ public class GraphQLServer extends AbstractVerticle {
   public void start(Promise<Void> promise) {
 
     // get datasource configuration
-    DatasourceConfig datasourceConfig = config().getJsonObject("datasource").mapTo(DatasourceConfig.class);
+    DatasourceConfig datasourceConfig = new DatasourceConfig();
+    if (config().containsKey("datasource")) {
+      datasourceConfig = config().getJsonObject("datasource").mapTo(DatasourceConfig.class);
+    }
 
     // fetch table schemas based on database metadata
     Map<String, TableSchema<?>> tableSchemas;
