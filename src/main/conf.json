@@ -1,0 +1,10 @@
+{
+  "http.port": 8080,
+  "datasource": {
+    "host": "localhost",
+    "port": 5432,
+    "db": "quarkus_test",
+    "username": "quarkus_test",
+    "password": "quarkus_test"
+  }
+}

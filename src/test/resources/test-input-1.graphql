@@ -1,0 +1,13 @@
+{
+  customers {
+    id
+    first_name
+    last_name
+    email
+  }
+  addresses {
+    id
+    street
+    house_number
+  }
+}
