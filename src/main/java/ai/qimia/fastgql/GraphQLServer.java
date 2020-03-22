@@ -1,4 +1,4 @@
-package ai.qimia.vertxtest;
+package ai.qimia.fastgql;
 
 import com.google.common.collect.Iterables;
 import graphql.GraphQL;

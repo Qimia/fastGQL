@@ -15,7 +15,7 @@ repositories {
 }
 
 vertx {
-    mainVerticle = 'ai.qimia.vertxtest.GraphQLServer'
+    mainVerticle = 'ai.qimia.fastgql.GraphQLServer'
     vertxVersion = '3.8.3'
     config = 'src/main/conf.json'
 }

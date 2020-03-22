@@ -1,4 +1,4 @@
-package ai.qimia.vertxtest;
+package ai.qimia.fastgql;
 
 import graphql.schema.*;
 import lombok.Getter;

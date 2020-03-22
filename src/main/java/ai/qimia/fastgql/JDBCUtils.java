@@ -1,4 +1,4 @@
-package ai.qimia.vertxtest;
+package ai.qimia.fastgql;
 
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.SelectedField;

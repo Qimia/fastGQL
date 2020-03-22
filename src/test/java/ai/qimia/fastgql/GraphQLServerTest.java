@@ -1,4 +1,4 @@
-package ai.qimia.vertxtest;
+package ai.qimia.fastgql;
 
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
