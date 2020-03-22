@@ -1,7 +1,7 @@
 package ai.qimia.fastgql;
 
-import io.debezium.testing.testcontainers.ConnectorConfiguration;
-import io.debezium.testing.testcontainers.DebeziumContainer;
+import ai.qimia.fastgql.testcontainers.ConnectorConfiguration;
+import ai.qimia.fastgql.testcontainers.DebeziumContainer;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
