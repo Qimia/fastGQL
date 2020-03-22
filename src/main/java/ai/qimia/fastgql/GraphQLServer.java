@@ -1,11 +1,15 @@
 package ai.qimia.fastgql;
 
+import static graphql.Scalars.GraphQLInt;
+
 import com.google.common.collect.Iterables;
 import graphql.GraphQL;
 import graphql.schema.DataFetcher;
+import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
@@ -85,13 +89,23 @@ public class GraphQLServer extends AbstractVerticle {
 
     tableSchemas.forEach(
         (tableName, tableSchema) -> {
+          GraphQLOutputType outputType = tableSchema.graphQLOutputType("", tableSchemas);
+
+          GraphQLArgument limit = GraphQLArgument.newArgument().name("limit").type(GraphQLInt)
+              .build();
+
+
           queryType.field(GraphQLFieldDefinition.newFieldDefinition()
               .name(tableName)
-              .type(tableSchema.graphQLOutputType("query_", tableSchemas))
+//              .type(tableSchema.graphQLOutputType("query_", tableSchemas))
+              .type(outputType)
+              .argument(limit)
               .build());
           subscriptionType.field(GraphQLFieldDefinition.newFieldDefinition()
               .name(tableName)
-              .type(tableSchema.graphQLOutputType("subscription_", tableSchemas))
+//              .type(tableSchema.graphQLOutputType("subscription_", tableSchemas))
+              .type(outputType)
+              .argument(limit)
               .build());
         }
     );

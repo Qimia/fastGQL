@@ -108,6 +108,12 @@ public class GraphQLServerTest {
     GraphQLTestUtils.verifyQuery(port, 1, vertx, context);
   }
 
+  @Test
+  public void shouldReceiveResponseForQueryWithLimit(Vertx vertx, VertxTestContext context) {
+    String inputResource = "test-limit/test-query-input.graphql";
+    String outputResource = "test-limit/test-query-output.json";
+    GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
+  }
 
   @Test
   void shouldReceiveEventsForSubscription1(Vertx vertx, VertxTestContext context) {
@@ -117,6 +123,30 @@ public class GraphQLServerTest {
         "test-subscription-output-1-1.json",
         "test-subscription-output-1-1.json",
         "test-subscription-output-1-2.json"
+    );
+    GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
+
+    Observable.timer(5, TimeUnit.SECONDS)
+        .subscribe(
+            result -> {
+              try {
+                DBTestUtils.executeSQLQuery(
+                    "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+                    postgresContainer);
+              } catch (SQLException e) {
+                context.failNow(e);
+              }
+            }
+        );
+  }
+
+  @Test
+  void shouldReceiveEventsForSubscriptionWithLimit(Vertx vertx, VertxTestContext context) {
+    String inputResource = "test-limit/test-subscription-input.graphql";
+    List<String> outputResources = List.of(
+        "test-limit/test-subscription-output.json",
+        "test-limit/test-subscription-output.json",
+        "test-limit/test-subscription-output.json"
     );
     GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
 

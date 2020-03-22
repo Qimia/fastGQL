@@ -1,0 +1,24 @@
+{
+    "data": {
+        "customers": [
+            {
+                "id": 101,
+                "first_name": "John",
+                "last_name": "Adam",
+                "email": "john@adam.com"
+            }
+        ],
+        "addresses": [
+            {
+                "id": 101,
+                "street": "Astreet",
+                "house_number": 5
+            },
+            {
+                "id": 102,
+                "street": "Bstreet",
+                "house_number": 6
+            }
+        ]
+    }
+}

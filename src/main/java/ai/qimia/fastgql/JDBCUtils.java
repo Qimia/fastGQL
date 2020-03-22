@@ -28,6 +28,13 @@ public class JDBCUtils {
   public static Single<List<Map<String, Object>>> getGraphQLResponse(
       DataFetchingEnvironment environment, Pool client) {
     String tableName = environment.getField().getName();
+
+    Map<String, Object> args = environment.getArguments();
+    Integer limit = (Integer) args.get("limit");
+
+    String query = "SELECT ";
+
+    // SELECT FROM
     List<String> fieldsToQuery = environment
         .getSelectionSet()
         .getFields()
@@ -35,7 +42,13 @@ public class JDBCUtils {
         .map(SelectedField::getName)
         .collect(Collectors.toList());
     String fieldsToQueryComaSeparated = String.join(", ", fieldsToQuery);
-    String query = String.format("SELECT %s FROM %s", fieldsToQueryComaSeparated, tableName);
+    query += String.format("%s FROM %s ", fieldsToQueryComaSeparated, tableName);
+
+    // LIMIT
+    if (limit != null) {
+      query += String.format("LIMIT %d ", limit);
+    }
+
     Single<RowSet<Row>> rowSet = client.rxQuery(query);
     return rowSet.map(
         rows -> {
