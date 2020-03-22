@@ -1,5 +1,9 @@
 package ai.qimia.fastgql;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.SelectedField;
 import io.reactivex.Single;
@@ -20,6 +24,8 @@ import java.util.stream.Collectors;
 
 public class JDBCUtils {
 
+  private final static Gson gson = new Gson();
+
   private final static Map<Integer, Class<?>> sqlTypeToClass = Map.of(
       4, Integer.class,
       12, String.class
@@ -32,6 +38,7 @@ public class JDBCUtils {
     Map<String, Object> args = environment.getArguments();
     Integer limit = (Integer) args.get("limit");
     Integer offset = (Integer) args.get("offset");
+    JsonElement orderBy = gson.toJsonTree(args.get("order_by"));
 
     String query = "SELECT ";
 
@@ -53,6 +60,21 @@ public class JDBCUtils {
     // OFFSET
     if (offset != null) {
       query += String.format("OFFSET %d ", offset);
+    }
+
+    // ORDER BY
+    // TODO: sorting based on nested object's fields
+    if (orderBy.isJsonArray()) {
+      query += "ORDER BY ";
+      List<String> orderQueryList = new ArrayList<>(List.of());
+      JsonArray orderByArray = orderBy.getAsJsonArray();
+      for (int i = 0; i < orderByArray.size(); i++) {
+        JsonObject object = orderByArray.get(i).getAsJsonObject();
+        for (String key : object.keySet()) {
+          orderQueryList.add(String.format("%s %s ", key, object.get(key).getAsString()));
+        }
+      }
+      query += String.join(", ", orderQueryList);
     }
 
     Single<RowSet<Row>> rowSet = client.rxQuery(query);

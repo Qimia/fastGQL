@@ -1,0 +1,8 @@
+subscription {
+    customers (order_by: {id: desc}) {
+        id
+        first_name
+        last_name
+        email
+    }
+}

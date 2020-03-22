@@ -5,7 +5,11 @@ import static graphql.Scalars.GraphQLFloat;
 import static graphql.Scalars.GraphQLInt;
 import static graphql.Scalars.GraphQLString;
 
+import ai.qimia.fastgql.arguments.OrderBy;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLInputObjectField;
+import graphql.schema.GraphQLInputObjectType;
+import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
@@ -62,7 +66,6 @@ public class TableSchema<PKType> {
     return new GraphQLList(graphQLObjectType(parentNames, prefix, tableSchemaMap));
   }
 
-
   private GraphQLObjectType graphQLObjectType(final Set<String> parentNames, final String prefix,
       final Map<String, TableSchema<?>> tableSchemaMap) {
     Set<String> parentNamesCopy = new HashSet<>(parentNames);
@@ -98,6 +101,23 @@ public class TableSchema<PKType> {
     }
 
     return builder.build();
+  }
+
+  // TODO: sorting based on nested object's fields
+  // https://hasura.io/docs/1.0/graphql/manual/queries/sorting.html#sorting-based-on-nested-object-s-fields
+  public GraphQLInputType orderByType() {
+    GraphQLInputObjectType.Builder builder = GraphQLInputObjectType.newInputObject();
+    builder.name(name + "_order_by")
+        .description("ordering options when selecting data from \"" + name + "\"")
+        .field(GraphQLInputObjectField.newInputObjectField()
+            .name(primaryKeyName)
+            .type(OrderBy.enumType)
+            .build());
+    columns.keySet().forEach(key -> builder.field(GraphQLInputObjectField.newInputObjectField()
+        .name(key)
+        .type(OrderBy.enumType)
+        .build()));
+    return GraphQLList.list(builder.build());
   }
 
   @Override

@@ -30,6 +30,7 @@ dependencies {
     implementation 'org.postgresql:postgresql:42.1.4'
     implementation 'org.apache.kafka:kafka-clients:2.4.0'
     implementation 'com.google.guava:guava:28.2-jre'
+    implementation 'com.google.code.gson:gson:2.8.6'
     runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
 
     testImplementation 'io.debezium:debezium-testing-testcontainers:1.0.3.Final.Qimia.0'

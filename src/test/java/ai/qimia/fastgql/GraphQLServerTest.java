@@ -109,13 +109,6 @@ public class GraphQLServerTest {
   }
 
   @Test
-  public void shouldReceiveResponseForQueryWithLimitOffset(Vertx vertx, VertxTestContext context) {
-    String inputResource = "test-limit-offset/test-query-input.graphql";
-    String outputResource = "test-limit-offset/test-query-output.json";
-    GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
-  }
-
-  @Test
   void shouldReceiveEventsForSubscription1(Vertx vertx, VertxTestContext context) {
 
     String inputResource = "test-subscription-input-1.graphql";
@@ -141,6 +134,13 @@ public class GraphQLServerTest {
   }
 
   @Test
+  public void shouldReceiveResponseForQueryWithLimitOffset(Vertx vertx, VertxTestContext context) {
+    String inputResource = "test-limit-offset/test-query-input.graphql";
+    String outputResource = "test-limit-offset/test-query-output.json";
+    GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
+  }
+
+  @Test
   void shouldReceiveEventsForSubscriptionWithLimitOffset(Vertx vertx, VertxTestContext context) {
     String inputResource = "test-limit-offset/test-subscription-input.graphql";
     List<String> outputResources = List.of(
@@ -156,6 +156,37 @@ public class GraphQLServerTest {
               try {
                 DBTestUtils.executeSQLQuery(
                     "DELETE FROM customers WHERE id = 101",
+                    postgresContainer);
+              } catch (SQLException e) {
+                context.failNow(e);
+              }
+            }
+        );
+  }
+
+  @Test
+  public void shouldReceiveResponseForQueryWithOrderBy(Vertx vertx, VertxTestContext context) {
+    String inputResource = "test-order-by/test-query-input.graphql";
+    String outputResource = "test-order-by/test-query-output.json";
+    GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
+  }
+
+  @Test
+  void shouldReceiveEventsForSubscriptionWithOrderBy(Vertx vertx, VertxTestContext context) {
+    String inputResource = "test-order-by/test-subscription-input.graphql";
+    List<String> outputResources = List.of(
+        "test-order-by/test-subscription-output-1.json",
+        "test-order-by/test-subscription-output-1.json",
+        "test-order-by/test-subscription-output-2.json"
+    );
+    GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
+
+    Observable.timer(5, TimeUnit.SECONDS)
+        .subscribe(
+            result -> {
+              try {
+                DBTestUtils.executeSQLQuery(
+                    "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
                     postgresContainer);
               } catch (SQLException e) {
                 context.failNow(e);

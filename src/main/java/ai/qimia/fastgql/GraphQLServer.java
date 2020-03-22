@@ -8,6 +8,7 @@ import graphql.schema.DataFetcher;
 import graphql.schema.GraphQLArgument;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLFieldDefinition;
+import graphql.schema.GraphQLInputType;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLSchema;
@@ -90,10 +91,13 @@ public class GraphQLServer extends AbstractVerticle {
     tableSchemas.forEach(
         (tableName, tableSchema) -> {
           GraphQLOutputType outputType = tableSchema.graphQLOutputType("", tableSchemas);
+          GraphQLInputType orderByType = tableSchema.orderByType();
 
           GraphQLArgument limit = GraphQLArgument.newArgument().name("limit").type(GraphQLInt)
               .build();
           GraphQLArgument offset = GraphQLArgument.newArgument().name("offset").type(GraphQLInt)
+              .build();
+          GraphQLArgument orderBy = GraphQLArgument.newArgument().name("order_by").type(orderByType)
               .build();
 
 
@@ -103,6 +107,7 @@ public class GraphQLServer extends AbstractVerticle {
               .type(outputType)
               .argument(limit)
               .argument(offset)
+              .argument(orderBy)
               .build());
           subscriptionType.field(GraphQLFieldDefinition.newFieldDefinition()
               .name(tableName)
@@ -110,6 +115,7 @@ public class GraphQLServer extends AbstractVerticle {
               .type(outputType)
               .argument(limit)
               .argument(offset)
+              .argument(orderBy)
               .build());
         }
     );
