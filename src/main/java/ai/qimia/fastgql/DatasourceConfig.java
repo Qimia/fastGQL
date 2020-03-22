@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class DatasourceConfig {
+
   private String host = "localhost";
   private int port = 5432;
   private String db = "quarkus_test";

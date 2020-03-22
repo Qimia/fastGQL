@@ -3,15 +3,15 @@ package ai.qimia.fastgql;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import io.vertx.junit5.VertxTestContext;
-
 import java.io.IOException;
 
 public class TestUtils {
+
   @SuppressWarnings("UnstableApiUsage")
   public static String readResource(String name) throws IOException {
     return Resources.toString(
-      Resources.getResource(name),
-      Charsets.UTF_8
+        Resources.getResource(name),
+        Charsets.UTF_8
     );
   }
 

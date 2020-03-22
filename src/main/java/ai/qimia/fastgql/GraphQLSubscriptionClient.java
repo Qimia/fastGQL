@@ -26,10 +26,10 @@ public class GraphQLSubscriptionClient extends AbstractVerticle {
         webSocket.handler(message -> System.out.println(message.toJsonObject().encodePrettily()));
 
         JsonObject request = new JsonObject()
-          .put("id", "1")
-          .put("type", ApolloWSMessageType.START.getText())
-          .put("payload", new JsonObject()
-            .put("query", "subscription { customers { id } }"));
+            .put("id", "1")
+            .put("type", ApolloWSMessageType.START.getText())
+            .put("payload", new JsonObject()
+                .put("query", "subscription { customers { id } }"));
         webSocket.write(new Buffer(request.toBuffer()));
       } else {
         websocketRes.cause().printStackTrace();
