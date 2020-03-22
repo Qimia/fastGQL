@@ -92,6 +92,8 @@ public class GraphQLServer extends AbstractVerticle {
         (tableName, tableSchema) -> {
           GraphQLOutputType outputType = tableSchema.graphQLOutputType("", tableSchemas);
           GraphQLInputType orderByType = tableSchema.orderByType();
+          GraphQLInputType distinctOnType = tableSchema.selectColumnType();
+          GraphQLInputType whereType = tableSchema.boolExpType();
 
           GraphQLArgument limit = GraphQLArgument.newArgument().name("limit").type(GraphQLInt)
               .build();
@@ -99,7 +101,10 @@ public class GraphQLServer extends AbstractVerticle {
               .build();
           GraphQLArgument orderBy = GraphQLArgument.newArgument().name("order_by").type(orderByType)
               .build();
-
+          GraphQLArgument distinctOn = GraphQLArgument.newArgument().name("distinct_on")
+              .type(distinctOnType).build();
+          GraphQLArgument where = GraphQLArgument.newArgument().name("where").type(whereType)
+              .build();
 
           queryType.field(GraphQLFieldDefinition.newFieldDefinition()
               .name(tableName)
@@ -108,6 +113,8 @@ public class GraphQLServer extends AbstractVerticle {
               .argument(limit)
               .argument(offset)
               .argument(orderBy)
+              .argument(distinctOn)
+              .argument(where)
               .build());
           subscriptionType.field(GraphQLFieldDefinition.newFieldDefinition()
               .name(tableName)
@@ -116,6 +123,8 @@ public class GraphQLServer extends AbstractVerticle {
               .argument(limit)
               .argument(offset)
               .argument(orderBy)
+              .argument(distinctOn)
+              .argument(where)
               .build());
         }
     );

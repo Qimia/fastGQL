@@ -5,7 +5,9 @@ import static graphql.Scalars.GraphQLFloat;
 import static graphql.Scalars.GraphQLInt;
 import static graphql.Scalars.GraphQLString;
 
+import ai.qimia.fastgql.arguments.ConditionalOperatorTypes;
 import ai.qimia.fastgql.arguments.OrderBy;
+import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
@@ -14,6 +16,7 @@ import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLOutputType;
 import graphql.schema.GraphQLScalarType;
+import graphql.schema.GraphQLTypeReference;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -118,6 +121,52 @@ public class TableSchema<PKType> {
         .type(OrderBy.enumType)
         .build()));
     return GraphQLList.list(builder.build());
+  }
+
+  public GraphQLInputType selectColumnType() {
+    GraphQLEnumType.Builder builder = GraphQLEnumType.newEnum();
+    builder.name(name + "_select_column")
+        .description("select columns of table \"" + name + "\"")
+        .value(primaryKeyName, primaryKeyName, "Primary key column name");
+    columns.keySet().forEach(key -> builder.value(key, key, "Column name"));
+    return GraphQLList.list(builder.build());
+  }
+
+  // TODO: filter based on nested objects' fields
+  // https://hasura.io/docs/1.0/graphql/manual/queries/query-filters.html#filter-based-on-nested-objects-fields
+  public GraphQLInputObjectType boolExpType() {
+    String typeName = name + "_bool_exp";
+    GraphQLInputObjectType.Builder builder = GraphQLInputObjectType.newInputObject();
+    builder.name(typeName)
+        .description("Boolean expression to filter rows from the table \"" + name
+            + "\". All fields are combined with a logical 'AND'.")
+        .field(GraphQLInputObjectField.newInputObjectField()
+            .name("_and")
+            .type(GraphQLList.list(GraphQLTypeReference.typeRef(typeName)))
+            .build())
+        .field(GraphQLInputObjectField.newInputObjectField()
+            .name("_not")
+            .type(GraphQLTypeReference.typeRef(typeName))
+            .build())
+        .field(GraphQLInputObjectField.newInputObjectField()
+            .name("_or")
+            .type(GraphQLList.list(GraphQLTypeReference.typeRef(typeName)))
+            .build());
+    GraphQLInputType primaryKeyGraphQLType = ConditionalOperatorTypes.scalarTypeToComparisonExpMap
+        .get(classGraphQLScalarTypeMap.get(primaryKeyClass));
+    builder.field(GraphQLInputObjectField.newInputObjectField()
+        .name(primaryKeyName)
+        .type(primaryKeyGraphQLType)
+        .build());
+    columns.forEach((key, value) -> {
+      GraphQLInputType columnGraphQLType = ConditionalOperatorTypes.scalarTypeToComparisonExpMap
+          .get(classGraphQLScalarTypeMap.get(value.getClazz()));
+      builder.field(GraphQLInputObjectField.newInputObjectField()
+          .name(key)
+          .type(columnGraphQLType)
+          .build());
+    });
+    return builder.build();
   }
 
   @Override

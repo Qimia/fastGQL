@@ -1,5 +1,6 @@
 package ai.qimia.fastgql;
 
+import ai.qimia.fastgql.arguments.ConditionalOperatorHelpers;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -39,8 +40,17 @@ public class JDBCUtils {
     Integer limit = (Integer) args.get("limit");
     Integer offset = (Integer) args.get("offset");
     JsonElement orderBy = gson.toJsonTree(args.get("order_by"));
+    Object distinctOn = args.get("distinct_on");
+    JsonElement where = gson.toJsonTree(args.get("where"));
 
     String query = "SELECT ";
+
+    // DISTINCT ON
+    if (distinctOn != null) {
+      query += String.format(
+          "DISTINCT ON ( %s ) ",
+          String.join(", ", (List<String>) distinctOn));
+    }
 
     // SELECT FROM
     List<String> fieldsToQuery = environment
@@ -51,6 +61,13 @@ public class JDBCUtils {
         .collect(Collectors.toList());
     String fieldsToQueryComaSeparated = String.join(", ", fieldsToQuery);
     query += String.format("%s FROM %s ", fieldsToQueryComaSeparated, tableName);
+
+    // WHERE
+    if (where.isJsonObject()) {
+      query += String
+          .format("WHERE %s ",
+              ConditionalOperatorHelpers.getConditionQuery(where.getAsJsonObject()));
+    }
 
     // LIMIT
     if (limit != null) {
