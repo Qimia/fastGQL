@@ -10,11 +10,6 @@
         ],
         "addresses": [
             {
-                "id": 101,
-                "street": "Astreet",
-                "house_number": 5
-            },
-            {
                 "id": 102,
                 "street": "Bstreet",
                 "house_number": 6

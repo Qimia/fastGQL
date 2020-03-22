@@ -109,9 +109,9 @@ public class GraphQLServerTest {
   }
 
   @Test
-  public void shouldReceiveResponseForQueryWithLimit(Vertx vertx, VertxTestContext context) {
-    String inputResource = "test-limit/test-query-input.graphql";
-    String outputResource = "test-limit/test-query-output.json";
+  public void shouldReceiveResponseForQueryWithLimitOffset(Vertx vertx, VertxTestContext context) {
+    String inputResource = "test-limit-offset/test-query-input.graphql";
+    String outputResource = "test-limit-offset/test-query-output.json";
     GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
   }
 
@@ -141,12 +141,12 @@ public class GraphQLServerTest {
   }
 
   @Test
-  void shouldReceiveEventsForSubscriptionWithLimit(Vertx vertx, VertxTestContext context) {
-    String inputResource = "test-limit/test-subscription-input.graphql";
+  void shouldReceiveEventsForSubscriptionWithLimitOffset(Vertx vertx, VertxTestContext context) {
+    String inputResource = "test-limit-offset/test-subscription-input.graphql";
     List<String> outputResources = List.of(
-        "test-limit/test-subscription-output.json",
-        "test-limit/test-subscription-output.json",
-        "test-limit/test-subscription-output.json"
+        "test-limit-offset/test-subscription-output-1.json",
+        "test-limit-offset/test-subscription-output-1.json",
+        "test-limit-offset/test-subscription-output-2.json"
     );
     GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
 
@@ -155,7 +155,7 @@ public class GraphQLServerTest {
             result -> {
               try {
                 DBTestUtils.executeSQLQuery(
-                    "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+                    "DELETE FROM customers WHERE id = 101",
                     postgresContainer);
               } catch (SQLException e) {
                 context.failNow(e);

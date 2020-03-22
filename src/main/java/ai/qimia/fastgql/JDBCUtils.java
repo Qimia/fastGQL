@@ -31,6 +31,7 @@ public class JDBCUtils {
 
     Map<String, Object> args = environment.getArguments();
     Integer limit = (Integer) args.get("limit");
+    Integer offset = (Integer) args.get("offset");
 
     String query = "SELECT ";
 
@@ -47,6 +48,11 @@ public class JDBCUtils {
     // LIMIT
     if (limit != null) {
       query += String.format("LIMIT %d ", limit);
+    }
+
+    // OFFSET
+    if (offset != null) {
+      query += String.format("OFFSET %d ", offset);
     }
 
     Single<RowSet<Row>> rowSet = client.rxQuery(query);

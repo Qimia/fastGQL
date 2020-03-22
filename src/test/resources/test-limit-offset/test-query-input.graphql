@@ -1,11 +1,11 @@
 query {
-    customers (limit: 1) {
+    customers (limit: 1, offset: 0) {
         id
         first_name
         last_name
         email
     }
-    addresses (limit: 2) {
+    addresses (limit: 1, offset: 1) {
         id
         street
         house_number

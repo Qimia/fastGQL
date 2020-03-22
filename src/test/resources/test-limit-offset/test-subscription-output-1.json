@@ -9,12 +9,6 @@
           "first_name": "John",
           "last_name": "Adam",
           "email": "john@adam.com"
-        },
-        {
-          "id": 102,
-          "first_name": "Uli",
-          "last_name": "Werk",
-          "email": "uli@werk.com"
         }
       ]
     }

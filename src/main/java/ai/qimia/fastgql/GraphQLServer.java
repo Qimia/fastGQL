@@ -93,6 +93,8 @@ public class GraphQLServer extends AbstractVerticle {
 
           GraphQLArgument limit = GraphQLArgument.newArgument().name("limit").type(GraphQLInt)
               .build();
+          GraphQLArgument offset = GraphQLArgument.newArgument().name("offset").type(GraphQLInt)
+              .build();
 
 
           queryType.field(GraphQLFieldDefinition.newFieldDefinition()
@@ -100,12 +102,14 @@ public class GraphQLServer extends AbstractVerticle {
 //              .type(tableSchema.graphQLOutputType("query_", tableSchemas))
               .type(outputType)
               .argument(limit)
+              .argument(offset)
               .build());
           subscriptionType.field(GraphQLFieldDefinition.newFieldDefinition()
               .name(tableName)
 //              .type(tableSchema.graphQLOutputType("subscription_", tableSchemas))
               .type(outputType)
               .argument(limit)
+              .argument(offset)
               .build());
         }
     );
