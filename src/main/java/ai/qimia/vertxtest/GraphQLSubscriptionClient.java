@@ -23,9 +23,7 @@ public class GraphQLSubscriptionClient extends AbstractVerticle {
       if (websocketRes.succeeded()) {
         WebSocket webSocket = websocketRes.result();
 
-        webSocket.handler(message -> {
-          System.out.println(message.toJsonObject().encodePrettily());
-        });
+        webSocket.handler(message -> System.out.println(message.toJsonObject().encodePrettily()));
 
         JsonObject request = new JsonObject()
           .put("id", "1")

@@ -1,8 +1,8 @@
 package ai.qimia.vertxtest;
 
+import com.google.common.collect.Iterables;
 import graphql.GraphQL;
 import graphql.schema.*;
-import io.reactivex.Flowable;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
@@ -12,35 +12,26 @@ import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
+import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
 import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
-import org.reactivestreams.Publisher;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@SuppressWarnings({"rawtypes", "ResultOfMethodCallIgnored"})
 public class GraphQLServer extends AbstractVerticle {
+
+  private static final String alteredTablesTopic = "altered-tables";
+  private static KafkaConsumer<String, String> kafkaConsumer;
 
   public static void main(String[] args) {
     Launcher.executeCommand("run", GraphQLServer.class.getName());
-  }
-
-  @SuppressWarnings("rawtypes")
-  private static Map<String, DataFetcher> getDataFetcherMap(Set<String> keys, DataFetcher dataFetcher) {
-    return keys
-      .stream()
-      .collect(
-        Collectors.toMap(
-          Function.identity(),
-          key -> dataFetcher
-        )
-      );
   }
 
   private static Map<String, TableSchema<?>> fetchTableSchemas(DatasourceConfig datasourceConfig) throws SQLException {
@@ -61,6 +52,17 @@ public class GraphQLServer extends AbstractVerticle {
     }
     return tableSchemas;
   }
+
+  private KafkaConsumer<String, String> buildKafkaConsumer() {
+    Map<String, String> config = new HashMap<>();
+    config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, config().getString("bootstrap.servers", "http://localhost:9092"));
+    config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+    config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+    config.put(ConsumerConfig.GROUP_ID_CONFIG, "tc-" + UUID.randomUUID());
+    config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    return KafkaConsumer.create(vertx, config);
+  }
+
 
   private GraphQL buildGraphQL(Map<String, TableSchema<?>> tableSchemas, DatasourceConfig datasourceConfig) {
     GraphQLObjectType.Builder queryType = GraphQLObjectType.newObject()
@@ -93,26 +95,44 @@ public class GraphQLServer extends AbstractVerticle {
       new PoolOptions().setMaxSize(5)
     );
 
-    VertxDataFetcher<List<Map<String, Object>>> dataFetcher = new VertxDataFetcher<>(
-      (environment, fetcherPromise) -> {
-        //noinspection ResultOfMethodCallIgnored
-        JDBCUtils.getGraphQLResponse(environment, client)
-          .subscribe(fetcherPromise::complete);
-      }
-    );
+    Map<String, DataFetcher> queryDataFetchers = tableSchemas
+      .keySet()
+      .stream()
+      .collect(
+        Collectors.toMap(
+          Function.identity(),
+          key -> new VertxDataFetcher<List<Map<String, Object>>>(
+            (environment, fetcherPromise) -> JDBCUtils.getGraphQLResponse(environment, client)
+              .subscribe(fetcherPromise::complete)
+          )
+        )
+      );
 
-    DataFetcher<Publisher<List<Map<String, Object>>>> rxDataFetcher = environment -> Flowable.combineLatest(
-      vertx.periodicStream(2000).toFlowable(),
-      JDBCUtils.getGraphQLResponse(environment, client).toFlowable(),
-      (tick, response) -> response
-    );
-
-    @SuppressWarnings("rawtypes") Map<String, DataFetcher> dataFetchers = getDataFetcherMap(tableSchemas.keySet(), dataFetcher);
-    @SuppressWarnings("rawtypes") Map<String, DataFetcher> rxDataFetchers = getDataFetcherMap(tableSchemas.keySet(), rxDataFetcher);
+    Map<String, DataFetcher> subscriptionDataFetchers = tableSchemas
+      .keySet()
+      .stream()
+      .collect(
+        Collectors.toMap(
+          Function.identity(),
+          key -> environment -> kafkaConsumer
+            .toFlowable()
+            .filter(record -> Iterables
+              .getLast(
+                Arrays.asList(
+                  record
+                    .value()
+                    .substring(1, record.value().length()-1)
+                    .split("\\.")
+                )
+              )
+              .equals(key))
+            .flatMap(record -> JDBCUtils.getGraphQLResponse(environment, client).toFlowable())
+        )
+      );
 
     GraphQLCodeRegistry codeRegistry = GraphQLCodeRegistry.newCodeRegistry()
-      .dataFetchers("Query", dataFetchers)
-      .dataFetchers("Subscription", rxDataFetchers)
+      .dataFetchers("Query", queryDataFetchers)
+      .dataFetchers("Subscription", subscriptionDataFetchers)
       .build();
 
     GraphQLSchema graphQLSchema = GraphQLSchema.newSchema()
@@ -125,7 +145,10 @@ public class GraphQLServer extends AbstractVerticle {
   }
 
   @Override
-  public void start(Promise<Void> promise) {
+  public void start(Promise<Void> future) {
+
+    kafkaConsumer = buildKafkaConsumer();
+    kafkaConsumer.subscribe(alteredTablesTopic);
 
     // get datasource configuration
     DatasourceConfig datasourceConfig = new DatasourceConfig();
@@ -138,7 +161,7 @@ public class GraphQLServer extends AbstractVerticle {
     try {
       tableSchemas = fetchTableSchemas(datasourceConfig);
     } catch (SQLException e) {
-      promise.fail(e);
+      future.fail(e);
       return;
     }
 
@@ -151,11 +174,15 @@ public class GraphQLServer extends AbstractVerticle {
     router.route("/graphql").handler(GraphQLHandler.create(graphQL));
 
     // start server
-    // noinspection ResultOfMethodCallIgnored
     vertx
       .createHttpServer(new HttpServerOptions().setWebsocketSubProtocols("graphql-ws"))
       .requestHandler(router)
       .rxListen(config().getInteger("http.port", 8080))
-      .subscribe(server -> promise.complete(), server -> promise.fail(server.getCause()));
+      .subscribe(server -> future.complete(), server -> future.fail(server.getCause()));
+  }
+
+  @Override
+  public void stop(Promise<Void> future) {
+    kafkaConsumer.unsubscribe(future);
   }
 }

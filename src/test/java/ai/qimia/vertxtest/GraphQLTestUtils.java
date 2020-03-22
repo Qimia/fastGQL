@@ -1,7 +1,5 @@
 package ai.qimia.vertxtest;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Resources;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.graphql.ApolloWSMessageType;
@@ -15,48 +13,25 @@ import io.vertx.reactivex.ext.web.client.WebClient;
 import io.vertx.reactivex.ext.web.client.predicate.ResponsePredicate;
 import io.vertx.reactivex.ext.web.codec.BodyCodec;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class GraphQLTestUtils {
 
-  public static String readResource(String name) throws IOException {
-    //noinspection UnstableApiUsage
-    return Resources.toString(
-      Resources.getResource(name),
-      Charsets.UTF_8
-    );
-  }
-
-  public static String readResource(String name, VertxTestContext context) {
-    String resource = null;
-    try {
-      resource = readResource(name);
-    } catch (IOException e) {
-      context.failNow(e);
-    }
-    assertNotNull(resource);
-    return resource;
-  }
-
-
+  @SuppressWarnings("ResultOfMethodCallIgnored")
   public static void verifyQuery(int port, String inputResource, String outputResource,
                                  Vertx vertx, VertxTestContext context) {
-    String graphQLQuery = readResource(inputResource, context);
-    String expectedResponseString = readResource(outputResource, context);
+    String graphQLQuery = TestUtils.readResource(inputResource, context);
+    String expectedResponseString = TestUtils.readResource(outputResource, context);
 
     JsonObject expectedResponse = new JsonObject(expectedResponseString);
 
     JsonObject request = new JsonObject()
       .put("query", graphQLQuery);
 
-    //noinspection ResultOfMethodCallIgnored
     WebClient
       .create(vertx)
       .post(port, "localhost", "/graphql")
@@ -80,13 +55,14 @@ public class GraphQLTestUtils {
   }
 
   public static void verifySubscription(int port, String inputResource, List<String> outputResources,
-                                        Vertx vertx, VertxTestContext context, Checkpoint checkpoints) {
+                                        Vertx vertx, VertxTestContext context) {
+    Checkpoint checkpoints = context.checkpoint(outputResources.size());
     AtomicInteger currentResponseAtomic = new AtomicInteger(0);
 
-    String graphQLQuery = readResource(inputResource, context);
+    String graphQLQuery = TestUtils.readResource(inputResource, context);
     List<JsonObject> expectedResponses = outputResources
       .stream()
-      .map(name -> readResource(name, context))
+      .map(name -> TestUtils.readResource(name, context))
       .map(JsonObject::new)
       .collect(Collectors.toList());
 
@@ -98,7 +74,7 @@ public class GraphQLTestUtils {
         webSocket.handler(message -> {
           int currentResponse = currentResponseAtomic.getAndIncrement();
           if (currentResponse < expectedResponses.size()) {
-            assertEquals(expectedResponses.get(currentResponse), message.toJsonObject());
+            context.verify(() -> assertEquals(expectedResponses.get(currentResponse), message.toJsonObject()));
           }
           checkpoints.flag();
         });
@@ -113,14 +89,5 @@ public class GraphQLTestUtils {
         context.failNow(websocketRes.cause());
       }
     });
-  }
-
-  public static void verifySubscription(int port, int number, int numberOfEvents, Vertx vertx,
-                                        VertxTestContext context, Checkpoint checkpoints) {
-    String inputResource = String.format("test-subscription-input-%d.graphql", number);
-    List<String> outputResources = IntStream.rangeClosed(1, numberOfEvents)
-      .mapToObj(count -> String.format("test-subscription-output-%d-%d.json", number, count))
-      .collect(Collectors.toList());
-    verifySubscription(port, inputResource, outputResources, vertx, context, checkpoints);
   }
 }

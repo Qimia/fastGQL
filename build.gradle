@@ -11,6 +11,7 @@ sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
 vertx {
@@ -25,9 +26,13 @@ dependencies {
     implementation 'io.vertx:vertx-web-graphql'
     implementation 'io.vertx:vertx-rx-java2'
     implementation 'io.vertx:vertx-pg-client'
+    implementation 'io.vertx:vertx-kafka-client'
     implementation 'org.postgresql:postgresql:42.1.4'
+    implementation 'org.apache.kafka:kafka-clients:2.4.0'
+    implementation 'com.google.guava:guava:28.2-jre'
     runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
-    testImplementation 'com.google.guava:guava:28.2-jre'
+
+    testImplementation 'io.debezium:debezium-testing-testcontainers:1.0.3.Final.Qimia.0'
     testImplementation 'io.vertx:vertx-junit5'
     testImplementation 'io.vertx:vertx-web-client'
     testImplementation 'org.testcontainers:kafka:1.12.5'
