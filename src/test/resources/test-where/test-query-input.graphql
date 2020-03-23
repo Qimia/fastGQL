@@ -1,0 +1,13 @@
+query {
+    customers (where: {id: {_eq: 101}}) {
+        id
+        first_name
+        last_name
+        email
+    },
+    addresses (where: {street: {_neq: "Astreet"}}) {
+        id
+        street
+        house_number
+    }
+}

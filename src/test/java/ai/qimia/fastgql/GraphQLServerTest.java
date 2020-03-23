@@ -194,4 +194,35 @@ public class GraphQLServerTest {
             }
         );
   }
+
+  @Test
+  public void shouldReceiveResponseForQueryWithWhere(Vertx vertx, VertxTestContext context) {
+    String inputResource = "test-where/test-query-input.graphql";
+    String outputResource = "test-where/test-query-output.json";
+    GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
+  }
+
+  @Test
+  void shouldReceiveEventsForSubscriptionWithWhere(Vertx vertx, VertxTestContext context) {
+    String inputResource = "test-where/test-subscription-input.graphql";
+    List<String> outputResources = List.of(
+        "test-where/test-subscription-output-1.json",
+        "test-where/test-subscription-output-1.json",
+        "test-where/test-subscription-output-2.json"
+    );
+    GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
+
+    Observable.timer(5, TimeUnit.SECONDS)
+        .subscribe(
+            result -> {
+              try {
+                DBTestUtils.executeSQLQuery(
+                    "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+                    postgresContainer);
+              } catch (SQLException e) {
+                context.failNow(e);
+              }
+            }
+        );
+  }
 }
