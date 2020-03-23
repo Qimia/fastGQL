@@ -5,6 +5,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.Observable;
+import io.vertx.junit5.VertxTestContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.shaded.org.apache.commons.lang.StringUtils;
 
@@ -33,6 +37,30 @@ public class DBTestUtils {
       throws SQLException {
     executeSQLQuery(sqlQuery, postgresContainer.getJdbcUrl(), postgresContainer.getUsername(),
         postgresContainer.getPassword());
+  }
+
+  public static void executeSQLQuery(String sqlQuery, PostgreSQLContainer<?> postgresContainer, VertxTestContext context) {
+    try {
+      executeSQLQuery(sqlQuery, postgresContainer);
+    } catch (SQLException e) {
+      context.failNow(e);
+    }
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  public static void executeSQLQueryWithDelay(String sqlQuery, long delay, TimeUnit unit, PostgreSQLContainer<?> postgresContainer, VertxTestContext context) {
+    Observable.timer(delay, unit)
+      .subscribe(
+        result -> {
+          try {
+            DBTestUtils.executeSQLQuery(
+              sqlQuery,
+              postgresContainer);
+          } catch (SQLException e) {
+            context.failNow(e);
+          }
+        }
+      );
   }
 
   public static void executeSQLQueryFromResource(String sqlResource,

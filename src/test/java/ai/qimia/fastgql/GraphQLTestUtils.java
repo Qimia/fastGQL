@@ -47,12 +47,6 @@ public class GraphQLTestUtils {
         );
   }
 
-  public static void verifyQuery(int port, int number, Vertx vertx, VertxTestContext context) {
-    String inputResource = String.format("test-input-%d.graphql", number);
-    String outputResource = String.format("test-output-%d.json", number);
-    verifyQuery(port, inputResource, outputResource, vertx, context);
-  }
-
   public static void verifySubscription(int port, String inputResource,
       List<String> outputResources,
       Vertx vertx, VertxTestContext context) {

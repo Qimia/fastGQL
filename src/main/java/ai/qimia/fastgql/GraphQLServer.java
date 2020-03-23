@@ -96,7 +96,7 @@ public class GraphQLServer extends AbstractVerticle {
 
     tableSchemas.forEach(
         (tableName, tableSchema) -> {
-          GraphQLOutputType outputType = tableSchema.graphQLOutputType("", tableSchemas);
+          GraphQLOutputType outputType = tableSchema.graphQLOutputType(tableSchemas);
           GraphQLInputType orderByType = tableSchema.orderByType();
           GraphQLInputType distinctOnType = tableSchema.selectColumnType();
           GraphQLInputType whereType = tableSchema.boolExpType();
@@ -114,7 +114,6 @@ public class GraphQLServer extends AbstractVerticle {
 
           queryType.field(GraphQLFieldDefinition.newFieldDefinition()
               .name(tableName)
-//              .type(tableSchema.graphQLOutputType("query_", tableSchemas))
               .type(outputType)
               .argument(limit)
               .argument(offset)
@@ -124,7 +123,6 @@ public class GraphQLServer extends AbstractVerticle {
               .build());
           subscriptionType.field(GraphQLFieldDefinition.newFieldDefinition()
               .name(tableName)
-//              .type(tableSchema.graphQLOutputType("subscription_", tableSchemas))
               .type(outputType)
               .argument(limit)
               .argument(offset)

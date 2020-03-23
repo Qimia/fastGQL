@@ -63,21 +63,20 @@ public class TableSchema<PKType> {
     columns.put(name.toLowerCase(), new Column<>(type, null));
   }
 
-  public GraphQLOutputType graphQLOutputType(final String prefix,
-      final Map<String, TableSchema<?>> tableSchemaMap) {
+  public GraphQLOutputType graphQLOutputType(final Map<String, TableSchema<?>> tableSchemaMap) {
     Set<String> parentNames = new HashSet<>();
-    return new GraphQLList(graphQLObjectType(parentNames, prefix, tableSchemaMap));
+    return new GraphQLList(graphQLObjectType(parentNames, tableSchemaMap));
   }
 
-  private GraphQLObjectType graphQLObjectType(final Set<String> parentNames, final String prefix,
+  private GraphQLObjectType graphQLObjectType(final Set<String> parentNames,
       final Map<String, TableSchema<?>> tableSchemaMap) {
     Set<String> parentNamesCopy = new HashSet<>(parentNames);
-    if (parentNamesCopy.contains(prefix + name)) {
+    if (parentNamesCopy.contains(name)) {
       throw new RuntimeException("circular foreign key relationship between tables");
     }
-    parentNamesCopy.add(prefix + name);
+    parentNamesCopy.add(name);
     GraphQLObjectType.Builder builder = GraphQLObjectType.newObject()
-        .name(prefix + name)
+        .name(name)
         .field(
             GraphQLFieldDefinition.newFieldDefinition()
                 .name(primaryKeyName)
@@ -93,7 +92,7 @@ public class TableSchema<PKType> {
       }
       GraphQLOutputType graphQLOutputType = column.getReferenceTable() != null
           ? tableSchemaMap.get(column.getReferenceTable())
-          .graphQLObjectType(parentNamesCopy, prefix, tableSchemaMap)
+          .graphQLObjectType(parentNamesCopy, tableSchemaMap)
           : classGraphQLScalarTypeMap.get(column.getClazz());
       builder.field(
           GraphQLFieldDefinition.newFieldDefinition()
