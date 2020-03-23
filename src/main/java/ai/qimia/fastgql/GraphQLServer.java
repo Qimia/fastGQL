@@ -46,6 +46,12 @@ public class GraphQLServer extends AbstractVerticle {
     Launcher.executeCommand("run", GraphQLServer.class.getName());
   }
 
+  private static String kafkaMessageToTableName(String message) {
+    return Iterables.getLast(
+        Arrays.asList(message.substring(1, message.length() - 1).split("\\."))
+    );
+  }
+
   private static Map<String, TableSchema<?>> fetchTableSchemas(DatasourceConfig datasourceConfig)
       throws SQLException {
     Map<String, TableSchema<?>> tableSchemas;
@@ -162,16 +168,7 @@ public class GraphQLServer extends AbstractVerticle {
                 Function.identity(),
                 key -> environment -> kafkaConsumer
                     .toFlowable()
-                    .filter(record -> Iterables
-                        .getLast(
-                            Arrays.asList(
-                                record
-                                    .value()
-                                    .substring(1, record.value().length() - 1)
-                                    .split("\\.")
-                            )
-                        )
-                        .equals(key))
+                    .filter(record -> kafkaMessageToTableName(record.value()).equals(key))
                     .flatMap(
                         record -> JDBCUtils.getGraphQLResponse(environment, client).toFlowable())
             )
@@ -194,6 +191,7 @@ public class GraphQLServer extends AbstractVerticle {
   @Override
   public void start(Promise<Void> future) {
 
+    // start kafka consumer
     kafkaConsumer = buildKafkaConsumer();
     kafkaConsumer.subscribe(alteredTablesTopic);
 
