@@ -1,0 +1,8 @@
+subscription {
+    customers (distinct_on: first_name, order_by: [{first_name: asc}, {id: desc}]) {
+        id
+        first_name
+        last_name
+        email
+    }
+}

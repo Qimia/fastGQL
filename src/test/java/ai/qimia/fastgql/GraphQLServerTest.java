@@ -225,4 +225,42 @@ public class GraphQLServerTest {
             }
         );
   }
+
+  @Test
+  public void shouldReceiveResponseForQueryWithDistinctOn(Vertx vertx, VertxTestContext context) {
+    try {
+      DBTestUtils.executeSQLQuery(
+          "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+          postgresContainer);
+    } catch (SQLException e) {
+      context.failNow(e);
+    }
+    String inputResource = "test-distinct-on/test-query-input.graphql";
+    String outputResource = "test-distinct-on/test-query-output.json";
+    GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
+  }
+
+  @Test
+  void shouldReceiveEventsForSubscriptionWithDistinctOn(Vertx vertx, VertxTestContext context) {
+    String inputResource = "test-distinct-on/test-subscription-input.graphql";
+    List<String> outputResources = List.of(
+        "test-distinct-on/test-subscription-output-1.json",
+        "test-distinct-on/test-subscription-output-1.json",
+        "test-distinct-on/test-subscription-output-2.json"
+    );
+    GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
+
+    Observable.timer(5, TimeUnit.SECONDS)
+        .subscribe(
+            result -> {
+              try {
+                DBTestUtils.executeSQLQuery(
+                    "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+                    postgresContainer);
+              } catch (SQLException e) {
+                context.failNow(e);
+              }
+            }
+        );
+  }
 }
