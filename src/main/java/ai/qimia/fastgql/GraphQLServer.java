@@ -20,12 +20,14 @@ import graphql.schema.GraphQLSchema;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
+import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
+import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
 import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
@@ -215,11 +217,19 @@ public class GraphQLServer extends AbstractVerticle {
 
     // construct graphql
     GraphQL graphQL = buildGraphQL(tableSchemas, datasourceConfig);
+    ApolloWSHandlerUpdatable apolloWSHandler = ApolloWSHandlerUpdatable.create();
+    apolloWSHandler.updateGraphQL(graphQL);
+
+    GraphQLHandlerUpdatable graphQLHandler = GraphQLHandlerUpdatable.create();
+    graphQLHandler.updateGraphQL(graphQL);
 
     // set up router
     Router router = Router.router(vertx);
-    router.route("/graphql").handler(ApolloWSHandler.create(graphQL));
-    router.route("/graphql").handler(GraphQLHandler.create(graphQL));
+    router.route("/graphql").handler(apolloWSHandler);
+    router.route("/graphql").handler(graphQLHandler);
+    router.route("/graphiql/*").handler(GraphiQLHandler.create(
+      new GraphiQLHandlerOptions().setEnabled(true)
+    ));
 
     // start server
     vertx
