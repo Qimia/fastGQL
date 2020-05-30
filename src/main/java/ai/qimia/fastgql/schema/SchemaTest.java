@@ -18,11 +18,11 @@ public class SchemaTest extends AbstractVerticle {
 
   @Override
   public void start(Promise<Void> future) {
-    DatabaseSchema database = new DatabaseSchema();
-
-    database.addRowDefinition("customers", "id", FieldType.INT);
-    database.addRowDefinition("customers", "address", FieldType.INT, "addresses", "id");
-    database.addRowDefinition("addresses", "id", FieldType.INT);
+    DatabaseSchema database = DatabaseSchema.newSchema()
+      .row("addresses/id", FieldType.INT)
+      .row("customers/id", FieldType.INT)
+      .row("customers/address", FieldType.INT, "addresses/id")
+      .build();
 
     GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject()
       .name("Query");
