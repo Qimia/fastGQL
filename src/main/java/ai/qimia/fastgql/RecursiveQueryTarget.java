@@ -36,7 +36,11 @@ public class RecursiveQueryTarget extends AbstractVerticle {
         .type(GraphQLString)
         .build())
       .field(GraphQLFieldDefinition.newFieldDefinition()
-        .name("addresses_ref")
+        .name("address_id")
+        .type(GraphQLInt)
+        .build())
+      .field(GraphQLFieldDefinition.newFieldDefinition()
+        .name("address_id_ref")
         .type(GraphQLTypeReference.typeRef("addresses"))
         .build())
       .build();
@@ -52,7 +56,7 @@ public class RecursiveQueryTarget extends AbstractVerticle {
         .type(GraphQLString)
         .build())
       .field(GraphQLFieldDefinition.newFieldDefinition()
-        .name("customers_ref_id")
+        .name("customers_on_address_id")
         .type(GraphQLList.list(GraphQLTypeReference.typeRef("customers")))
         .build())
       .build();
@@ -61,11 +65,11 @@ public class RecursiveQueryTarget extends AbstractVerticle {
       .name("Query")
       .field(GraphQLFieldDefinition.newFieldDefinition()
         .name("customers")
-        .type(customersList)
+        .type(GraphQLList.list(customersList))
         .build())
       .field(GraphQLFieldDefinition.newFieldDefinition()
         .name("addresses")
-        .type(addressesList)
+        .type(GraphQLList.list(addressesList))
         .build())
       .build();
 

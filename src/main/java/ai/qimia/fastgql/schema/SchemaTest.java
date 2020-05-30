@@ -1,17 +1,50 @@
 package ai.qimia.fastgql.schema;
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import graphql.GraphQL;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLSchema;
+import io.vertx.core.Launcher;
+import io.vertx.core.Promise;
+import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
+import io.vertx.reactivex.core.AbstractVerticle;
+import io.vertx.reactivex.ext.web.Router;
+import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
+import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
 
-public class SchemaTest {
+public class SchemaTest extends AbstractVerticle {
   public static void main(String[] args) {
-    NodeGraph graph = new NodeGraph();
-    graph.addNode(new NodeDefinition(new QualifiedName("customers"), NodeType.TABLE, null, null));
-    graph.addNode(new NodeDefinition(new QualifiedName("customers/id"), NodeType.INT, null, null));
-    graph.addNode(new NodeDefinition(new QualifiedName("customers/address"), NodeType.INT, new QualifiedName("addresses/id"), null));
-    graph.addNode(new NodeDefinition(new QualifiedName("addresses"), NodeType.TABLE, null, null));
-    graph.addNode(new NodeDefinition(new QualifiedName("addresses/id"), NodeType.INT, null, null));
-    System.out.println(graph);
+    Launcher.executeCommand("run", SchemaTest.class.getName());
+  }
+
+  @Override
+  public void start(Promise<Void> future) {
+    DatabaseSchema database = new DatabaseSchema();
+
+    database.addRowDefinition("customers", "id", FieldType.INT);
+    database.addRowDefinition("customers", "address", FieldType.INT, "addresses", "id");
+    database.addRowDefinition("addresses", "id", FieldType.INT);
+
+    GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject()
+      .name("Query");
+    database.addToGraphQLObjectType(queryBuilder);
+    GraphQLObjectType query = queryBuilder.build();
+
+    GraphQLSchema graphQLSchema = GraphQLSchema.newSchema()
+      .query(query)
+      .build();
+
+    GraphQL graphQL = GraphQL.newGraphQL(graphQLSchema).build();
+
+    Router router = Router.router(vertx);
+    router.route("/graphql").handler(GraphQLHandler.create(graphQL));
+    router.route("/graphiql/*").handler(GraphiQLHandler.create(
+      new GraphiQLHandlerOptions().setEnabled(true)
+    ));
+
+    vertx
+      .createHttpServer()
+      .requestHandler(router)
+      .rxListen(config().getInteger("http.port", 8080))
+      .subscribe(server -> future.complete(), server -> future.fail(server.getCause()));
   }
 }

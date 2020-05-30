@@ -22,8 +22,8 @@ public class QualifiedName {
     Objects.requireNonNull(name);
     this.parent = parent;
     this.name = name;
-    if (parent.isEmpty()) {
-      this.qualifiedName = name;
+    if (parent.isEmpty() || name.isEmpty()) {
+      throw new IllegalArgumentException("qualified name: parent or name cannot be empty");
     } else {
       this.qualifiedName = String.format("%s/%s", parent, name);
     }
@@ -45,9 +45,7 @@ public class QualifiedName {
   private static Pair<String, String> splitName(String name) {
     Pair<String, String> ret;
     String[] splitted = name.split("/");
-    if (splitted.length == 1) {
-      ret = new Pair<>("", name);
-    } else if (splitted.length == 2) {
+    if (splitted.length == 2) {
       ret = new Pair<>(splitted[0], splitted[1]);
     } else {
       throw new IllegalArgumentException("qualified name has to be in the format of \"parent/child\"");

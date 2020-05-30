@@ -1,8 +1,7 @@
 package ai.qimia.fastgql.schema;
 
-public enum NodeType {
-  TABLE,
+public enum FieldType {
   INT,
   FLOAT,
-  STRING
+  STRING;
 }
