@@ -22,6 +22,6 @@ INSERT INTO addresses VALUES (101, 101, 'Astreet', 5);
 INSERT INTO addresses VALUES (102, 102, 'Bstreet', 6);
 INSERT INTO addresses VALUES (103, NULL, 'Bstreet', 6);
 INSERT INTO customers VALUES (101, 'John', 'Adam', 'john@adam.com', 101, 101);
-INSERT INTO customers VALUES (102, 'Uli', 'Werk', 'uli@werk.com', 102, 101);
-INSERT INTO customers VALUES (103, 'Mark', 'Woy', 'mark@woy.com');
+INSERT INTO customers VALUES (102, 'Uli', 'Werk', 'uli@werk.com', 102, null);
+INSERT INTO customers VALUES (103, 'Mark', 'Woy', 'mark@woy.com', null, 101);
 
