@@ -6,15 +6,15 @@ public class NodeDefinition {
   private final QualifiedName qualifiedName;
   private final FieldType fieldType;
   private QualifiedName referencing;
-  private Set<QualifiedName> referredBy;
+  private Set<QualifiedName> referencedBy;
 
-  public NodeDefinition(QualifiedName qualifiedName, FieldType fieldType, QualifiedName referencing, Set<QualifiedName> referredBy) {
+  public NodeDefinition(QualifiedName qualifiedName, FieldType fieldType, QualifiedName referencing, Set<QualifiedName> referencedBySet) {
     Objects.requireNonNull(qualifiedName);
     Objects.requireNonNull(fieldType);
     this.qualifiedName = qualifiedName;
     this.fieldType = fieldType;
     this.referencing = referencing;
-    this.referredBy = Objects.requireNonNullElseGet(referredBy, HashSet::new);
+    this.referencedBy = Objects.requireNonNullElseGet(referencedBySet, HashSet::new);
   }
 
   public QualifiedName getQualifiedName() {
@@ -29,12 +29,12 @@ public class NodeDefinition {
     return referencing;
   }
 
-  public Set<QualifiedName> getReferredBy() {
-    return referredBy;
+  public Set<QualifiedName> getReferencedBy() {
+    return referencedBy;
   }
 
   public void addReferredBy(QualifiedName name) {
-    this.referredBy.add(name);
+    this.referencedBy.add(name);
   }
 
   @Override
@@ -49,7 +49,7 @@ public class NodeDefinition {
     return Objects.equals(qualifiedName, otherNode.qualifiedName) &&
       Objects.equals(fieldType, otherNode.fieldType) &&
       Objects.equals(referencing, otherNode.referencing) &&
-      Objects.equals(referredBy, otherNode.referredBy);
+      Objects.equals(referencedBy, otherNode.referencedBy);
   }
 
   public void merge(NodeDefinition otherNode) {
@@ -69,10 +69,10 @@ public class NodeDefinition {
     if (otherNode.referencing != null) {
       this.referencing = otherNode.referencing;
     }
-    if (otherNode.referredBy == null) {
+    if (otherNode.referencedBy == null) {
       return;
     }
-    for (QualifiedName qualifiedName: otherNode.referredBy) {
+    for (QualifiedName qualifiedName: otherNode.referencedBy) {
       addReferredBy(qualifiedName);
     }
   }
@@ -83,7 +83,7 @@ public class NodeDefinition {
       "qualifiedName='" + qualifiedName + '\'' +
       ", nodeType=" + fieldType +
       ", referencing='" + referencing + '\'' +
-      ", referredBy=" + referredBy +
+      ", referredBy=" + referencedBy +
       '}';
   }
 

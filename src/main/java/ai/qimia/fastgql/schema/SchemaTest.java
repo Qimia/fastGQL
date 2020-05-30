@@ -10,7 +10,6 @@ import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class SchemaTest extends AbstractVerticle {
@@ -55,9 +54,11 @@ public class SchemaTest extends AbstractVerticle {
       .row("customers/address2", FieldType.INT, "addresses/id2")
       .build();
 
+    GraphQLDatabaseSchema graphQLDatabaseSchema = new GraphQLDatabaseSchema(database);
+
     GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject()
       .name("Query");
-    database.addToGraphQLObjectType(queryBuilder);
+    graphQLDatabaseSchema.applyToGraphQLObjectType(queryBuilder);
     GraphQLObjectType query = queryBuilder.build();
 
     DataFetcher<String> dataFetcher = env -> {

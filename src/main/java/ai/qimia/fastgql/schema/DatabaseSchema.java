@@ -1,51 +1,16 @@
 package ai.qimia.fastgql.schema;
 
-import graphql.schema.*;
 import java.util.*;
-import static graphql.Scalars.*;
 
 public class DatabaseSchema {
   private final Map<String, Map<String, NodeDefinition>> graph;
-  private static final Map<FieldType, GraphQLScalarType> nodeToGraphQLType = Map.of(
-    FieldType.INT, GraphQLInt,
-    FieldType.STRING, GraphQLString,
-    FieldType.FLOAT, GraphQLFloat
-  );
 
   public static DatabaseSchema.Builder newSchema() {
     return new DatabaseSchema.Builder();
   }
 
-  public void addToGraphQLObjectType(GraphQLObjectType.Builder builder) {
-    Objects.requireNonNull(builder);
-    graph.forEach((parent, subgraph) -> {
-      GraphQLObjectType.Builder object = GraphQLObjectType.newObject()
-        .name(parent);
-      subgraph.forEach((name, node) -> {
-        object.field(GraphQLFieldDefinition.newFieldDefinition()
-          .name(name)
-          .type(nodeToGraphQLType.get(node.getFieldType()))
-          .build());
-        QualifiedName referencing = node.getReferencing();
-        Set<QualifiedName> referredBySet = node.getReferredBy();
-        if (referencing != null) {
-          object.field(GraphQLFieldDefinition.newFieldDefinition()
-            .name(getNameForReferencingField(node.getQualifiedName()))
-            .type(GraphQLTypeReference.typeRef(referencing.getParent()))
-            .build());
-        }
-        referredBySet.forEach(referredBy -> {
-          object.field(GraphQLFieldDefinition.newFieldDefinition()
-            .name(getNameForReferredByField(referredBy))
-            .type(GraphQLList.list(GraphQLTypeReference.typeRef(referredBy.getParent())))
-            .build());
-        });
-      });
-      builder.field(GraphQLFieldDefinition.newFieldDefinition()
-        .name(parent)
-        .type(GraphQLList.list(object.build()))
-        .build());
-    });
+  public Map<String, Map<String, NodeDefinition>> getGraph() {
+    return graph;
   }
 
   @Override
@@ -136,15 +101,5 @@ public class DatabaseSchema {
 
   private DatabaseSchema(Map<String, Map<String, NodeDefinition>> graph) {
     this.graph = graph;
-  }
-
-  private String getNameForReferencingField(QualifiedName qualifiedName) {
-    Objects.requireNonNull(qualifiedName);
-    return String.format("%s_ref", qualifiedName.getName());
-  }
-
-  private String getNameForReferredByField(QualifiedName qualifiedName) {
-    Objects.requireNonNull(qualifiedName);
-    return String.format("%s_on_%s", qualifiedName.getParent(), qualifiedName.getName());
   }
 }
