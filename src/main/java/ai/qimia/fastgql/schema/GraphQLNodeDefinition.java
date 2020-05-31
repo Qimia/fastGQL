@@ -10,6 +10,7 @@ public class GraphQLNodeDefinition {
   private final QualifiedName qualifiedName;
   private final GraphQLOutputType graphQLType;
   private final QualifiedName foreignName;
+  private final ReferenceType referenceType;
   private static final Map<FieldType, GraphQLScalarType> nodeToGraphQLType = Map.of(
     FieldType.INT, GraphQLInt,
     FieldType.STRING, GraphQLString,
@@ -17,15 +18,15 @@ public class GraphQLNodeDefinition {
   );
 
   public static GraphQLNodeDefinition createLeaf(QualifiedName qualifiedName, FieldType type) {
-    return new GraphQLNodeDefinition(qualifiedName, nodeToGraphQLType.get(type), null);
+    return new GraphQLNodeDefinition(qualifiedName, nodeToGraphQLType.get(type), null, ReferenceType.NONE);
   }
 
   public static GraphQLNodeDefinition createReferencing(QualifiedName qualifiedName, QualifiedName foreignName) {
-    return new GraphQLNodeDefinition(qualifiedName, GraphQLTypeReference.typeRef(foreignName.getParent()), foreignName);
+    return new GraphQLNodeDefinition(qualifiedName, GraphQLTypeReference.typeRef(foreignName.getParent()), foreignName, ReferenceType.REFERENCING);
   }
 
   public static GraphQLNodeDefinition createReferencedBy(QualifiedName qualifiedName, QualifiedName foreignName) {
-    return new GraphQLNodeDefinition(qualifiedName, GraphQLList.list(GraphQLTypeReference.typeRef(foreignName.getParent())), foreignName);
+    return new GraphQLNodeDefinition(qualifiedName, GraphQLList.list(GraphQLTypeReference.typeRef(foreignName.getParent())), foreignName, ReferenceType.REFERENCED);
   }
 
   public QualifiedName getQualifiedName() {
@@ -40,10 +41,15 @@ public class GraphQLNodeDefinition {
     return foreignName;
   }
 
-  private GraphQLNodeDefinition(QualifiedName qualifiedName, GraphQLOutputType graphQLType, QualifiedName foreignName) {
+  public ReferenceType getReferenceType() {
+    return referenceType;
+  }
+
+  private GraphQLNodeDefinition(QualifiedName qualifiedName, GraphQLOutputType graphQLType, QualifiedName foreignName, ReferenceType referenceType) {
     this.qualifiedName = qualifiedName;
     this.graphQLType = graphQLType;
     this.foreignName = foreignName;
+    this.referenceType = referenceType;
   }
 
   @Override

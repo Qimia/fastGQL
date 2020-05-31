@@ -4,5 +4,4 @@ public enum FieldType {
   INT,
   FLOAT,
   STRING,
-  GRAPHQL
 }
