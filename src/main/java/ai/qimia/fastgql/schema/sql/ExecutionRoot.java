@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 public class ExecutionRoot {
   private final String field;
+  private final String alias;
   private SQLQuery query;
   private List<Component> components;
   private List<Map<String, Object>> forgedResponse;
@@ -18,62 +19,63 @@ public class ExecutionRoot {
 
     List<Map<String, Object>> forged = List.of(
       Map.of(
-        "customers_id", 101,
-        "customers_first_name", "John",
-        "addresses_id", 101,
-        "addresses_street", "StreetA",
-        "vehicles_id", 101,
-        "vehicles_model", "Subaru"
+        "c_id", 101,
+        "c_first_name", "John",
+        "a_id", 101,
+        "a_street", "StreetA",
+        "v_id", 101,
+        "v_model", "Subaru"
       ),
       Map.of(
-        "customers_id", 102,
-        "customers_first_name", "Mike",
-        "addresses_id", 102,
-        "addresses_street", "StreetB",
-        "vehicles_id", 102,
-        "vehicles_model", "Ford"
+        "c_id", 102,
+        "c_first_name", "Mike",
+        "a_id", 102,
+        "a_street", "StreetB",
+        "v_id", 102,
+        "v_model", "Ford"
       )
     );
 
     List<Map<String, Object>> forged2 = List.of(
       Map.of(
-        "vehicles_model", "Subaru",
-        "vehicles_year", 2010
+        "v_model", "Subaru",
+        "v_year", 2010
       ),
       Map.of(
-        "vehicles_model", "BMW",
-        "vehicles_year", 2012
+        "v_model", "BMW",
+        "v_year", 2012
       )
     );
 
-    ExecutionRoot executionRoot = new ExecutionRoot("customers");
+    ExecutionRoot executionRoot = new ExecutionRoot("customers", "c");
     executionRoot.setForgedResponse(forged);
-    executionRoot.addComponent(new ComponentRow( "customers", "id"));
-    executionRoot.addComponent(new ComponentRow("customers", "first_name"));
+    executionRoot.addComponent(new ComponentRow( "c", "id"));
+    executionRoot.addComponent(new ComponentRow("c", "first_name"));
 
-    ComponentReferencing addressRef = new ComponentReferencing("address_ref", "customers", "address", "addresses", "id");
-    addressRef.addComponent(new ComponentRow("addresses", "id"));
-    addressRef.addComponent(new ComponentRow("addresses", "street"));
+    ComponentReferencing addressRef = new ComponentReferencing("address_ref", "c", "address", "addresses", "a", "id");
+    addressRef.addComponent(new ComponentRow("a", "id"));
+    addressRef.addComponent(new ComponentRow("a", "street"));
 
-    ComponentReferencing vehiclesRef = new ComponentReferencing("vehicles_ref", "addresses", "vehicle", "vehicles", "id");
-    vehiclesRef.addComponent(new ComponentRow("vehicles", "id"));
-    vehiclesRef.addComponent(new ComponentRow("vehicles", "model"));
+    ComponentReferencing vehiclesRef = new ComponentReferencing("vehicles_ref", "a", "vehicle", "vehicles", "v", "id");
+    vehiclesRef.addComponent(new ComponentRow("v", "id"));
+    vehiclesRef.addComponent(new ComponentRow("v", "model"));
 
     addressRef.addComponent(vehiclesRef);
     executionRoot.addComponent(addressRef);
 
-    ComponentReferenced vehiclesOnCustomer = new ComponentReferenced("vehicles_on_customer", "customers", "id", "vehicles", "customer");
+    ComponentReferenced vehiclesOnCustomer = new ComponentReferenced("vehicles_on_customer", "c", "id", "vehicles", "v", "customer");
     vehiclesOnCustomer.setForgedResponse(forged2);
-    vehiclesOnCustomer.addComponent(new ComponentRow("vehicles", "model"));
-    vehiclesOnCustomer.addComponent(new ComponentRow("vehicles", "year"));
+    vehiclesOnCustomer.addComponent(new ComponentRow("v", "model"));
+    vehiclesOnCustomer.addComponent(new ComponentRow("v", "year"));
 
     executionRoot.addComponent(vehiclesOnCustomer);
     System.out.println(executionRoot.execute());
   }
 
-  public ExecutionRoot(String table) {
+  public ExecutionRoot(String table, String alias) {
     this.field = table;
-    this.query = new SQLQuery(table);
+    this.alias = alias;
+    this.query = new SQLQuery(table, alias);
     this.components = new ArrayList<>();
   }
 

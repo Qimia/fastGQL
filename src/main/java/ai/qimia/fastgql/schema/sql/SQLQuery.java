@@ -5,12 +5,14 @@ import java.util.List;
 
 public class SQLQuery {
   private final String table;
+  private final String alias;
   private List<String> keys;
   private List<String> joins;
   private List<String> suffixes;
 
-  public SQLQuery(String table) {
+  public SQLQuery(String table, String alias) {
     this.table = table;
+    this.alias = alias;
     this.keys = new ArrayList<>();
     this.joins = new ArrayList<>();
     this.suffixes = new ArrayList<>();
@@ -20,8 +22,8 @@ public class SQLQuery {
     keys.add(key);
   }
 
-  public void addJoin(String thisTable, String thisKey, String foreignTable, String foreignKey) {
-    joins.add(String.format("LEFT JOIN %s ON %s.%s = %s.%s", foreignTable, thisTable, thisKey, foreignTable, foreignKey));
+  public void addJoin(String thisTable, String thisKey, String foreignTable, String foreignTableAlias, String foreignKey) {
+    joins.add(String.format("LEFT JOIN %s %s ON %s.%s = %s.%s", foreignTable, foreignTableAlias, thisTable, thisKey, foreignTableAlias, foreignKey));
   }
 
   public void addSuffix(String suffix) {
@@ -35,6 +37,6 @@ public class SQLQuery {
   }
 
   public String build() {
-    return String.format("SELECT %s FROM %s %s %s", String.join(", ", keys), table, String.join(" ", joins), String.join(" ", suffixes));
+    return String.format("SELECT %s FROM %s %s %s %s", String.join(", ", keys), table, alias, String.join(" ", joins), String.join(" ", suffixes));
   }
 }
