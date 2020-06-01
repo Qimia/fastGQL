@@ -1,11 +1,9 @@
 package ai.qimia.fastgql.schema.sql;
 
-import ai.qimia.fastgql.schema.FieldType;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ExecutionRoot {
@@ -47,33 +45,33 @@ public class ExecutionRoot {
       )
     );
 
-    ExecutionRoot executionRoot = new ExecutionRoot("customers", "c");
+    ExecutionRoot executionRoot = new ExecutionRoot("customers", "customers", "c");
     executionRoot.setForgedResponse(forged);
-    executionRoot.addComponent(new ComponentRow( "c", "id"));
-    executionRoot.addComponent(new ComponentRow("c", "first_name"));
+    executionRoot.addComponent(new ComponentRow( "id"));
+    executionRoot.addComponent(new ComponentRow("first_name"));
 
-    ComponentReferencing addressRef = new ComponentReferencing("address_ref", "c", "address", "addresses", "a", "id");
-    addressRef.addComponent(new ComponentRow("a", "id"));
-    addressRef.addComponent(new ComponentRow("a", "street"));
+    ComponentReferencing addressRef = new ComponentReferencing("address_ref", "address", "addresses", "a", "id");
+    addressRef.addComponent(new ComponentRow( "id"));
+    addressRef.addComponent(new ComponentRow("street"));
 
-    ComponentReferencing vehiclesRef = new ComponentReferencing("vehicles_ref", "a", "vehicle", "vehicles", "v", "id");
-    vehiclesRef.addComponent(new ComponentRow("v", "id"));
-    vehiclesRef.addComponent(new ComponentRow("v", "model"));
+    ComponentReferencing vehiclesRef = new ComponentReferencing("vehicles_ref", "vehicle", "vehicles", "v", "id");
+    vehiclesRef.addComponent(new ComponentRow("id"));
+    vehiclesRef.addComponent(new ComponentRow("model"));
 
     addressRef.addComponent(vehiclesRef);
     executionRoot.addComponent(addressRef);
 
-    ComponentReferenced vehiclesOnCustomer = new ComponentReferenced("vehicles_on_customer", "c", "id", "vehicles", "v", "customer");
+    ComponentReferenced vehiclesOnCustomer = new ComponentReferenced("vehicles_on_customer", "id", "vehicles", "v", "customer");
     vehiclesOnCustomer.setForgedResponse(forged2);
-    vehiclesOnCustomer.addComponent(new ComponentRow("v", "model"));
-    vehiclesOnCustomer.addComponent(new ComponentRow("v", "year"));
+    vehiclesOnCustomer.addComponent(new ComponentRow("model"));
+    vehiclesOnCustomer.addComponent(new ComponentRow("year"));
 
     executionRoot.addComponent(vehiclesOnCustomer);
     System.out.println(executionRoot.execute());
   }
 
-  public ExecutionRoot(String table, String alias) {
-    this.field = table;
+  public ExecutionRoot(String field, String table, String alias) {
+    this.field = field;
     this.alias = alias;
     this.query = new SQLQuery(table, alias);
     this.components = new ArrayList<>();
@@ -86,27 +84,19 @@ public class ExecutionRoot {
   public Map<String, Object> execute() {
     components.forEach(component -> component.updateQuery(query));
     System.out.println(query.build());
-    List<Map<String, Object>> response = forgedResponse.stream().map(row -> {
-      Map<String, Object> ret = new HashMap<>();
-      components
-        .stream()
-        .map(component -> component.extractValues(row))
-        .forEach(map -> ret.putAll(
-          map.entrySet().stream().collect(
-            Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
-          )
-        ));
-      return ret;
-    }).collect(Collectors.toList());
+    List<Map<String, Object>> response = forgedResponse.stream().map(
+      row -> SQLResponseProcessor.constructResponse(row, components)).collect(Collectors.toList()
+    );
     query.reset();
     return Map.of(field, response);
   }
 
   public void addComponent(Component component) {
+    component.setTable(alias);
     components.add(component);
   }
 
-  protected SQLQuery getQuery() {
-    return query;
+  protected void modifyQuery(Consumer<SQLQuery> modifier) {
+    modifier.accept(query);
   }
 }

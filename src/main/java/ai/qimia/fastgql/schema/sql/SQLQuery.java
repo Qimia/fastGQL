@@ -1,19 +1,21 @@
 package ai.qimia.fastgql.schema.sql;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class SQLQuery {
   private final String table;
   private final String alias;
-  private List<String> keys;
+  private Set<String> keys;
   private List<String> joins;
   private List<String> suffixes;
 
   public SQLQuery(String table, String alias) {
     this.table = table;
     this.alias = alias;
-    this.keys = new ArrayList<>();
+    this.keys = new HashSet<>();
     this.joins = new ArrayList<>();
     this.suffixes = new ArrayList<>();
   }
@@ -31,7 +33,7 @@ public class SQLQuery {
   }
 
   public void reset() {
-    keys = new ArrayList<>();
+    keys = new HashSet<>();
     joins = new ArrayList<>();
     suffixes = new ArrayList<>();
   }

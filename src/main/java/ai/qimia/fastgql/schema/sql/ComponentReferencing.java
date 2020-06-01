@@ -5,16 +5,15 @@ import java.util.stream.Collectors;
 
 public class ComponentReferencing implements Component {
   private final String field;
-  private final String table;
+  private String table;
   private final String key;
   private final String foreignTable;
   private final String foreignTableAlias;
   private final String foreignKey;
   private List<Component> components;
 
-  public ComponentReferencing(String field, String table, String key, String foreignTable, String foreignTableAlias, String foreignKey) {
+  public ComponentReferencing(String field, String key, String foreignTable, String foreignTableAlias, String foreignKey) {
     this.field = field;
-    this.table = table;
     this.key = key;
     this.foreignTable = foreignTable;
     this.foreignTableAlias = foreignTableAlias;
@@ -23,6 +22,7 @@ public class ComponentReferencing implements Component {
   }
 
   public void addComponent(Component component) {
+    component.setTable(foreignTableAlias);
     components.add(component);
   }
 
@@ -34,16 +34,12 @@ public class ComponentReferencing implements Component {
   }
 
   @Override
+  public void setTable(String table) {
+    this.table = table;
+  }
+
+  @Override
   public Map<String, Object> extractValues(Map<String, Object> row) {
-    Map<String, Object> ret = new HashMap<>();
-    components
-      .stream()
-      .map(component -> component.extractValues(row))
-      .forEach(map -> ret.putAll(
-        map.entrySet().stream().collect(
-          Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
-        )
-      ));
-    return Map.of(field, ret);
+    return Map.of(field, SQLResponseProcessor.constructResponse(row, components));
   }
 }

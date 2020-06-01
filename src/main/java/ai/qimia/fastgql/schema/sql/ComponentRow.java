@@ -4,22 +4,26 @@ import java.util.Map;
 import java.util.Objects;
 
 public class ComponentRow implements Component {
-  private final String table;
+  private String table;
   private final String key;
 
-  public ComponentRow(String table, String key) {
-    this.table = table;
+  public ComponentRow(String key) {
     this.key = key;
   }
 
   @Override
   public void updateQuery(SQLQuery query) {
     Objects.requireNonNull(query);
-    query.addKey(String.format("%s.%s", table, key));
+    query.addKey(String.format("%s.%s AS %s_%s", table, key, table, key));
+  }
+
+  @Override
+  public void setTable(String table) {
+    this.table = table;
   }
 
   @Override
   public Map<String, Object> extractValues(Map<String, Object> row) {
-    return Map.of(key, row.get(String.format("%s_%s", table, key)));
+    return Map.of(key, SQLResponseProcessor.getValue(row, table, key));
   }
 }
