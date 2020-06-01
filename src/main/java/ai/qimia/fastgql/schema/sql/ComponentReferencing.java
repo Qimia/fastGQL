@@ -1,7 +1,6 @@
 package ai.qimia.fastgql.schema.sql;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ComponentReferencing implements Component {
   private final String field;
@@ -21,6 +20,7 @@ public class ComponentReferencing implements Component {
     this.components = new ArrayList<>();
   }
 
+  @Override
   public void addComponent(Component component) {
     component.setTable(foreignTableAlias);
     components.add(component);

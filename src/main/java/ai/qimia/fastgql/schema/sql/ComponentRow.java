@@ -26,4 +26,9 @@ public class ComponentRow implements Component {
   public Map<String, Object> extractValues(Map<String, Object> row) {
     return Map.of(key, SQLResponseProcessor.getValue(row, table, key));
   }
+
+  @Override
+  public void addComponent(Component component) {
+    throw new RuntimeException("ComponentRow cannot have any child components");
+  }
 }
