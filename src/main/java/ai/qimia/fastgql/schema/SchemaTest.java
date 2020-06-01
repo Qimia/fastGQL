@@ -25,6 +25,7 @@ public class SchemaTest extends AbstractVerticle {
   }
 
   private void traverseSelectionSetInner(GraphQLDatabaseSchema graphQLDatabaseSchema, String table, DataFetchingFieldSelectionSet selectionSet) {
+    List<String> keysToQuery = new ArrayList<>();
     selectionSet.getFields().forEach(field -> {
       // todo: cleaner way to skip non-root nodes?
       if (field.getQualifiedName().contains("/")) {
@@ -32,18 +33,20 @@ public class SchemaTest extends AbstractVerticle {
       }
       GraphQLNodeDefinition node = graphQLDatabaseSchema.getGraph().get(table).get(field.getName());
       ReferenceType referenceType = node.getReferenceType();
-      QualifiedName thisName = node.getQualifiedName();
-      String key = thisName.getName();
+      String key = node.getQualifiedName().getName();
       if (referenceType.equals(ReferenceType.NONE)) {
         System.out.println(table + "(" + key + ")");
+        keysToQuery.add(key);
       } else {
         QualifiedName foreignName = node.getForeignName();
         String foreignTable = foreignName.getParent();
         String foreignKey = foreignName.getName();
         System.out.println("traversing " + field.getQualifiedName() + ", " + table + "(" + key + ") -> " + foreignTable + "(" + foreignKey + ")");
+/*
         if (referenceType.equals(ReferenceType.REFERENCED)) {
           System.out.println("pk -> " + foreignTable + "(" + graphQLDatabaseSchema.getPrimaryKeys().get(foreignTable) + ")");
         }
+*/
         traverseSelectionSetInner(graphQLDatabaseSchema, foreignTable, field.getSelectionSet());
       }
 /*
@@ -58,6 +61,7 @@ public class SchemaTest extends AbstractVerticle {
       }
 */
     });
+    //System.out.println(keysToQuery);
   }
 
   @Override
@@ -87,11 +91,31 @@ public class SchemaTest extends AbstractVerticle {
       return "none";
     };
 
+    DataFetcher<List<Map<String, Object>>> queryCustomersDataFetcher = env -> {
+      // return all rows
+      // SELECT field1, field2, ... from customers
+      traverseSelectionSetInner(graphQLDatabaseSchema, "customers", env.getSelectionSet());
+      return List.of(Map.of("id", 5));
+    };
+
+    DataFetcher<Map<String, Object>> customersAddressRefDataFetcher = env -> {
+      // get address for specific address id
+      // SELECT field1, field2, ... from addresses where id = 100
+      //System.out.println(env.getExecutionStepInfo());
+      return Map.of("id", 7);
+    };
+
+    DataFetcher<List<Map<String, Object>>> addressesCustomersOnAddressDataFetcher = env -> {
+      // get customers matching specific address id
+      // SELECT field1, field2, ... from customers where address = 100
+      return List.of(Map.of("id", 8));
+    };
+
     GraphQLCodeRegistry codeRegistry = GraphQLCodeRegistry.newCodeRegistry()
-      .dataFetcher(FieldCoordinates.coordinates("Query", "customers"), (DataFetcher<?>) env -> List.of(Map.of("id", 5)))
+      .dataFetcher(FieldCoordinates.coordinates("Query", "customers"), queryCustomersDataFetcher)
       .dataFetcher(FieldCoordinates.coordinates("Query", "addresses"), (DataFetcher<?>) env -> List.of(Map.of("id", 1)))
-      .dataFetcher(FieldCoordinates.coordinates("customers", "address_ref"), (DataFetcher<?>) env -> Map.of("id", 7))
-      .dataFetcher(FieldCoordinates.coordinates("addresses", "customers_on_address"), (DataFetcher<?>) env -> List.of(Map.of("id", 8)))
+      .dataFetcher(FieldCoordinates.coordinates("customers", "address_ref"), customersAddressRefDataFetcher)
+      .dataFetcher(FieldCoordinates.coordinates("addresses", "customers_on_address"), addressesCustomersOnAddressDataFetcher)
       .build();
 
     GraphQLSchema graphQLSchema = GraphQLSchema.newSchema()
