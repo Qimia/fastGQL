@@ -28,7 +28,7 @@ public class FastGQL extends AbstractVerticle {
         DriverManager.getConnection(
             "jdbc:postgresql://localhost:5432/quarkus_test", "quarkus_test", "quarkus_test");
     DatabaseSchema database = MetadataUtils.getDatabaseSchema(connection);
-    System.out.println(database);
+    connection.close();
 
     Pool client =
         PgPool.pool(

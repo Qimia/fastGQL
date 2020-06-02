@@ -65,7 +65,6 @@ public class MetadataUtils {
     }
     tablesResultSet.close();
     statement.close();
-    connection.close();
     return databaseSchemaBuilder.build();
   }
 }
