@@ -3,15 +3,18 @@ package ai.qimia.fastgql.schema;
 import ai.qimia.fastgql.schema.sql.*;
 import graphql.GraphQL;
 import graphql.schema.*;
-import io.reactivex.Single;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
+import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
+import io.vertx.reactivex.pgclient.PgPool;
+import io.vertx.reactivex.sqlclient.Pool;
+import io.vertx.sqlclient.PoolOptions;
 
 import java.util.List;
 import java.util.Map;
@@ -21,7 +24,7 @@ public class SchemaTest extends AbstractVerticle {
     Launcher.executeCommand("run", SchemaTest.class.getName());
   }
 
-  private void traverseSelectionSet(GraphQLDatabaseSchema graphQLDatabaseSchema, ComponentParent parent, AliasGenerator aliasGenerator, DataFetchingFieldSelectionSet selectionSet) {
+  private void traverseSelectionSet(Pool client, GraphQLDatabaseSchema graphQLDatabaseSchema, ComponentParent parent, AliasGenerator aliasGenerator, DataFetchingFieldSelectionSet selectionSet) {
     selectionSet.getFields().forEach(field -> {
       // todo: cleaner way to skip non-root nodes?
       if (field.getQualifiedName().contains("/")) {
@@ -40,7 +43,7 @@ public class SchemaTest extends AbstractVerticle {
             aliasGenerator.getAlias(),
             node.getForeignName().getName()
           );
-          traverseSelectionSet(graphQLDatabaseSchema, componentReferencing, aliasGenerator, field.getSelectionSet());
+          traverseSelectionSet(client, graphQLDatabaseSchema, componentReferencing, aliasGenerator, field.getSelectionSet());
           parent.addComponent(componentReferencing);
           break;
         case REFERENCED:
@@ -49,18 +52,10 @@ public class SchemaTest extends AbstractVerticle {
             node.getQualifiedName().getName(),
             node.getForeignName().getParent(),
             aliasGenerator.getAlias(),
-            node.getForeignName().getName()
+            node.getForeignName().getName(),
+            queryString -> SQLResponseProcessor.executeQuery(queryString, client)
           );
-          traverseSelectionSet(graphQLDatabaseSchema, componentReferenced, aliasGenerator, field.getSelectionSet());
-          List<Map<String, Object>> forged = List.of(
-            Map.of(
-              "a2_id", 105
-            ),
-            Map.of(
-              "a2_id", 106
-            )
-          );
-          ((ComponentExecutable) componentReferenced).setForgedResponse(Single.just(forged));
+          traverseSelectionSet(client, graphQLDatabaseSchema, componentReferenced, aliasGenerator, field.getSelectionSet());
           parent.addComponent(componentReferenced);
           break;
         default:
@@ -72,9 +67,14 @@ public class SchemaTest extends AbstractVerticle {
   @Override
   public void start(Promise<Void> future) {
     DatabaseSchema database = DatabaseSchema.newSchema()
-      .row("addresses/id", FieldType.INT)
       .row("customers/id", FieldType.INT)
+      .row("customers/first_name", FieldType.STRING)
+      .row("customers/last_name", FieldType.STRING)
+      .row("customers/email", FieldType.STRING)
       .row("customers/address", FieldType.INT, "addresses/id")
+      .row("addresses/id", FieldType.INT)
+      .row("addresses/street", FieldType.STRING)
+      .row("addresses/house_number", FieldType.INT)
       .build();
 
     GraphQLDatabaseSchema graphQLDatabaseSchema = new GraphQLDatabaseSchema(database);
@@ -84,18 +84,21 @@ public class SchemaTest extends AbstractVerticle {
     graphQLDatabaseSchema.applyToGraphQLObjectType(queryBuilder);
     GraphQLObjectType query = queryBuilder.build();
 
+    Pool client = PgPool.pool(
+      vertx,
+      new PgConnectOptions()
+        .setHost("localhost")
+        .setPort(5432)
+        .setDatabase("quarkus_test")
+        .setUser("quarkus_test")
+        .setPassword("quarkus_test"),
+      new PoolOptions().setMaxSize(5)
+    );
+
     VertxDataFetcher<List<Map<String, Object>>> vertxDataFetcher = new VertxDataFetcher<>(((env, listPromise) -> {
       AliasGenerator aliasGenerator = new AliasGenerator();
-      ComponentExecutable executionRoot = new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias());
-      traverseSelectionSet(graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
-      List<Map<String, Object>> forged = List.of(
-        Map.of(
-          "a0_id", 101,
-          "a0_address", 102,
-          "a1_id", 102
-        )
-      );
-      executionRoot.setForgedResponse(Single.just(forged));
+      ComponentExecutable executionRoot = new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), queryString -> SQLResponseProcessor.executeQuery(queryString, client));
+      traverseSelectionSet(client, graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
       executionRoot.execute().subscribe(listPromise::complete);
     }));
 

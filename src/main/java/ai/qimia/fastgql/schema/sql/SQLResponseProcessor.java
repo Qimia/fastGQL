@@ -1,6 +1,7 @@
 package ai.qimia.fastgql.schema.sql;
 
 import io.reactivex.Single;
+import io.vertx.reactivex.sqlclient.Pool;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,12 +26,21 @@ public class SQLResponseProcessor {
       Arrays
         .stream(values)
         .map(value -> (Map<String, Object>) value)
-        .forEach(map -> r.putAll(
-           map.entrySet().stream().collect(
-             Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
-           )
-      ));
+        .forEach(r::putAll);
       return r;
+    });
+  }
+
+  public static Single<List<Map<String, Object>>> executeQuery(String query, Pool client) {
+    return client.rxQuery(query).map(rowSet -> {
+      List<String> columnNames = rowSet.columnsNames();
+      List<Map<String, Object>> rList = new ArrayList<>();
+      rowSet.forEach(row -> {
+        Map<String, Object> r = new HashMap<>();
+        columnNames.forEach(columnName -> r.put(columnName, row.getValue(columnName)));
+        rList.add(r);
+      });
+      return rList;
     });
   }
 }

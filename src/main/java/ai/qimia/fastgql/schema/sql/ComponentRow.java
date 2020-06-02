@@ -26,7 +26,11 @@ public class ComponentRow implements Component {
 
   @Override
   public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
-    return Single.just(Map.of(key, SQLResponseProcessor.getValue(row, table, key)));
+    Object value = SQLResponseProcessor.getValue(row, table, key);
+    if (value == null) {
+      return Single.just(Map.of());
+    }
+    return Single.just(Map.of(key, value));
   }
 
   @Override

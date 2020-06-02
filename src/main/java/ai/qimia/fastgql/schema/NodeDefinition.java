@@ -86,10 +86,4 @@ public class NodeDefinition {
       ", referredBy=" + referencedBy +
       '}';
   }
-
-  static class Builder {
-    public Builder() {}
-
-
-  }
 }

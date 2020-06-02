@@ -47,6 +47,9 @@ public class ComponentReferencing implements Component {
 
   @Override
   public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
+    if (SQLResponseProcessor.getValue(row, table, key) == null) {
+      return Single.just(Map.of());
+    }
     return SQLResponseProcessor.constructResponse(row, components).map(response -> Map.of(field, response));
   }
 }

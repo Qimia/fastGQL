@@ -2,7 +2,9 @@ package ai.qimia.fastgql.schema.sql;
 
 import io.reactivex.Single;
 
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 public class ComponentReferenced extends ExecutionRoot implements Component {
   private String table;
@@ -11,8 +13,13 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
   private final String foreignTableAlias;
   private final String foreignKey;
 
-  public ComponentReferenced(String field, String key, String foreignTable, String foreignTableAlias, String foreignKey) {
-    super(foreignTable, foreignTableAlias);
+  public ComponentReferenced(String field,
+                             String key,
+                             String foreignTable,
+                             String foreignTableAlias,
+                             String foreignKey,
+                             Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+    super(foreignTable, foreignTableAlias, sqlExecutor);
     this.key = key;
     this.field = field;
     this.foreignTableAlias = foreignTableAlias;
@@ -31,8 +38,11 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
 
   @Override
   public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
-    String value = row.get(String.format("%s_%s", table, key)).toString();
-    modifyQuery(query -> query.addSuffix(String.format("WHERE %s.%s = %s", foreignTableAlias, foreignKey, value)));
+    Object value = SQLResponseProcessor.getValue(row, table, key);
+    if (value == null) {
+      return Single.just(Map.of());
+    }
+    modifyQuery(query -> query.addSuffix(String.format("WHERE %s.%s = %s", foreignTableAlias, foreignKey, value.toString())));
     return execute().map(response -> Map.of(field, response));
   }
 }

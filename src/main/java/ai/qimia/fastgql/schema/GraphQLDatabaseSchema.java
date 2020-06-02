@@ -52,11 +52,9 @@ public class GraphQLDatabaseSchema {
   public void applyToGraphQLObjectType(GraphQLObjectType.Builder builder) {
     Objects.requireNonNull(builder);
     graph.forEach((parent, subgraph) -> {
-      System.out.println(parent);
       GraphQLObjectType.Builder object = GraphQLObjectType.newObject()
         .name(parent);
       subgraph.forEach((name, node) -> {
-        System.out.println("    " + name);
         object.field(GraphQLFieldDefinition.newFieldDefinition()
           .name(name)
           .type(node.getGraphQLType())
