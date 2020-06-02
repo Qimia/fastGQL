@@ -7,6 +7,8 @@ package ai.qimia.fastgql.oldarch;
 
 import static graphql.Scalars.GraphQLInt;
 
+import ai.qimia.fastgql.router.ApolloWSHandlerUpdatable;
+import ai.qimia.fastgql.router.GraphQLHandlerUpdatable;
 import com.google.common.collect.Iterables;
 import graphql.GraphQL;
 import graphql.schema.DataFetcher;

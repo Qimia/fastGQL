@@ -3,15 +3,12 @@ package ai.qimia.fastgql;
 import ai.qimia.fastgql.common.FieldType;
 import ai.qimia.fastgql.db.DatabaseSchema;
 import ai.qimia.fastgql.graphql.GraphQLUtils;
+import ai.qimia.fastgql.router.RouterUpdatable;
 import graphql.GraphQL;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
-import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.ext.web.Router;
-import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
-import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
 import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
@@ -46,16 +43,12 @@ public class FastGQL extends AbstractVerticle {
     );
 
     GraphQL graphQL = GraphQLUtils.create(database, client);
-
-    Router router = Router.router(vertx);
-    router.route("/graphql").handler(GraphQLHandler.create(graphQL));
-    router.route("/graphiql/*").handler(GraphiQLHandler.create(
-      new GraphiQLHandlerOptions().setEnabled(true)
-    ));
+    RouterUpdatable routerUpdatable = new RouterUpdatable(vertx);
+    routerUpdatable.update(graphQL);
 
     vertx
       .createHttpServer()
-      .requestHandler(router)
+      .requestHandler(routerUpdatable.getRouter())
       .rxListen(config().getInteger("http.port", 8080))
       .subscribe(server -> future.complete(), server -> future.fail(server.getCause()));
   }

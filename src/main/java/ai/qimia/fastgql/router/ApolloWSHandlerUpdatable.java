@@ -1,4 +1,4 @@
-package ai.qimia.fastgql.oldarch;
+package ai.qimia.fastgql.router;
 
 import graphql.GraphQL;
 import io.reactivex.subjects.BehaviorSubject;
