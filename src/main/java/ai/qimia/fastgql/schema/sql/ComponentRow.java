@@ -1,5 +1,7 @@
 package ai.qimia.fastgql.schema.sql;
 
+import io.reactivex.Single;
+
 import java.util.Map;
 import java.util.Objects;
 
@@ -23,8 +25,8 @@ public class ComponentRow implements Component {
   }
 
   @Override
-  public Map<String, Object> extractValues(Map<String, Object> row) {
-    return Map.of(key, SQLResponseProcessor.getValue(row, table, key));
+  public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
+    return Single.just(Map.of(key, SQLResponseProcessor.getValue(row, table, key)));
   }
 
   @Override

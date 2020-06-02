@@ -1,5 +1,7 @@
 package ai.qimia.fastgql.schema.sql;
 
+import io.reactivex.Single;
+
 import java.util.Map;
 
 public class ComponentReferenced extends ExecutionRoot implements Component {
@@ -28,9 +30,9 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
   }
 
   @Override
-  public Map<String, Object> extractValues(Map<String, Object> row) {
+  public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
     String value = row.get(String.format("%s_%s", table, key)).toString();
     modifyQuery(query -> query.addSuffix(String.format("WHERE %s.%s = %s", foreignTableAlias, foreignKey, value)));
-    return Map.of(field, execute());
+    return execute().map(response -> Map.of(field, response));
   }
 }

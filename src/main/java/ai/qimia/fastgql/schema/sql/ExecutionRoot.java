@@ -1,20 +1,17 @@
 package ai.qimia.fastgql.schema.sql;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import io.reactivex.Single;
+
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ExecutionRoot implements ComponentExecutable {
   private final String table;
-/*
-  private final String field;
-*/
   private final String alias;
   private SQLQuery query;
   private List<Component> components;
-  private List<Map<String, Object>> forgedResponse;
+  private Single<List<Map<String, Object>>> forgedResponse;
 
   public static void main(String[] args) {
 
@@ -55,7 +52,7 @@ public class ExecutionRoot implements ComponentExecutable {
     AliasGenerator aliasGenerator = new AliasGenerator();
 
     ComponentExecutable executionRoot = new ExecutionRoot("customers", aliasGenerator.getAlias());
-    executionRoot.setForgedResponse(forged);
+    executionRoot.setForgedResponse(Single.just(forged));
     executionRoot.addComponent(new ComponentRow( "id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
 
@@ -71,7 +68,7 @@ public class ExecutionRoot implements ComponentExecutable {
     executionRoot.addComponent(addressRef);
 
     Component vehiclesOnCustomer = new ComponentReferenced("vehicles_on_customer", "id", "vehicles", aliasGenerator.getAlias(), "customer");
-    ((ComponentExecutable) vehiclesOnCustomer).setForgedResponse(forged2);
+    ((ComponentExecutable) vehiclesOnCustomer).setForgedResponse(Single.just(forged2));
     vehiclesOnCustomer.addComponent(new ComponentRow("model"));
     vehiclesOnCustomer.addComponent(new ComponentRow("year"));
 
@@ -81,43 +78,31 @@ public class ExecutionRoot implements ComponentExecutable {
     vehiclesOnCustomer.addComponent(customerRef);
 
     executionRoot.addComponent(vehiclesOnCustomer);
-    System.out.println(executionRoot.execute());
+    System.out.println(executionRoot.execute().blockingGet());
   }
 
   public ExecutionRoot(String table, String alias) {
     this.table = table;
-/*
-    this.field = table;
-*/
     this.alias = alias;
     this.query = new SQLQuery(table, alias);
     this.components = new ArrayList<>();
   }
-
-/*
-  public ExecutionRoot(String field, String table, String alias) {
-    this.table = table;
-    this.field = field;
-    this.alias = alias;
-    this.query = new SQLQuery(table, alias);
-    this.components = new ArrayList<>();
-  }
-*/
 
   @Override
-  public void setForgedResponse(List<Map<String, Object>> forgedResponse) {
+  public void setForgedResponse(Single<List<Map<String, Object>>> forgedResponse) {
     this.forgedResponse = forgedResponse;
   }
 
   @Override
-  public List<Map<String, Object>> execute() {
+  public Single<List<Map<String, Object>>> execute() {
     components.forEach(component -> component.updateQuery(query));
     System.out.println(query.build());
-    List<Map<String, Object>> response = forgedResponse.stream().map(
-      row -> SQLResponseProcessor.constructResponse(row, components)).collect(Collectors.toList()
-    );
     query.reset();
-    return response;
+    return forgedResponse.flatMap(
+      input -> {
+        List<Single<Map<String, Object>>> observables = input.stream().map(row -> SQLResponseProcessor.constructResponse(row, components)).collect(Collectors.toList());
+        return Single.zip(observables, values -> Arrays.stream(values).map(value -> (Map<String, Object>) value).collect(Collectors.toList()));
+      });
   }
 
   @Override

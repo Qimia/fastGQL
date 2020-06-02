@@ -1,9 +1,8 @@
 package ai.qimia.fastgql.schema.sql;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import io.reactivex.Single;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SQLResponseProcessor {
@@ -14,18 +13,24 @@ public class SQLResponseProcessor {
     return row.get(String.format("%s_%s", alias, key));
   }
 
-  public static Map<String, Object> constructResponse(Map<String, Object> row, List<Component> components) {
+  public static Single<Map<String, Object>> constructResponse(Map<String, Object> row, List<Component> components) {
     Objects.requireNonNull(row);
     Objects.requireNonNull(components);
-    Map<String, Object> ret = new HashMap<>();
-    components
+    List<Single<Map<String, Object>>> observables = components
       .stream()
       .map(component -> component.extractValues(row))
-      .forEach(map -> ret.putAll(
-        map.entrySet().stream().collect(
-          Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
-        )
+      .collect(Collectors.toList());
+    return Single.zip(observables, values -> {
+      Map<String, Object> r = new HashMap<>();
+      Arrays
+        .stream(values)
+        .map(value -> (Map<String, Object>) value)
+        .forEach(map -> r.putAll(
+           map.entrySet().stream().collect(
+             Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
+           )
       ));
-    return ret;
+      return r;
+    });
   }
 }

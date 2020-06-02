@@ -3,9 +3,11 @@ package ai.qimia.fastgql.schema;
 import ai.qimia.fastgql.schema.sql.*;
 import graphql.GraphQL;
 import graphql.schema.*;
+import io.reactivex.Single;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
+import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
@@ -50,14 +52,15 @@ public class SchemaTest extends AbstractVerticle {
             node.getForeignName().getName()
           );
           traverseSelectionSet(graphQLDatabaseSchema, componentReferenced, aliasGenerator, field.getSelectionSet());
-          ((ComponentExecutable) componentReferenced).setForgedResponse(List.of(
+          List<Map<String, Object>> forged = List.of(
             Map.of(
               "a2_id", 105
             ),
             Map.of(
               "a2_id", 106
             )
-          ));
+          );
+          ((ComponentExecutable) componentReferenced).setForgedResponse(Single.just(forged));
           parent.addComponent(componentReferenced);
           break;
         default:
@@ -81,22 +84,23 @@ public class SchemaTest extends AbstractVerticle {
     graphQLDatabaseSchema.applyToGraphQLObjectType(queryBuilder);
     GraphQLObjectType query = queryBuilder.build();
 
-    DataFetcher<List<Map<String, Object>>> genericDataFetcher = env -> {
+    VertxDataFetcher<List<Map<String, Object>>> vertxDataFetcher = new VertxDataFetcher<>(((env, listPromise) -> {
       AliasGenerator aliasGenerator = new AliasGenerator();
       ComponentExecutable executionRoot = new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias());
       traverseSelectionSet(graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
-      executionRoot.setForgedResponse(List.of(
+      List<Map<String, Object>> forged = List.of(
         Map.of(
           "a0_id", 101,
           "a0_address", 102,
           "a1_id", 102
         )
-      ));
-      return executionRoot.execute();
-    };
+      );
+      executionRoot.setForgedResponse(Single.just(forged));
+      executionRoot.execute().subscribe(listPromise::complete);
+    }));
 
     GraphQLCodeRegistry codeRegistry = GraphQLCodeRegistry.newCodeRegistry()
-      .dataFetcher(FieldCoordinates.coordinates("Query", "customers"), genericDataFetcher)
+      .dataFetcher(FieldCoordinates.coordinates("Query", "customers"), vertxDataFetcher)
       .build();
 
     GraphQLSchema graphQLSchema = GraphQLSchema.newSchema()

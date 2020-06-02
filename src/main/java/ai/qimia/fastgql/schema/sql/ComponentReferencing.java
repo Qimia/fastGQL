@@ -1,5 +1,7 @@
 package ai.qimia.fastgql.schema.sql;
 
+import io.reactivex.Single;
+
 import java.util.*;
 
 public class ComponentReferencing implements Component {
@@ -44,7 +46,7 @@ public class ComponentReferencing implements Component {
   }
 
   @Override
-  public Map<String, Object> extractValues(Map<String, Object> row) {
-    return Map.of(field, SQLResponseProcessor.constructResponse(row, components));
+  public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
+    return SQLResponseProcessor.constructResponse(row, components).map(response -> Map.of(field, response));
   }
 }
