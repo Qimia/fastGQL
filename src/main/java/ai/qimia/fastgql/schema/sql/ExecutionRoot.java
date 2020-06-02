@@ -17,60 +17,62 @@ public class ExecutionRoot implements ComponentExecutable {
 
     List<Map<String, Object>> forged = List.of(
       Map.of(
-        "c_id", 101,
-        "c_first_name", "John",
-        "a_id", 101,
-        "a_street", "StreetA",
-        "v_id", 101,
-        "v_model", "Subaru"
+        "a0_id", 101,
+        "a0_first_name", "John",
+        "a1_id", 101,
+        "a1_street", "StreetA",
+        "a2_id", 101,
+        "a2_model", "Subaru"
       ),
       Map.of(
-        "c_id", 102,
-        "c_first_name", "Mike",
-        "a_id", 102,
-        "a_street", "StreetB",
-        "v_id", 102,
-        "v_model", "Ford"
+        "a0_id", 102,
+        "a0_first_name", "Mike",
+        "a1_id", 102,
+        "a1_street", "StreetB",
+        "a2_id", 102,
+        "a2_model", "Ford"
       )
     );
 
     List<Map<String, Object>> forged2 = List.of(
       Map.of(
-        "v_model", "Subaru",
-        "v_year", 2010,
-        "c_id", 101,
-        "c_first_name", "Klaus"
+        "a3_model", "Subaru",
+        "a3_year", 2010,
+        "a4_id", 101,
+        "a4_first_name", "Klaus"
       ),
       Map.of(
-        "v_model", "BMW",
-        "v_year", 2012,
-        "c_id", 102,
-        "c_first_name", "John"
+        "a3_model", "BMW",
+        "a3_year", 2012,
+        "a4_id", 102,
+        "a4_first_name", "John"
       )
     );
 
-    ComponentExecutable executionRoot = new ExecutionRoot("customers", "c");
+    AliasGenerator aliasGenerator = new AliasGenerator();
+
+    ComponentExecutable executionRoot = new ExecutionRoot("customers", aliasGenerator.getAlias());
     executionRoot.setForgedResponse(forged);
     executionRoot.addComponent(new ComponentRow( "id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
 
-    Component addressRef = new ComponentReferencing("address_ref", "address", "addresses", "a", "id");
+    Component addressRef = new ComponentReferencing("address_ref", "address", "addresses", aliasGenerator.getAlias(), "id");
     addressRef.addComponent(new ComponentRow( "id"));
     addressRef.addComponent(new ComponentRow("street"));
 
-    Component vehiclesRef = new ComponentReferencing("vehicles_ref", "vehicle", "vehicles", "v", "id");
+    Component vehiclesRef = new ComponentReferencing("vehicles_ref", "vehicle", "vehicles", aliasGenerator.getAlias(), "id");
     vehiclesRef.addComponent(new ComponentRow("id"));
     vehiclesRef.addComponent(new ComponentRow("model"));
 
     addressRef.addComponent(vehiclesRef);
     executionRoot.addComponent(addressRef);
 
-    Component vehiclesOnCustomer = new ComponentReferenced("vehicles_on_customer", "id", "vehicles", "v", "customer");
+    Component vehiclesOnCustomer = new ComponentReferenced("vehicles_on_customer", "id", "vehicles", aliasGenerator.getAlias(), "customer");
     ((ComponentExecutable) vehiclesOnCustomer).setForgedResponse(forged2);
     vehiclesOnCustomer.addComponent(new ComponentRow("model"));
     vehiclesOnCustomer.addComponent(new ComponentRow("year"));
 
-    Component customerRef = new ComponentReferencing("customer_ref", "customer", "customers", "c", "id");
+    Component customerRef = new ComponentReferencing("customer_ref", "customer", "customers", aliasGenerator.getAlias(), "id");
     customerRef.addComponent(new ComponentRow( "id"));
     customerRef.addComponent(new ComponentRow("first_name"));
     vehiclesOnCustomer.addComponent(customerRef);
