@@ -7,7 +7,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ExecutionRoot implements ComponentExecutable {
+  private final String table;
+/*
   private final String field;
+*/
   private final String alias;
   private SQLQuery query;
   private List<Component> components;
@@ -82,18 +85,24 @@ public class ExecutionRoot implements ComponentExecutable {
   }
 
   public ExecutionRoot(String table, String alias) {
+    this.table = table;
+/*
     this.field = table;
+*/
     this.alias = alias;
     this.query = new SQLQuery(table, alias);
     this.components = new ArrayList<>();
   }
 
+/*
   public ExecutionRoot(String field, String table, String alias) {
+    this.table = table;
     this.field = field;
     this.alias = alias;
     this.query = new SQLQuery(table, alias);
     this.components = new ArrayList<>();
   }
+*/
 
   @Override
   public void setForgedResponse(List<Map<String, Object>> forgedResponse) {
@@ -101,20 +110,25 @@ public class ExecutionRoot implements ComponentExecutable {
   }
 
   @Override
-  public Map<String, Object> execute() {
+  public List<Map<String, Object>> execute() {
     components.forEach(component -> component.updateQuery(query));
     System.out.println(query.build());
     List<Map<String, Object>> response = forgedResponse.stream().map(
       row -> SQLResponseProcessor.constructResponse(row, components)).collect(Collectors.toList()
     );
     query.reset();
-    return Map.of(field, response);
+    return response;
   }
 
   @Override
   public void addComponent(Component component) {
     component.setTable(alias);
     components.add(component);
+  }
+
+  @Override
+  public String trueTableNameWhenParent() {
+    return table;
   }
 
   protected void modifyQuery(Consumer<SQLQuery> modifier) {

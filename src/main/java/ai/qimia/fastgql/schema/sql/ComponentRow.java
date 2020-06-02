@@ -31,4 +31,9 @@ public class ComponentRow implements Component {
   public void addComponent(Component component) {
     throw new RuntimeException("ComponentRow cannot have any child components");
   }
+
+  @Override
+  public String trueTableNameWhenParent() {
+    throw new RuntimeException("ComponentRow cannot have any child components");
+  }
 }

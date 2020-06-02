@@ -5,5 +5,5 @@ import java.util.Map;
 
 public interface ComponentExecutable extends ComponentParent {
   void setForgedResponse(List<Map<String, Object>> forgedResponse);
-  Map<String, Object> execute();
+  List<Map<String, Object>> execute();
 }

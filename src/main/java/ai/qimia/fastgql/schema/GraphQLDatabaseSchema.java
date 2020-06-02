@@ -13,10 +13,6 @@ public class GraphQLDatabaseSchema {
   private Map<String, Map<String, GraphQLNodeDefinition>> graph;
   private final Map<String, String> primaryKeys;
 
-  public Map<String, Map<String, GraphQLNodeDefinition>> getGraph() {
-    return graph;
-  }
-
   public Map<String, String> getPrimaryKeys() {
     return primaryKeys;
   }
@@ -29,6 +25,10 @@ public class GraphQLDatabaseSchema {
   private String getNameForReferencedByField(QualifiedName qualifiedName) {
     Objects.requireNonNull(qualifiedName);
     return String.format("%s_on_%s", qualifiedName.getParent(), qualifiedName.getName());
+  }
+
+  public GraphQLNodeDefinition nodeAt(String table, String field) {
+    return graph.get(table).get(field);
   }
 
   public GraphQLDatabaseSchema(DatabaseSchema databaseSchema) {

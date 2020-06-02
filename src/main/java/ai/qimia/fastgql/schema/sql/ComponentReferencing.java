@@ -27,6 +27,11 @@ public class ComponentReferencing implements Component {
   }
 
   @Override
+  public String trueTableNameWhenParent() {
+    return foreignTable;
+  }
+
+  @Override
   public void updateQuery(SQLQuery query) {
     Objects.requireNonNull(query);
     query.addJoin(table, key, foreignTable, foreignTableAlias, foreignKey);

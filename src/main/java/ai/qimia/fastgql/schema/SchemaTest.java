@@ -1,5 +1,6 @@
 package ai.qimia.fastgql.schema;
 
+import ai.qimia.fastgql.schema.sql.*;
 import graphql.GraphQL;
 import graphql.schema.*;
 import io.vertx.core.Launcher;
@@ -10,7 +11,6 @@ import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -19,49 +19,51 @@ public class SchemaTest extends AbstractVerticle {
     Launcher.executeCommand("run", SchemaTest.class.getName());
   }
 
-  private void traverseSelectionSet(GraphQLDatabaseSchema graphQLDatabaseSchema, String table, DataFetchingFieldSelectionSet selectionSet) {
-    System.out.println("pk -> " + table + "(" + graphQLDatabaseSchema.getPrimaryKeys().get(table) + ")");
-    traverseSelectionSetInner(graphQLDatabaseSchema, table, selectionSet);
-  }
-
-  private void traverseSelectionSetInner(GraphQLDatabaseSchema graphQLDatabaseSchema, String table, DataFetchingFieldSelectionSet selectionSet) {
-    List<String> keysToQuery = new ArrayList<>();
+  private void traverseSelectionSet(GraphQLDatabaseSchema graphQLDatabaseSchema, ComponentParent parent, AliasGenerator aliasGenerator, DataFetchingFieldSelectionSet selectionSet) {
     selectionSet.getFields().forEach(field -> {
       // todo: cleaner way to skip non-root nodes?
       if (field.getQualifiedName().contains("/")) {
         return;
       }
-      GraphQLNodeDefinition node = graphQLDatabaseSchema.getGraph().get(table).get(field.getName());
-      ReferenceType referenceType = node.getReferenceType();
-      String key = node.getQualifiedName().getName();
-      if (referenceType.equals(ReferenceType.NONE)) {
-        System.out.println(table + "(" + key + ")");
-        keysToQuery.add(key);
-      } else {
-        QualifiedName foreignName = node.getForeignName();
-        String foreignTable = foreignName.getParent();
-        String foreignKey = foreignName.getName();
-        System.out.println("traversing " + field.getQualifiedName() + ", " + table + "(" + key + ") -> " + foreignTable + "(" + foreignKey + ")");
-/*
-        if (referenceType.equals(ReferenceType.REFERENCED)) {
-          System.out.println("pk -> " + foreignTable + "(" + graphQLDatabaseSchema.getPrimaryKeys().get(foreignTable) + ")");
-        }
-*/
-        traverseSelectionSetInner(graphQLDatabaseSchema, foreignTable, field.getSelectionSet());
+      GraphQLNodeDefinition node = graphQLDatabaseSchema.nodeAt(parent.trueTableNameWhenParent(), field.getName());
+      switch (node.getReferenceType()) {
+        case NONE:
+          parent.addComponent(new ComponentRow(node.getQualifiedName().getName()));
+          break;
+        case REFERENCING:
+          Component componentReferencing = new ComponentReferencing(
+            field.getName(),
+            node.getQualifiedName().getName(),
+            node.getForeignName().getParent(),
+            aliasGenerator.getAlias(),
+            node.getForeignName().getName()
+          );
+          traverseSelectionSet(graphQLDatabaseSchema, componentReferencing, aliasGenerator, field.getSelectionSet());
+          parent.addComponent(componentReferencing);
+          break;
+        case REFERENCED:
+          Component componentReferenced = new ComponentReferenced(
+            field.getName(),
+            node.getQualifiedName().getName(),
+            node.getForeignName().getParent(),
+            aliasGenerator.getAlias(),
+            node.getForeignName().getName()
+          );
+          traverseSelectionSet(graphQLDatabaseSchema, componentReferenced, aliasGenerator, field.getSelectionSet());
+          ((ComponentExecutable) componentReferenced).setForgedResponse(List.of(
+            Map.of(
+              "a2_id", 105
+            ),
+            Map.of(
+              "a2_id", 106
+            )
+          ));
+          parent.addComponent(componentReferenced);
+          break;
+        default:
+          throw new RuntimeException("Unrecognized reference type");
       }
-/*
-      if (field.getSelectionSet().getFields().size() > 0) {
-        QualifiedName foreignName = node.getForeignName();
-        String foreignTable = foreignName.getParent();
-        String foreignKey = foreignName.getName();
-        System.out.println("traversing " + field.getQualifiedName() + ", " + table + "(" + key + ") -> " + foreignTable + "(" + foreignKey + ")");
-        traverseSelectionSet(graphQLDatabaseSchema, foreignTable, field.getSelectionSet());
-      } else {
-        System.out.println(table + "(" + key + ")");
-      }
-*/
     });
-    //System.out.println(keysToQuery);
   }
 
   @Override
@@ -81,41 +83,22 @@ public class SchemaTest extends AbstractVerticle {
     graphQLDatabaseSchema.applyToGraphQLObjectType(queryBuilder);
     GraphQLObjectType query = queryBuilder.build();
 
-    DataFetcher<String> dataFetcher = env -> {
-      traverseSelectionSet(graphQLDatabaseSchema, env.getExecutionStepInfo().getField().getName(), env.getSelectionSet());
-/*
-      env.getSelectionSet().getFields().forEach(field -> {
-        System.out.println(field.getQualifiedName() + " " + field.getSelectionSet().getFields());
-      });
-*/
-      return "none";
-    };
-
-    DataFetcher<List<Map<String, Object>>> queryCustomersDataFetcher = env -> {
-      // return all rows
-      // SELECT field1, field2, ... from customers
-      traverseSelectionSetInner(graphQLDatabaseSchema, "customers", env.getSelectionSet());
-      return List.of(Map.of("id", 5));
-    };
-
-    DataFetcher<Map<String, Object>> customersAddressRefDataFetcher = env -> {
-      // get address for specific address id
-      // SELECT field1, field2, ... from addresses where id = 100
-      //System.out.println(env.getExecutionStepInfo());
-      return Map.of("id", 7);
-    };
-
-    DataFetcher<List<Map<String, Object>>> addressesCustomersOnAddressDataFetcher = env -> {
-      // get customers matching specific address id
-      // SELECT field1, field2, ... from customers where address = 100
-      return List.of(Map.of("id", 8));
+    DataFetcher<List<Map<String, Object>>> genericDataFetcher = env -> {
+      AliasGenerator aliasGenerator = new AliasGenerator();
+      ComponentExecutable executionRoot = new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias());
+      traverseSelectionSet(graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
+      executionRoot.setForgedResponse(List.of(
+        Map.of(
+          "a0_id", 101,
+          "a0_address", 102,
+          "a1_id", 102
+        )
+      ));
+      return executionRoot.execute();
     };
 
     GraphQLCodeRegistry codeRegistry = GraphQLCodeRegistry.newCodeRegistry()
-      .dataFetcher(FieldCoordinates.coordinates("Query", "customers"), queryCustomersDataFetcher)
-      .dataFetcher(FieldCoordinates.coordinates("Query", "addresses"), (DataFetcher<?>) env -> List.of(Map.of("id", 1)))
-      .dataFetcher(FieldCoordinates.coordinates("customers", "address_ref"), customersAddressRefDataFetcher)
-      .dataFetcher(FieldCoordinates.coordinates("addresses", "customers_on_address"), addressesCustomersOnAddressDataFetcher)
+      .dataFetcher(FieldCoordinates.coordinates("Query", "customers"), genericDataFetcher)
       .build();
 
     GraphQLSchema graphQLSchema = GraphQLSchema.newSchema()
