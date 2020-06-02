@@ -72,8 +72,6 @@ public class SchemaTest extends AbstractVerticle {
       .row("addresses/id", FieldType.INT)
       .row("customers/id", FieldType.INT)
       .row("customers/address", FieldType.INT, "addresses/id")
-      .primaryKey("customers", "id")
-      .primaryKey("addresses", "id")
       .build();
 
     GraphQLDatabaseSchema graphQLDatabaseSchema = new GraphQLDatabaseSchema(database);

@@ -11,11 +11,6 @@ import java.util.Set;
 
 public class GraphQLDatabaseSchema {
   private Map<String, Map<String, GraphQLNodeDefinition>> graph;
-  private final Map<String, String> primaryKeys;
-
-  public Map<String, String> getPrimaryKeys() {
-    return primaryKeys;
-  }
 
   private String getNameForReferencingField(QualifiedName qualifiedName) {
     Objects.requireNonNull(qualifiedName);
@@ -33,7 +28,6 @@ public class GraphQLDatabaseSchema {
 
   public GraphQLDatabaseSchema(DatabaseSchema databaseSchema) {
     Objects.requireNonNull(databaseSchema);
-    this.primaryKeys = databaseSchema.getPrimaryKeys();
     graph = new HashMap<>();
     databaseSchema.getGraph().forEach((parent, subgraph) -> {
       graph.put(parent, new HashMap<>());

@@ -4,7 +4,6 @@ import java.util.*;
 
 public class DatabaseSchema {
   private final Map<String, Map<String, NodeDefinition>> graph;
-  private final Map<String, String> primaryKeys;
 
   public static DatabaseSchema.Builder newSchema() {
     return new DatabaseSchema.Builder();
@@ -12,10 +11,6 @@ public class DatabaseSchema {
 
   public Map<String, Map<String, NodeDefinition>> getGraph() {
     return graph;
-  }
-
-  public Map<String, String> getPrimaryKeys() {
-    return primaryKeys;
   }
 
   @Override
@@ -27,17 +22,11 @@ public class DatabaseSchema {
 
   public static class Builder {
     private Map<String, Map<String, NodeDefinition>> graph = new HashMap<>();
-    private Map<String, String> primaryKeys = new HashMap<>();
 
     public Builder() {}
 
     public DatabaseSchema build() {
-      return new DatabaseSchema(graph, primaryKeys);
-    }
-
-    public Builder primaryKey(String table, String key) {
-      primaryKeys.put(table, key);
-      return this;
+      return new DatabaseSchema(graph);
     }
 
     public Builder row(String table, String field, FieldType type, String referencingTable, String referencingField) {
@@ -110,8 +99,7 @@ public class DatabaseSchema {
     }
   }
 
-  private DatabaseSchema(Map<String, Map<String, NodeDefinition>> graph, Map<String, String> primaryKeys) {
+  private DatabaseSchema(Map<String, Map<String, NodeDefinition>> graph) {
     this.graph = graph;
-    this.primaryKeys = primaryKeys;
   }
 }
