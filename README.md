@@ -25,5 +25,5 @@ Build production bundle:
 Execute production version:
 
 ```shell script
-build/install/fastgql/bin/fastgql run --conf src/main/conf.json ai.qimia.fastgql.GraphQLServer
+build/install/fastgql/bin/fastgql run --conf src/main/conf.json ai.qimia.fastgql.oldarch.GraphQLServer
 ```
