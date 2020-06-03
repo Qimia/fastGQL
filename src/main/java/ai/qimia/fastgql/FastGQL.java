@@ -9,10 +9,8 @@ import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.ext.sql.SQLConnection;
 import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.reactivex.sqlclient.SqlConnection;
 import io.vertx.sqlclient.PoolOptions;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -29,7 +27,7 @@ public class FastGQL extends AbstractVerticle {
     Connection connection =
         DriverManager.getConnection(
             "jdbc:postgresql://localhost:5432/quarkus_test", "quarkus_test", "quarkus_test");
-    DatabaseSchema database = MetadataUtils.getDatabaseSchema(connection);
+    DatabaseSchema database = MetadataUtils.createDatabaseSchema(connection);
     connection.close();
 
     Pool client =

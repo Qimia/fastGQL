@@ -18,7 +18,7 @@ public class MetadataUtils {
           4, FieldType.INT,
           12, FieldType.STRING);
 
-  public static DatabaseSchema getDatabaseSchema(Connection connection) throws SQLException {
+  public static DatabaseSchema createDatabaseSchema(Connection connection) throws SQLException {
     DatabaseMetaData databaseMetaData = connection.getMetaData();
     Statement statement = connection.createStatement();
     ResultSet tablesResultSet =
