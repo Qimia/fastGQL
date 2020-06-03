@@ -46,7 +46,7 @@ public class FastGQL extends AbstractVerticle {
                 .setPassword("quarkus_test"),
             new PoolOptions().setMaxSize(5));
 
-    GraphQL graphQL = GraphQLDefinition.create(database, client);
+    GraphQL graphQL = GraphQLDefinition.newGraphQL(database, client).enableQuery().build();
     RouterUpdatable routerUpdatable = new RouterUpdatable(vertx);
     routerUpdatable.update(graphQL);
 
