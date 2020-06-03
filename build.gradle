@@ -17,8 +17,7 @@ repositories {
 
 spotless {
     java {
-        target 'src/main/java/dev/fastgql/**/*.java'
-        target 'src/test/java/dev/fastgql/**/*.java'
+        target 'src/**/java/dev/fastgql/**/*.java'
         googleJavaFormat("1.8")
     }
 }
