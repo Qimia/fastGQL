@@ -90,44 +90,4 @@ public class GraphQLDefinition {
       return GraphQL.newGraphQL(graphQLSchema).build();
     }
   }
-
-  public static GraphQL create(DatabaseSchema database, Pool client) {
-    GraphQLDatabaseSchema graphQLDatabaseSchema = new GraphQLDatabaseSchema(database);
-
-    GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject()
-      .name("Query");
-    graphQLDatabaseSchema.applyToGraphQLObjectType(queryBuilder);
-
-    VertxDataFetcher<List<Map<String, Object>>> vertxDataFetcher = new VertxDataFetcher<>((env, listPromise) -> client
-      .rxGetConnection()
-      .doOnSuccess(
-        connection -> {
-          AliasGenerator aliasGenerator = new AliasGenerator();
-          ComponentExecutable executionRoot = new ExecutionRoot(
-            env.getField().getName(),
-            aliasGenerator.getAlias(),
-            queryString -> SQLResponseUtils.executeQuery(queryString, connection)
-          );
-          SQLResponseUtils.traverseSelectionSet(connection, graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
-          executionRoot
-            .execute()
-            .doOnSuccess(listPromise::complete)
-            .doOnError(listPromise::fail)
-            .doFinally(connection::close)
-            .subscribe();
-        })
-      .doOnError(listPromise::fail)
-      .subscribe()
-    );
-
-    GraphQLCodeRegistry.Builder codeRegistryBuilder = GraphQLCodeRegistry.newCodeRegistry();
-    database.getTableNames().forEach(tableName -> codeRegistryBuilder.dataFetcher(FieldCoordinates.coordinates("Query", tableName), vertxDataFetcher));
-
-    GraphQLSchema graphQLSchema = GraphQLSchema.newSchema()
-      .query(queryBuilder.build())
-      .codeRegistry(codeRegistryBuilder.build())
-      .build();
-
-    return GraphQL.newGraphQL(graphQLSchema).build();
-  }
 }
