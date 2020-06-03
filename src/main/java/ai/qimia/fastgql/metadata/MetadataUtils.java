@@ -28,7 +28,6 @@ public class MetadataUtils {
 
     while (tablesResultSet.next()) {
       String tableName = tablesResultSet.getString("TABLE_NAME");
-      System.out.println(tableName);
       // Foreign key extraction
       ResultSet foreignKeyResultSet = databaseMetaData.getImportedKeys(null, null, tableName);
       Map<String, String> foreignKeyToRef = new HashMap<>();
