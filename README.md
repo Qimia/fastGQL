@@ -35,5 +35,5 @@ Build production bundle:
 Execute production version:
 
 ```shell script
-build/install/fastgql/bin/fastgql run --conf src/main/conf.json ai.qimia.fastgql.FastGQL
+build/install/fastgql/bin/fastgql run --conf src/main/conf.json dev.fastgql.FastGQL
 ```
