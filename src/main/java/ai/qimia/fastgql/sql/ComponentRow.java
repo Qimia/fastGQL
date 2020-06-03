@@ -16,7 +16,7 @@ public class ComponentRow implements Component {
   @Override
   public void updateQuery(SQLQuery query) {
     Objects.requireNonNull(query);
-    query.addKey(String.format("%s.%s AS %s_%s", table, key, table, key));
+    query.addKey(table, key);
   }
 
   @Override

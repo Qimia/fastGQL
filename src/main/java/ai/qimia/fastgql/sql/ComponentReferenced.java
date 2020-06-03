@@ -28,7 +28,7 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
 
   @Override
   public void updateQuery(SQLQuery query) {
-    query.addKey(String.format("%s.%s AS %s_%s", table, key, table, key));
+    query.addKey(table, key);
   }
 
   @Override

@@ -4,7 +4,6 @@ import ai.qimia.fastgql.graphql.GraphQLDatabaseSchema;
 import ai.qimia.fastgql.graphql.GraphQLNodeDefinition;
 import graphql.schema.DataFetchingFieldSelectionSet;
 import io.reactivex.Single;
-import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.SqlConnection;
 
 import java.util.*;
