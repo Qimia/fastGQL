@@ -14,7 +14,6 @@ import graphql.GraphQL;
 import graphql.schema.*;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.sqlclient.Pool;
-
 import java.util.List;
 import java.util.Map;
 

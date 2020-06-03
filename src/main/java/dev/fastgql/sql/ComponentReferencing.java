@@ -6,7 +6,6 @@
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
-
 import java.util.*;
 
 public class ComponentReferencing implements Component {
@@ -18,7 +17,8 @@ public class ComponentReferencing implements Component {
   private final String foreignKey;
   private List<Component> components;
 
-  public ComponentReferencing(String field, String key, String foreignTable, String foreignTableAlias, String foreignKey) {
+  public ComponentReferencing(
+      String field, String key, String foreignTable, String foreignTableAlias, String foreignKey) {
     this.field = field;
     this.key = key;
     this.foreignTable = foreignTable;
@@ -56,6 +56,7 @@ public class ComponentReferencing implements Component {
     if (SQLResponseUtils.getValue(row, table, key) == null) {
       return Single.just(Map.of());
     }
-    return SQLResponseUtils.constructResponse(row, components).map(response -> Map.of(field, response));
+    return SQLResponseUtils.constructResponse(row, components)
+        .map(response -> Map.of(field, response));
   }
 }

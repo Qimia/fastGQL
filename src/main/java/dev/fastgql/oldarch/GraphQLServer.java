@@ -7,9 +7,9 @@ package dev.fastgql.oldarch;
 
 import static graphql.Scalars.GraphQLInt;
 
+import com.google.common.collect.Iterables;
 import dev.fastgql.router.ApolloWSHandlerUpdatable;
 import dev.fastgql.router.GraphQLHandlerUpdatable;
-import com.google.common.collect.Iterables;
 import graphql.GraphQL;
 import graphql.schema.DataFetcher;
 import graphql.schema.GraphQLArgument;
@@ -55,25 +55,19 @@ public class GraphQLServer extends AbstractVerticle {
 
   private static String kafkaMessageToTableName(String message) {
     return Iterables.getLast(
-        Arrays.asList(message.substring(1, message.length() - 1).split("\\."))
-    );
+        Arrays.asList(message.substring(1, message.length() - 1).split("\\.")));
   }
 
   private static Map<String, TableSchema<?>> fetchTableSchemas(DatasourceConfig datasourceConfig)
       throws SQLException {
     Map<String, TableSchema<?>> tableSchemas;
-    try (
-        Connection connection = DriverManager.getConnection(
+    try (Connection connection =
+        DriverManager.getConnection(
             String.format(
                 "jdbc:postgresql://%s:%d/%s",
-                datasourceConfig.getHost(),
-                datasourceConfig.getPort(),
-                datasourceConfig.getDb()
-            ),
+                datasourceConfig.getHost(), datasourceConfig.getPort(), datasourceConfig.getDb()),
             datasourceConfig.getUsername(),
-            datasourceConfig.getPassword()
-        )
-    ) {
+            datasourceConfig.getPassword())) {
       tableSchemas = JDBCUtils.getTableSchemas(connection);
     }
     return tableSchemas;
@@ -81,25 +75,25 @@ public class GraphQLServer extends AbstractVerticle {
 
   private KafkaConsumer<String, String> buildKafkaConsumer() {
     Map<String, String> config = new HashMap<>();
-    config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+    config.put(
+        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
         config().getString("bootstrap.servers", "http://localhost:9092"));
-    config.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+    config.put(
+        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
         "org.apache.kafka.common.serialization.StringDeserializer");
-    config.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+    config.put(
+        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
         "org.apache.kafka.common.serialization.StringDeserializer");
     config.put(ConsumerConfig.GROUP_ID_CONFIG, "tc-" + UUID.randomUUID());
     config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
     return KafkaConsumer.create(vertx, config);
   }
 
+  private GraphQL buildGraphQL(
+      Map<String, TableSchema<?>> tableSchemas, DatasourceConfig datasourceConfig) {
+    GraphQLObjectType.Builder queryType = GraphQLObjectType.newObject().name("Query");
 
-  private GraphQL buildGraphQL(Map<String, TableSchema<?>> tableSchemas,
-      DatasourceConfig datasourceConfig) {
-    GraphQLObjectType.Builder queryType = GraphQLObjectType.newObject()
-        .name("Query");
-
-    GraphQLObjectType.Builder subscriptionType = GraphQLObjectType.newObject()
-        .name("Subscription");
+    GraphQLObjectType.Builder subscriptionType = GraphQLObjectType.newObject().name("Subscription");
 
     tableSchemas.forEach(
         (tableName, tableSchema) -> {
@@ -108,87 +102,89 @@ public class GraphQLServer extends AbstractVerticle {
           GraphQLInputType distinctOnType = tableSchema.selectColumnType();
           GraphQLInputType whereType = tableSchema.boolExpType();
 
-          GraphQLArgument limit = GraphQLArgument.newArgument().name("limit").type(GraphQLInt)
-              .build();
-          GraphQLArgument offset = GraphQLArgument.newArgument().name("offset").type(GraphQLInt)
-              .build();
-          GraphQLArgument orderBy = GraphQLArgument.newArgument().name("order_by").type(orderByType)
-              .build();
-          GraphQLArgument distinctOn = GraphQLArgument.newArgument().name("distinct_on")
-              .type(distinctOnType).build();
-          GraphQLArgument where = GraphQLArgument.newArgument().name("where").type(whereType)
-              .build();
+          GraphQLArgument limit =
+              GraphQLArgument.newArgument().name("limit").type(GraphQLInt).build();
+          GraphQLArgument offset =
+              GraphQLArgument.newArgument().name("offset").type(GraphQLInt).build();
+          GraphQLArgument orderBy =
+              GraphQLArgument.newArgument().name("order_by").type(orderByType).build();
+          GraphQLArgument distinctOn =
+              GraphQLArgument.newArgument().name("distinct_on").type(distinctOnType).build();
+          GraphQLArgument where =
+              GraphQLArgument.newArgument().name("where").type(whereType).build();
 
-          queryType.field(GraphQLFieldDefinition.newFieldDefinition()
-              .name(tableName)
-              .type(outputType)
-              .argument(limit)
-              .argument(offset)
-              .argument(orderBy)
-              .argument(distinctOn)
-              .argument(where)
-              .build());
-          subscriptionType.field(GraphQLFieldDefinition.newFieldDefinition()
-              .name(tableName)
-              .type(outputType)
-              .argument(limit)
-              .argument(offset)
-              .argument(orderBy)
-              .argument(distinctOn)
-              .argument(where)
-              .build());
-        }
-    );
+          queryType.field(
+              GraphQLFieldDefinition.newFieldDefinition()
+                  .name(tableName)
+                  .type(outputType)
+                  .argument(limit)
+                  .argument(offset)
+                  .argument(orderBy)
+                  .argument(distinctOn)
+                  .argument(where)
+                  .build());
+          subscriptionType.field(
+              GraphQLFieldDefinition.newFieldDefinition()
+                  .name(tableName)
+                  .type(outputType)
+                  .argument(limit)
+                  .argument(offset)
+                  .argument(orderBy)
+                  .argument(distinctOn)
+                  .argument(where)
+                  .build());
+        });
 
-    PgPool client = PgPool.pool(
-        vertx,
-        new PgConnectOptions()
-            .setHost(datasourceConfig.getHost())
-            .setPort(datasourceConfig.getPort())
-            .setDatabase(datasourceConfig.getDb())
-            .setUser(datasourceConfig.getUsername())
-            .setPassword(datasourceConfig.getPassword()),
-        new PoolOptions().setMaxSize(5)
-    );
+    PgPool client =
+        PgPool.pool(
+            vertx,
+            new PgConnectOptions()
+                .setHost(datasourceConfig.getHost())
+                .setPort(datasourceConfig.getPort())
+                .setDatabase(datasourceConfig.getDb())
+                .setUser(datasourceConfig.getUsername())
+                .setPassword(datasourceConfig.getPassword()),
+            new PoolOptions().setMaxSize(5));
 
-    Map<String, DataFetcher> queryDataFetchers = tableSchemas
-        .keySet()
-        .stream()
-        .collect(
-            Collectors.toMap(
-                Function.identity(),
-                key -> new VertxDataFetcher<List<Map<String, Object>>>(
-                    (environment, fetcherPromise) -> JDBCUtils
-                        .getGraphQLResponse(environment, client)
-                        .subscribe(fetcherPromise::complete)
-                )
-            )
-        );
+    Map<String, DataFetcher> queryDataFetchers =
+        tableSchemas.keySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    key ->
+                        new VertxDataFetcher<List<Map<String, Object>>>(
+                            (environment, fetcherPromise) ->
+                                JDBCUtils.getGraphQLResponse(environment, client)
+                                    .subscribe(fetcherPromise::complete))));
 
-    Map<String, DataFetcher> subscriptionDataFetchers = tableSchemas
-        .keySet()
-        .stream()
-        .collect(
-            Collectors.toMap(
-                Function.identity(),
-                key -> environment -> kafkaConsumer
-                    .toFlowable()
-                    .filter(record -> kafkaMessageToTableName(record.value()).equals(key))
-                    .flatMap(
-                        record -> JDBCUtils.getGraphQLResponse(environment, client).toFlowable())
-            )
-        );
+    Map<String, DataFetcher> subscriptionDataFetchers =
+        tableSchemas.keySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    key ->
+                        environment ->
+                            kafkaConsumer
+                                .toFlowable()
+                                .filter(
+                                    record -> kafkaMessageToTableName(record.value()).equals(key))
+                                .flatMap(
+                                    record ->
+                                        JDBCUtils.getGraphQLResponse(environment, client)
+                                            .toFlowable())));
 
-    GraphQLCodeRegistry codeRegistry = GraphQLCodeRegistry.newCodeRegistry()
-        .dataFetchers("Query", queryDataFetchers)
-        .dataFetchers("Subscription", subscriptionDataFetchers)
-        .build();
+    GraphQLCodeRegistry codeRegistry =
+        GraphQLCodeRegistry.newCodeRegistry()
+            .dataFetchers("Query", queryDataFetchers)
+            .dataFetchers("Subscription", subscriptionDataFetchers)
+            .build();
 
-    GraphQLSchema graphQLSchema = GraphQLSchema.newSchema()
-        .query(queryType)
-        .subscription(subscriptionType)
-        .codeRegistry(codeRegistry)
-        .build();
+    GraphQLSchema graphQLSchema =
+        GraphQLSchema.newSchema()
+            .query(queryType)
+            .subscription(subscriptionType)
+            .codeRegistry(codeRegistry)
+            .build();
 
     return GraphQL.newGraphQL(graphQLSchema).build();
   }
@@ -227,9 +223,9 @@ public class GraphQLServer extends AbstractVerticle {
     Router router = Router.router(vertx);
     router.route("/graphql").handler(apolloWSHandler);
     router.route("/graphql").handler(graphQLHandler);
-    router.route("/graphiql/*").handler(GraphiQLHandler.create(
-      new GraphiQLHandlerOptions().setEnabled(true)
-    ));
+    router
+        .route("/graphiql/*")
+        .handler(GraphiQLHandler.create(new GraphiQLHandlerOptions().setEnabled(true)));
 
     // start server
     vertx

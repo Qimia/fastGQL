@@ -21,9 +21,9 @@ public class RouterUpdatable {
     apolloWSHandlerUpdatable = ApolloWSHandlerUpdatable.create();
     router = Router.router(vertx);
     router.route("/graphql").handler(graphQLHandlerUpdatable);
-    router.route("/graphiql/*").handler(GraphiQLHandler.create(
-      new GraphiQLHandlerOptions().setEnabled(true)
-    ));
+    router
+        .route("/graphiql/*")
+        .handler(GraphiQLHandler.create(new GraphiQLHandlerOptions().setEnabled(true)));
   }
 
   public void update(GraphQL graphQL) {

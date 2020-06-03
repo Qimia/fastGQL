@@ -19,33 +19,34 @@ public class ConditionalOperatorHelpers {
     if (obj.size() == 0) {
       return "TRUE ";
     }
-    List<String> conditionList = obj.keySet().stream().map(m -> {
-      String condition;
-      switch (m) {
-        case "_and":
-          condition = getArrayQuery("AND ", obj.get(m).getAsJsonArray());
-          break;
-        case "_or":
-          condition = getArrayQuery("OR ", obj.get(m).getAsJsonArray());
-          break;
-        case "_not":
-          condition = getNotQuery(obj.get(m).getAsJsonObject());
-          break;
-        default:
-          condition = getTypeComparisonQuery(m, obj.get(m).getAsJsonObject());
-      }
-      return String.format("(%s) ", condition);
-    }).collect(Collectors.toList());
+    List<String> conditionList =
+        obj.keySet().stream()
+            .map(
+                m -> {
+                  String condition;
+                  switch (m) {
+                    case "_and":
+                      condition = getArrayQuery("AND ", obj.get(m).getAsJsonArray());
+                      break;
+                    case "_or":
+                      condition = getArrayQuery("OR ", obj.get(m).getAsJsonArray());
+                      break;
+                    case "_not":
+                      condition = getNotQuery(obj.get(m).getAsJsonObject());
+                      break;
+                    default:
+                      condition = getTypeComparisonQuery(m, obj.get(m).getAsJsonObject());
+                  }
+                  return String.format("(%s) ", condition);
+                })
+            .collect(Collectors.toList());
     return String.join("AND ", conditionList);
   }
 
   private static String getArrayQuery(String delimiter, JsonArray array) {
     List<String> list = new ArrayList<>();
     for (int i = 0; i < array.size(); i++) {
-      list.add(
-          String.format(
-              "(%s) ",
-              getConditionQuery(array.get(i).getAsJsonObject())));
+      list.add(String.format("(%s) ", getConditionQuery(array.get(i).getAsJsonObject())));
     }
     return String.join(delimiter, list);
   }
@@ -58,11 +59,16 @@ public class ConditionalOperatorHelpers {
     if (obj.size() == 0) {
       return "TRUE ";
     }
-    List<String> list = obj.keySet().stream().map(opName -> {
-      String operator = ConditionalOperatorTypes.getOperatorNameToValueMap().get(opName);
-      String compareValue = getCompareValue(obj.get(opName));
-      return String.format("(%s %s %s) ", key, operator, compareValue);
-    }).collect(Collectors.toList());
+    List<String> list =
+        obj.keySet().stream()
+            .map(
+                opName -> {
+                  String operator =
+                      ConditionalOperatorTypes.getOperatorNameToValueMap().get(opName);
+                  String compareValue = getCompareValue(obj.get(opName));
+                  return String.format("(%s %s %s) ", key, operator, compareValue);
+                })
+            .collect(Collectors.toList());
     return String.join("AND ", list);
   }
 
@@ -71,11 +77,14 @@ public class ConditionalOperatorHelpers {
       return getPrimitiveString(element.getAsJsonPrimitive());
     } else if (element.isJsonArray()) {
       List<String> list = new ArrayList<>();
-      element.getAsJsonArray().forEach(e -> {
-        if (e.isJsonPrimitive()) {
-          list.add(getPrimitiveString(e.getAsJsonPrimitive()));
-        }
-      });
+      element
+          .getAsJsonArray()
+          .forEach(
+              e -> {
+                if (e.isJsonPrimitive()) {
+                  list.add(getPrimitiveString(e.getAsJsonPrimitive()));
+                }
+              });
       return String.format("(%s)", String.join(", ", list));
     } else {
       return "";

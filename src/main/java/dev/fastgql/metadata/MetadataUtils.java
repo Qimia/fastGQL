@@ -8,7 +8,6 @@ package dev.fastgql.metadata;
 import dev.fastgql.common.FieldType;
 import dev.fastgql.common.QualifiedName;
 import dev.fastgql.db.DatabaseSchema;
-
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -42,8 +41,8 @@ public class MetadataUtils {
         String refColumnName = foreignKeyResultSet.getString("PKCOLUMN_NAME");
         String refTableName = foreignKeyResultSet.getString("PKTABLE_NAME");
         foreignKeyToRef.put(
-          QualifiedName.generate(tableName, columnName),
-          QualifiedName.generate(refTableName, refColumnName));
+            QualifiedName.generate(tableName, columnName),
+            QualifiedName.generate(refTableName, refColumnName));
       }
       foreignKeyResultSet.close();
 
