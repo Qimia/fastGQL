@@ -5,6 +5,7 @@ import ai.qimia.fastgql.graphql.GraphQLNodeDefinition;
 import graphql.schema.DataFetchingFieldSelectionSet;
 import io.reactivex.Single;
 import io.vertx.reactivex.sqlclient.Pool;
+import io.vertx.reactivex.sqlclient.SqlConnection;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,8 +35,8 @@ public class SQLResponseUtils {
     });
   }
 
-  public static Single<List<Map<String, Object>>> executeQuery(String query, Pool client) {
-    return client.rxQuery(query).map(rowSet -> {
+  public static Single<List<Map<String, Object>>> executeQuery(String query, SqlConnection connection) {
+    return connection.rxQuery(query).map(rowSet -> {
       List<String> columnNames = rowSet.columnsNames();
       List<Map<String, Object>> rList = new ArrayList<>();
       rowSet.forEach(row -> {
@@ -47,7 +48,7 @@ public class SQLResponseUtils {
     });
   }
 
-  public static void traverseSelectionSet(Pool client, GraphQLDatabaseSchema graphQLDatabaseSchema, ComponentParent parent, AliasGenerator aliasGenerator, DataFetchingFieldSelectionSet selectionSet) {
+  public static void traverseSelectionSet(SqlConnection connection, GraphQLDatabaseSchema graphQLDatabaseSchema, ComponentParent parent, AliasGenerator aliasGenerator, DataFetchingFieldSelectionSet selectionSet) {
     selectionSet.getFields().forEach(field -> {
       // todo: cleaner way to skip non-root nodes?
       if (field.getQualifiedName().contains("/")) {
@@ -66,7 +67,7 @@ public class SQLResponseUtils {
             aliasGenerator.getAlias(),
             node.getForeignName().getName()
           );
-          traverseSelectionSet(client, graphQLDatabaseSchema, componentReferencing, aliasGenerator, field.getSelectionSet());
+          traverseSelectionSet(connection, graphQLDatabaseSchema, componentReferencing, aliasGenerator, field.getSelectionSet());
           parent.addComponent(componentReferencing);
           break;
         case REFERENCED:
@@ -76,9 +77,9 @@ public class SQLResponseUtils {
             node.getForeignName().getParent(),
             aliasGenerator.getAlias(),
             node.getForeignName().getName(),
-            queryString -> SQLResponseUtils.executeQuery(queryString, client)
+            queryString -> SQLResponseUtils.executeQuery(queryString, connection)
           );
-          traverseSelectionSet(client, graphQLDatabaseSchema, componentReferenced, aliasGenerator, field.getSelectionSet());
+          traverseSelectionSet(connection, graphQLDatabaseSchema, componentReferenced, aliasGenerator, field.getSelectionSet());
           parent.addComponent(componentReferenced);
           break;
         default:

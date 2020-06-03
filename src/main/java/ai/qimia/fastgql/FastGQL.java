@@ -9,8 +9,10 @@ import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
+import io.vertx.reactivex.ext.sql.SQLConnection;
 import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.reactivex.sqlclient.Pool;
+import io.vertx.reactivex.sqlclient.SqlConnection;
 import io.vertx.sqlclient.PoolOptions;
 
 public class FastGQL extends AbstractVerticle {

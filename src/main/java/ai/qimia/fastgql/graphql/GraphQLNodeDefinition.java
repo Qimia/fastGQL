@@ -2,6 +2,7 @@ package ai.qimia.fastgql.graphql;
 
 import ai.qimia.fastgql.common.FieldType;
 import ai.qimia.fastgql.common.QualifiedName;
+import ai.qimia.fastgql.common.ReferenceType;
 import graphql.schema.*;
 
 import java.util.Map;

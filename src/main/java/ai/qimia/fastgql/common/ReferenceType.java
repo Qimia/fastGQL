@@ -1,4 +1,4 @@
-package ai.qimia.fastgql.graphql;
+package ai.qimia.fastgql.common;
 
 public enum ReferenceType {
   REFERENCING,
