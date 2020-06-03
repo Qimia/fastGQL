@@ -5,6 +5,7 @@
  */
 package ai.qimia.fastgql;
 
+import ai.qimia.fastgql.oldarch.GraphQLServer;
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
 import io.vertx.core.DeploymentOptions;

@@ -3,15 +3,15 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
-package ai.qimia.fastgql;
+package ai.qimia.fastgql.oldarch;
 
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLFloat;
 import static graphql.Scalars.GraphQLInt;
 import static graphql.Scalars.GraphQLString;
 
-import ai.qimia.fastgql.arguments.ConditionalOperatorTypes;
-import ai.qimia.fastgql.arguments.OrderBy;
+import ai.qimia.fastgql.oldarch.arguments.ConditionalOperatorTypes;
+import ai.qimia.fastgql.oldarch.arguments.OrderBy;
 import graphql.schema.GraphQLEnumType;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;

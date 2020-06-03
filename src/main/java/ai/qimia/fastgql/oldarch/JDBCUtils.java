@@ -3,9 +3,9 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
-package ai.qimia.fastgql;
+package ai.qimia.fastgql.oldarch;
 
-import ai.qimia.fastgql.arguments.ConditionalOperatorHelpers;
+import ai.qimia.fastgql.oldarch.arguments.ConditionalOperatorHelpers;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

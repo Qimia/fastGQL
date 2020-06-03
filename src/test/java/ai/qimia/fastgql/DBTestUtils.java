@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
 
+import ai.qimia.fastgql.oldarch.DatasourceConfig;
 import io.reactivex.Observable;
 import io.vertx.junit5.VertxTestContext;
 import org.testcontainers.containers.PostgreSQLContainer;
