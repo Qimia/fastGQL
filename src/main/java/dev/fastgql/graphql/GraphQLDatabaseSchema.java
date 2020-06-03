@@ -7,6 +7,7 @@ package dev.fastgql.graphql;
 
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.common.QualifiedName;
+import dev.fastgql.graphql.arguments.GraphQLArguments;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
@@ -56,7 +57,7 @@ public class GraphQLDatabaseSchema {
     });
   }
 
-  public void applyToGraphQLObjectType(GraphQLObjectType.Builder builder) {
+  public void applyToGraphQLObjectType(GraphQLObjectType.Builder builder, GraphQLArguments args) {
     Objects.requireNonNull(builder);
     graph.forEach((parent, subgraph) -> {
       GraphQLObjectType.Builder object = GraphQLObjectType.newObject()
@@ -65,11 +66,15 @@ public class GraphQLDatabaseSchema {
         object.field(GraphQLFieldDefinition.newFieldDefinition()
           .name(name)
           .type(node.getGraphQLType())
+            .argument(args.getLimit())
+            .argument(args.getOffset())
           .build());
       });
       builder.field(GraphQLFieldDefinition.newFieldDefinition()
         .name(parent)
         .type(GraphQLList.list(object.build()))
+          .argument(args.getLimit())
+          .argument(args.getOffset())
         .build());
     });
   }

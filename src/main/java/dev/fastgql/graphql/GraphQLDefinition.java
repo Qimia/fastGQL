@@ -6,6 +6,7 @@
 package dev.fastgql.graphql;
 
 import dev.fastgql.db.DatabaseSchema;
+import dev.fastgql.graphql.arguments.GraphQLArguments;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.ComponentExecutable;
 import dev.fastgql.sql.ExecutionRoot;
@@ -25,10 +26,11 @@ public class GraphQLDefinition {
 
   public static GraphQL create(DatabaseSchema database, Pool client) {
     GraphQLDatabaseSchema graphQLDatabaseSchema = new GraphQLDatabaseSchema(database);
+    GraphQLArguments graphQLArguments = new GraphQLArguments(database);
 
     GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject()
       .name("Query");
-    graphQLDatabaseSchema.applyToGraphQLObjectType(queryBuilder);
+    graphQLDatabaseSchema.applyToGraphQLObjectType(queryBuilder, graphQLArguments);
 
     VertxDataFetcher<List<Map<String, Object>>> vertxDataFetcher = new VertxDataFetcher<>((env, listPromise) -> client
       .rxGetConnection()
