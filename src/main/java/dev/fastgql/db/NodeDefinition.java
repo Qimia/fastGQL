@@ -7,7 +7,6 @@ package dev.fastgql.db;
 
 import dev.fastgql.common.FieldType;
 import dev.fastgql.common.QualifiedName;
-
 import java.util.*;
 
 public class NodeDefinition {
@@ -16,7 +15,11 @@ public class NodeDefinition {
   private QualifiedName referencing;
   private Set<QualifiedName> referencedBy;
 
-  public NodeDefinition(QualifiedName qualifiedName, FieldType fieldType, QualifiedName referencing, Set<QualifiedName> referencedBySet) {
+  public NodeDefinition(
+      QualifiedName qualifiedName,
+      FieldType fieldType,
+      QualifiedName referencing,
+      Set<QualifiedName> referencedBySet) {
     Objects.requireNonNull(qualifiedName);
     Objects.requireNonNull(fieldType);
     this.qualifiedName = qualifiedName;
@@ -54,10 +57,10 @@ public class NodeDefinition {
       return false;
     }
     NodeDefinition otherNode = (NodeDefinition) o;
-    return Objects.equals(qualifiedName, otherNode.qualifiedName) &&
-      Objects.equals(fieldType, otherNode.fieldType) &&
-      Objects.equals(referencing, otherNode.referencing) &&
-      Objects.equals(referencedBy, otherNode.referencedBy);
+    return Objects.equals(qualifiedName, otherNode.qualifiedName)
+        && Objects.equals(fieldType, otherNode.fieldType)
+        && Objects.equals(referencing, otherNode.referencing)
+        && Objects.equals(referencedBy, otherNode.referencedBy);
   }
 
   public void merge(NodeDefinition otherNode) {
@@ -67,11 +70,13 @@ public class NodeDefinition {
     if (otherNode == null) {
       throw new RuntimeException("cannot merge with null node");
     }
-    if (!(Objects.equals(qualifiedName, otherNode.qualifiedName) &&
-      Objects.equals(fieldType, otherNode.fieldType))) {
+    if (!(Objects.equals(qualifiedName, otherNode.qualifiedName)
+        && Objects.equals(fieldType, otherNode.fieldType))) {
       throw new RuntimeException("nodes to be merged not compatible");
     }
-    if (referencing != null && otherNode.referencing != null && !referencing.equals(otherNode.referencing)) {
+    if (referencing != null
+        && otherNode.referencing != null
+        && !referencing.equals(otherNode.referencing)) {
       throw new RuntimeException("node is already referencing other node");
     }
     if (otherNode.referencing != null) {
@@ -80,18 +85,24 @@ public class NodeDefinition {
     if (otherNode.referencedBy == null) {
       return;
     }
-    for (QualifiedName qualifiedName: otherNode.referencedBy) {
+    for (QualifiedName qualifiedName : otherNode.referencedBy) {
       addReferredBy(qualifiedName);
     }
   }
 
   @Override
   public String toString() {
-    return "NodeDefinition{" +
-      "qualifiedName='" + qualifiedName + '\'' +
-      ", nodeType=" + fieldType +
-      ", referencing='" + referencing + '\'' +
-      ", referredBy=" + referencedBy +
-      '}';
+    return "NodeDefinition{"
+        + "qualifiedName='"
+        + qualifiedName
+        + '\''
+        + ", nodeType="
+        + fieldType
+        + ", referencing='"
+        + referencing
+        + '\''
+        + ", referredBy="
+        + referencedBy
+        + '}';
   }
 }

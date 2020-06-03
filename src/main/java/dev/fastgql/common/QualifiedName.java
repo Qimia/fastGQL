@@ -5,9 +5,8 @@
  */
 package dev.fastgql.common;
 
-import org.antlr.v4.runtime.misc.Pair;
-
 import java.util.Objects;
+import org.antlr.v4.runtime.misc.Pair;
 
 public class QualifiedName {
   private final String parent;
@@ -62,7 +61,8 @@ public class QualifiedName {
     if (splitted.length == 2) {
       ret = new Pair<>(splitted[0], splitted[1]);
     } else {
-      throw new IllegalArgumentException("qualified name has to be in the format of \"parent/child\"");
+      throw new IllegalArgumentException(
+          "qualified name has to be in the format of \"parent/child\"");
     }
     return ret;
   }
@@ -76,8 +76,8 @@ public class QualifiedName {
       return false;
     }
     QualifiedName other = (QualifiedName) o;
-    return parent.equals(other.parent) &&
-      name.equals(other.name) &&
-      qualifiedName.equals(other.qualifiedName);
+    return parent.equals(other.parent)
+        && name.equals(other.name)
+        && qualifiedName.equals(other.qualifiedName);
   }
 }

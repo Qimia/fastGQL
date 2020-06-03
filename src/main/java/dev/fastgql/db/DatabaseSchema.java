@@ -7,7 +7,6 @@ package dev.fastgql.db;
 
 import dev.fastgql.common.FieldType;
 import dev.fastgql.common.QualifiedName;
-
 import java.util.*;
 
 public class DatabaseSchema {
@@ -27,9 +26,7 @@ public class DatabaseSchema {
 
   @Override
   public String toString() {
-    return "DatabaseSchema{" +
-      "graph=" + graph +
-      '}';
+    return "DatabaseSchema{" + "graph=" + graph + '}';
   }
 
   public static class Builder {
@@ -41,13 +38,23 @@ public class DatabaseSchema {
       return new DatabaseSchema(graph);
     }
 
-    public Builder row(String table, String field, FieldType type, String referencingTable, String referencingField) {
+    public Builder row(
+        String table,
+        String field,
+        FieldType type,
+        String referencingTable,
+        String referencingField) {
       Objects.requireNonNull(table);
       Objects.requireNonNull(field);
       Objects.requireNonNull(type);
       Objects.requireNonNull(referencingTable);
       Objects.requireNonNull(referencingField);
-      addNode(new NodeDefinition(new QualifiedName(table, field), type, new QualifiedName(referencingTable, referencingField), null));
+      addNode(
+          new NodeDefinition(
+              new QualifiedName(table, field),
+              type,
+              new QualifiedName(referencingTable, referencingField),
+              null));
       return this;
     }
 
@@ -55,7 +62,12 @@ public class DatabaseSchema {
       Objects.requireNonNull(qualifiedName);
       Objects.requireNonNull(type);
       Objects.requireNonNull(qualifiedReferencingName);
-      addNode(new NodeDefinition(new QualifiedName(qualifiedName), type, new QualifiedName(qualifiedReferencingName), null));
+      addNode(
+          new NodeDefinition(
+              new QualifiedName(qualifiedName),
+              type,
+              new QualifiedName(qualifiedReferencingName),
+              null));
       return this;
     }
 
@@ -106,7 +118,8 @@ public class DatabaseSchema {
       }
       QualifiedName referencing = newNode.getReferencing();
       if (referencing != null) {
-        addNode(new NodeDefinition(referencing, newNode.getFieldType(), null, Set.of(qualifiedName)));
+        addNode(
+            new NodeDefinition(referencing, newNode.getFieldType(), null, Set.of(qualifiedName)));
       }
     }
   }
