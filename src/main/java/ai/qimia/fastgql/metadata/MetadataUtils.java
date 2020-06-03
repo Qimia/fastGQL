@@ -1,6 +1,7 @@
 package ai.qimia.fastgql.metadata;
 
 import ai.qimia.fastgql.common.FieldType;
+import ai.qimia.fastgql.common.QualifiedName;
 import ai.qimia.fastgql.db.DatabaseSchema;
 import ai.qimia.fastgql.db.DatabaseSchema.Builder;
 import java.sql.Connection;
@@ -36,8 +37,8 @@ public class MetadataUtils {
         String refColumnName = foreignKeyResultSet.getString("PKCOLUMN_NAME");
         String refTableName = foreignKeyResultSet.getString("PKTABLE_NAME");
         foreignKeyToRef.put(
-            String.format("%s/%s", tableName, columnName),
-            String.format("%s/%s", refTableName, refColumnName));
+          QualifiedName.generate(tableName, columnName),
+          QualifiedName.generate(refTableName, refColumnName));
       }
       foreignKeyResultSet.close();
 
@@ -50,7 +51,7 @@ public class MetadataUtils {
               "Only integer or string class for columns currently supported");
         }
         String columnName = columnsResultSet.getString("COLUMN_NAME");
-        String qualifiedName = String.format("%s/%s", tableName, columnName);
+        String qualifiedName = QualifiedName.generate(tableName, columnName);
         if (foreignKeyToRef.containsKey(qualifiedName)) {
           databaseSchemaBuilder.row(
               qualifiedName,

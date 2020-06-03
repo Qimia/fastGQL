@@ -9,6 +9,11 @@ public class QualifiedName {
   private final String name;
   private final String qualifiedName;
 
+  public static String generate(String parent, String name) {
+    QualifiedName tmp = new QualifiedName(parent, name);
+    return tmp.getQualifiedName();
+  }
+
   public QualifiedName(String qualifiedName) {
     Objects.requireNonNull(qualifiedName);
     Pair<String, String> splitted = splitName(qualifiedName);
@@ -35,6 +40,10 @@ public class QualifiedName {
 
   public String getParent() {
     return parent;
+  }
+
+  public String getQualifiedName() {
+    return qualifiedName;
   }
 
   @Override
