@@ -10,11 +10,21 @@ Run all tests:
 ./gradlew test
 ```
 
-Start in dev mode with hot reload:
+#### Development
+
+Start Postgres container:
+
+```shell script
+./start_postgres.sh
+```
+
+Start FastGQL in dev mode with hot reload:
 
 ```shell script
 ./gradlew vertxRun
 ````
+
+#### Production
 
 Build production bundle:
 
@@ -25,5 +35,5 @@ Build production bundle:
 Execute production version:
 
 ```shell script
-build/install/fastgql/bin/fastgql run --conf src/main/conf.json ai.qimia.fastgql.oldarch.GraphQLServer
+build/install/fastgql/bin/fastgql run --conf src/main/conf.json ai.qimia.fastgql.FastGQL
 ```
