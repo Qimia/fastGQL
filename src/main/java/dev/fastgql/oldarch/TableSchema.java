@@ -32,25 +32,21 @@ import lombok.Getter;
 
 public class TableSchema<PKType> {
 
-  @Getter
-  private Map<String, Column<?>> columns = new HashMap<>();
-  @Getter
-  private final String name;
-  @Getter
-  private final String primaryKeyName;
-  private final Map<Class<?>, GraphQLScalarType> classGraphQLScalarTypeMap = Map.of(
-      Integer.class, GraphQLInt,
-      Long.class, GraphQLInt,
-      Float.class, GraphQLFloat,
-      Double.class, GraphQLFloat,
-      String.class, GraphQLString,
-      Boolean.class, GraphQLBoolean
-  );
-  @Getter
-  private final Class<PKType> primaryKeyClass;
+  @Getter private Map<String, Column<?>> columns = new HashMap<>();
+  @Getter private final String name;
+  @Getter private final String primaryKeyName;
+  private final Map<Class<?>, GraphQLScalarType> classGraphQLScalarTypeMap =
+      Map.of(
+          Integer.class, GraphQLInt,
+          Long.class, GraphQLInt,
+          Float.class, GraphQLFloat,
+          Double.class, GraphQLFloat,
+          String.class, GraphQLString,
+          Boolean.class, GraphQLBoolean);
+  @Getter private final Class<PKType> primaryKeyClass;
 
-  public TableSchema(final String name, final String primaryKeyName,
-      final Class<PKType> primaryKeyClass) {
+  public TableSchema(
+      final String name, final String primaryKeyName, final Class<PKType> primaryKeyClass) {
     if (!classGraphQLScalarTypeMap.containsKey(primaryKeyClass)) {
       throw new IllegalArgumentException(
           "Primary key class " + primaryKeyClass + " cannot be cast to GraphQL type");
@@ -73,38 +69,39 @@ public class TableSchema<PKType> {
     return new GraphQLList(graphQLObjectType(parentNames, tableSchemaMap));
   }
 
-  private GraphQLObjectType graphQLObjectType(final Set<String> parentNames,
-      final Map<String, TableSchema<?>> tableSchemaMap) {
+  private GraphQLObjectType graphQLObjectType(
+      final Set<String> parentNames, final Map<String, TableSchema<?>> tableSchemaMap) {
     Set<String> parentNamesCopy = new HashSet<>(parentNames);
     if (parentNamesCopy.contains(name)) {
       throw new RuntimeException("circular foreign key relationship between tables");
     }
     parentNamesCopy.add(name);
-    GraphQLObjectType.Builder builder = GraphQLObjectType.newObject()
-        .name(name)
-        .field(
-            GraphQLFieldDefinition.newFieldDefinition()
-                .name(primaryKeyName)
-                .type(classGraphQLScalarTypeMap.get(primaryKeyClass))
-                .build()
-        );
+    GraphQLObjectType.Builder builder =
+        GraphQLObjectType.newObject()
+            .name(name)
+            .field(
+                GraphQLFieldDefinition.newFieldDefinition()
+                    .name(primaryKeyName)
+                    .type(classGraphQLScalarTypeMap.get(primaryKeyClass))
+                    .build());
     for (Map.Entry<String, Column<?>> entry : columns.entrySet()) {
       Column<?> column = entry.getValue();
       String columnName = entry.getKey();
-      if (column.getReferenceTable() != null && !tableSchemaMap
-          .containsKey(column.getReferenceTable())) {
+      if (column.getReferenceTable() != null
+          && !tableSchemaMap.containsKey(column.getReferenceTable())) {
         throw new RuntimeException("non existing table schema referenced");
       }
-      GraphQLOutputType graphQLOutputType = column.getReferenceTable() != null
-          ? tableSchemaMap.get(column.getReferenceTable())
-          .graphQLObjectType(parentNamesCopy, tableSchemaMap)
-          : classGraphQLScalarTypeMap.get(column.getClazz());
+      GraphQLOutputType graphQLOutputType =
+          column.getReferenceTable() != null
+              ? tableSchemaMap
+                  .get(column.getReferenceTable())
+                  .graphQLObjectType(parentNamesCopy, tableSchemaMap)
+              : classGraphQLScalarTypeMap.get(column.getClazz());
       builder.field(
           GraphQLFieldDefinition.newFieldDefinition()
               .name(columnName)
               .type(graphQLOutputType)
-              .build()
-      );
+              .build());
     }
 
     return builder.build();
@@ -114,22 +111,30 @@ public class TableSchema<PKType> {
   // https://hasura.io/docs/1.0/graphql/manual/queries/sorting.html#sorting-based-on-nested-object-s-fields
   public GraphQLInputType orderByType() {
     GraphQLInputObjectType.Builder builder = GraphQLInputObjectType.newInputObject();
-    builder.name(name + "_order_by")
+    builder
+        .name(name + "_order_by")
         .description("ordering options when selecting data from \"" + name + "\"")
-        .field(GraphQLInputObjectField.newInputObjectField()
-            .name(primaryKeyName)
-            .type(OrderBy.enumType)
-            .build());
-    columns.keySet().forEach(key -> builder.field(GraphQLInputObjectField.newInputObjectField()
-        .name(key)
-        .type(OrderBy.enumType)
-        .build()));
+        .field(
+            GraphQLInputObjectField.newInputObjectField()
+                .name(primaryKeyName)
+                .type(OrderBy.enumType)
+                .build());
+    columns
+        .keySet()
+        .forEach(
+            key ->
+                builder.field(
+                    GraphQLInputObjectField.newInputObjectField()
+                        .name(key)
+                        .type(OrderBy.enumType)
+                        .build()));
     return GraphQLList.list(builder.build());
   }
 
   public GraphQLInputType selectColumnType() {
     GraphQLEnumType.Builder builder = GraphQLEnumType.newEnum();
-    builder.name(name + "_select_column")
+    builder
+        .name(name + "_select_column")
         .description("select columns of table \"" + name + "\"")
         .value(primaryKeyName, primaryKeyName, "Primary key column name");
     columns.keySet().forEach(key -> builder.value(key, key, "Column name"));
@@ -141,35 +146,46 @@ public class TableSchema<PKType> {
   public GraphQLInputObjectType boolExpType() {
     String typeName = name + "_bool_exp";
     GraphQLInputObjectType.Builder builder = GraphQLInputObjectType.newInputObject();
-    builder.name(typeName)
-        .description("Boolean expression to filter rows from the table \"" + name
-            + "\". All fields are combined with a logical 'AND'.")
-        .field(GraphQLInputObjectField.newInputObjectField()
-            .name("_and")
-            .type(GraphQLList.list(GraphQLTypeReference.typeRef(typeName)))
-            .build())
-        .field(GraphQLInputObjectField.newInputObjectField()
-            .name("_not")
-            .type(GraphQLTypeReference.typeRef(typeName))
-            .build())
-        .field(GraphQLInputObjectField.newInputObjectField()
-            .name("_or")
-            .type(GraphQLList.list(GraphQLTypeReference.typeRef(typeName)))
+    builder
+        .name(typeName)
+        .description(
+            "Boolean expression to filter rows from the table \""
+                + name
+                + "\". All fields are combined with a logical 'AND'.")
+        .field(
+            GraphQLInputObjectField.newInputObjectField()
+                .name("_and")
+                .type(GraphQLList.list(GraphQLTypeReference.typeRef(typeName)))
+                .build())
+        .field(
+            GraphQLInputObjectField.newInputObjectField()
+                .name("_not")
+                .type(GraphQLTypeReference.typeRef(typeName))
+                .build())
+        .field(
+            GraphQLInputObjectField.newInputObjectField()
+                .name("_or")
+                .type(GraphQLList.list(GraphQLTypeReference.typeRef(typeName)))
+                .build());
+    GraphQLInputType primaryKeyGraphQLType =
+        ConditionalOperatorTypes.scalarTypeToComparisonExpMap.get(
+            classGraphQLScalarTypeMap.get(primaryKeyClass));
+    builder.field(
+        GraphQLInputObjectField.newInputObjectField()
+            .name(primaryKeyName)
+            .type(primaryKeyGraphQLType)
             .build());
-    GraphQLInputType primaryKeyGraphQLType = ConditionalOperatorTypes.scalarTypeToComparisonExpMap
-        .get(classGraphQLScalarTypeMap.get(primaryKeyClass));
-    builder.field(GraphQLInputObjectField.newInputObjectField()
-        .name(primaryKeyName)
-        .type(primaryKeyGraphQLType)
-        .build());
-    columns.forEach((key, value) -> {
-      GraphQLInputType columnGraphQLType = ConditionalOperatorTypes.scalarTypeToComparisonExpMap
-          .get(classGraphQLScalarTypeMap.get(value.getClazz()));
-      builder.field(GraphQLInputObjectField.newInputObjectField()
-          .name(key)
-          .type(columnGraphQLType)
-          .build());
-    });
+    columns.forEach(
+        (key, value) -> {
+          GraphQLInputType columnGraphQLType =
+              ConditionalOperatorTypes.scalarTypeToComparisonExpMap.get(
+                  classGraphQLScalarTypeMap.get(value.getClazz()));
+          builder.field(
+              GraphQLInputObjectField.newInputObjectField()
+                  .name(key)
+                  .type(columnGraphQLType)
+                  .build());
+        });
     return builder.build();
   }
 
@@ -178,12 +194,8 @@ public class TableSchema<PKType> {
     return String.format(
         "%s(%s)",
         name,
-        Stream.concat(
-            columns.keySet().stream(),
-            Stream.of(primaryKeyName)
-        )
+        Stream.concat(columns.keySet().stream(), Stream.of(primaryKeyName))
             .sorted()
-            .collect(Collectors.joining(" | "))
-    );
+            .collect(Collectors.joining(" | ")));
   }
 }

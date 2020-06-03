@@ -51,11 +51,11 @@ public class FastGQL extends AbstractVerticle {
     routerUpdatable.update(graphQL);
 
     vertx
-      .createHttpServer()
-      .requestHandler(routerUpdatable.getRouter())
-      .rxListen(config().getInteger("http.port", 8080))
-      .doOnSuccess(server -> future.complete())
-      .doOnError(server -> future.fail(server.getCause()))
-      .subscribe();
+        .createHttpServer()
+        .requestHandler(routerUpdatable.getRouter())
+        .rxListen(config().getInteger("http.port", 8080))
+        .doOnSuccess(server -> future.complete())
+        .doOnError(server -> future.fail(server.getCause()))
+        .subscribe();
   }
 }

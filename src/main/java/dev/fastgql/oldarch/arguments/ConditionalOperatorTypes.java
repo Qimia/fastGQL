@@ -79,28 +79,27 @@ public class ConditionalOperatorTypes {
     for (TextOps op : TextOps.values()) {
       operatorNameToValueMap.put(op.name, op.value);
     }
-
   }
 
   // TODO: implement comparison expression for other GraphQL type
-  public static final Map<GraphQLScalarType, GraphQLInputObjectType> scalarTypeToComparisonExpMap = Map
-      .of(
+  public static final Map<GraphQLScalarType, GraphQLInputObjectType> scalarTypeToComparisonExpMap =
+      Map.of(
           GraphQLInt, comparisonExpBuilder("Int", GraphQLInt).build(),
           GraphQLBoolean, comparisonExpBuilder("Boolean", GraphQLBoolean).build(),
           GraphQLFloat, comparisonExpBuilder("Float", GraphQLFloat).build(),
           GraphQLString, stringComparisonExpBuilder().build());
 
-  private static GraphQLInputObjectType.Builder comparisonExpBuilder(String prefix,
-      GraphQLScalarType type) {
-    GraphQLInputObjectType.Builder builder = GraphQLInputObjectType.newInputObject()
-        .name(prefix + "_comparison_exp");
+  private static GraphQLInputObjectType.Builder comparisonExpBuilder(
+      String prefix, GraphQLScalarType type) {
+    GraphQLInputObjectType.Builder builder =
+        GraphQLInputObjectType.newInputObject().name(prefix + "_comparison_exp");
     addGenericOperators(builder, type);
     return builder;
   }
 
   private static GraphQLInputObjectType.Builder stringComparisonExpBuilder() {
-    GraphQLInputObjectType.Builder builder = GraphQLInputObjectType.newInputObject()
-        .name("String_comparison_exp");
+    GraphQLInputObjectType.Builder builder =
+        GraphQLInputObjectType.newInputObject().name("String_comparison_exp");
     addGenericOperators(builder, GraphQLString);
     addTextOperators(builder, GraphQLString);
     return builder;
@@ -110,33 +109,31 @@ public class ConditionalOperatorTypes {
     for (GenericOps op : GenericOps.values()) {
       switch (op) {
         case _is_null:
-          builder.field(GraphQLInputObjectField.newInputObjectField()
-              .name(op.name())
-              .type(GraphQLBoolean)
-              .build());
+          builder.field(
+              GraphQLInputObjectField.newInputObjectField()
+                  .name(op.name())
+                  .type(GraphQLBoolean)
+                  .build());
           break;
         case _in:
         case _nin:
-          builder.field(GraphQLInputObjectField.newInputObjectField()
-              .name(op.name())
-              .type(GraphQLList.list(type))
-              .build());
+          builder.field(
+              GraphQLInputObjectField.newInputObjectField()
+                  .name(op.name())
+                  .type(GraphQLList.list(type))
+                  .build());
           break;
         default:
-          builder.field(GraphQLInputObjectField.newInputObjectField()
-              .name(op.name())
-              .type(type)
-              .build());
+          builder.field(
+              GraphQLInputObjectField.newInputObjectField().name(op.name()).type(type).build());
       }
     }
   }
 
   private static void addTextOperators(Builder builder, GraphQLScalarType type) {
     for (TextOps op : TextOps.values()) {
-      builder.field(GraphQLInputObjectField.newInputObjectField()
-          .name(op.name())
-          .type(type)
-          .build());
+      builder.field(
+          GraphQLInputObjectField.newInputObjectField().name(op.name()).type(type).build());
     }
   }
 }

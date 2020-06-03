@@ -41,19 +41,19 @@ public class GraphQLServerTest {
 
   private static Network network = Network.newNetwork();
 
-  private static KafkaContainer kafkaContainer = new KafkaContainer()
-      .withNetwork(network);
+  private static KafkaContainer kafkaContainer = new KafkaContainer().withNetwork(network);
 
-  private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(
-      "debezium/postgres:11")
-      .withNetwork(network)
-      .withNetworkAliases("postgres");
+  private static PostgreSQLContainer<?> postgresContainer =
+      new PostgreSQLContainer<>("debezium/postgres:11")
+          .withNetwork(network)
+          .withNetworkAliases("postgres");
 
-  private static DebeziumContainer debeziumContainer = new DebeziumContainer("1.0")
-      .withNetwork(network)
-      .withKafka(kafkaContainer)
-      .withLogConsumer(new Slf4jLogConsumer(LOGGER))
-      .dependsOn(kafkaContainer);
+  private static DebeziumContainer debeziumContainer =
+      new DebeziumContainer("1.0")
+          .withNetwork(network)
+          .withKafka(kafkaContainer)
+          .withLogConsumer(new Slf4jLogConsumer(LOGGER))
+          .dependsOn(kafkaContainer);
 
   @Test
   public void shouldReceiveResponseForSimpleQuery(Vertx vertx, VertxTestContext context) {
@@ -66,19 +66,18 @@ public class GraphQLServerTest {
   void shouldReceiveEventsForSimpleSubscription(Vertx vertx, VertxTestContext context) {
 
     String inputResource = "test-simple/test-subscription-input.graphql";
-    List<String> outputResources = List.of(
-      "test-simple/test-subscription-output-1.json",
-      "test-simple/test-subscription-output-1.json",
-      "test-simple/test-subscription-output-2.json"
-    );
+    List<String> outputResources =
+        List.of(
+            "test-simple/test-subscription-output-1.json",
+            "test-simple/test-subscription-output-1.json",
+            "test-simple/test-subscription-output-2.json");
     GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
     DBTestUtils.executeSQLQueryWithDelay(
-      "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-      5,
-      TimeUnit.SECONDS,
-      postgresContainer,
-      context
-    );
+        "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+        5,
+        TimeUnit.SECONDS,
+        postgresContainer,
+        context);
   }
 
   @Test
@@ -91,19 +90,14 @@ public class GraphQLServerTest {
   @Test
   void shouldReceiveEventsForSubscriptionWithLimitOffset(Vertx vertx, VertxTestContext context) {
     String inputResource = "test-limit-offset/test-subscription-input.graphql";
-    List<String> outputResources = List.of(
-      "test-limit-offset/test-subscription-output-1.json",
-      "test-limit-offset/test-subscription-output-1.json",
-      "test-limit-offset/test-subscription-output-2.json"
-    );
+    List<String> outputResources =
+        List.of(
+            "test-limit-offset/test-subscription-output-1.json",
+            "test-limit-offset/test-subscription-output-1.json",
+            "test-limit-offset/test-subscription-output-2.json");
     GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
     DBTestUtils.executeSQLQueryWithDelay(
-      "DELETE FROM customers WHERE id = 101",
-      5,
-      TimeUnit.SECONDS,
-      postgresContainer,
-      context
-    );
+        "DELETE FROM customers WHERE id = 101", 5, TimeUnit.SECONDS, postgresContainer, context);
   }
 
   @Test
@@ -116,19 +110,18 @@ public class GraphQLServerTest {
   @Test
   void shouldReceiveEventsForSubscriptionWithOrderBy(Vertx vertx, VertxTestContext context) {
     String inputResource = "test-order-by/test-subscription-input.graphql";
-    List<String> outputResources = List.of(
-      "test-order-by/test-subscription-output-1.json",
-      "test-order-by/test-subscription-output-1.json",
-      "test-order-by/test-subscription-output-2.json"
-    );
+    List<String> outputResources =
+        List.of(
+            "test-order-by/test-subscription-output-1.json",
+            "test-order-by/test-subscription-output-1.json",
+            "test-order-by/test-subscription-output-2.json");
     GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
     DBTestUtils.executeSQLQueryWithDelay(
-      "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-      5,
-      TimeUnit.SECONDS,
-      postgresContainer,
-      context
-    );
+        "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+        5,
+        TimeUnit.SECONDS,
+        postgresContainer,
+        context);
   }
 
   @Test
@@ -141,28 +134,26 @@ public class GraphQLServerTest {
   @Test
   void shouldReceiveEventsForSubscriptionWithWhere(Vertx vertx, VertxTestContext context) {
     String inputResource = "test-where/test-subscription-input.graphql";
-    List<String> outputResources = List.of(
-      "test-where/test-subscription-output-1.json",
-      "test-where/test-subscription-output-1.json",
-      "test-where/test-subscription-output-2.json"
-    );
+    List<String> outputResources =
+        List.of(
+            "test-where/test-subscription-output-1.json",
+            "test-where/test-subscription-output-1.json",
+            "test-where/test-subscription-output-2.json");
     GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
     DBTestUtils.executeSQLQueryWithDelay(
-      "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-      5,
-      TimeUnit.SECONDS,
-      postgresContainer,
-      context
-    );
+        "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+        5,
+        TimeUnit.SECONDS,
+        postgresContainer,
+        context);
   }
 
   @Test
   public void shouldReceiveResponseForQueryWithDistinctOn(Vertx vertx, VertxTestContext context) {
     DBTestUtils.executeSQLQuery(
-      "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-      postgresContainer,
-      context
-    );
+        "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+        postgresContainer,
+        context);
     String inputResource = "test-distinct-on/test-query-input.graphql";
     String outputResource = "test-distinct-on/test-query-output.json";
     GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
@@ -171,19 +162,18 @@ public class GraphQLServerTest {
   @Test
   void shouldReceiveEventsForSubscriptionWithDistinctOn(Vertx vertx, VertxTestContext context) {
     String inputResource = "test-distinct-on/test-subscription-input.graphql";
-    List<String> outputResources = List.of(
-      "test-distinct-on/test-subscription-output-1.json",
-      "test-distinct-on/test-subscription-output-1.json",
-      "test-distinct-on/test-subscription-output-2.json"
-    );
+    List<String> outputResources =
+        List.of(
+            "test-distinct-on/test-subscription-output-1.json",
+            "test-distinct-on/test-subscription-output-1.json",
+            "test-distinct-on/test-subscription-output-2.json");
     GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
     DBTestUtils.executeSQLQueryWithDelay(
-      "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-      5,
-      TimeUnit.SECONDS,
-      postgresContainer,
-      context
-    );
+        "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+        5,
+        TimeUnit.SECONDS,
+        postgresContainer,
+        context);
   }
 
   @BeforeEach
@@ -203,31 +193,32 @@ public class GraphQLServerTest {
           "my-connector",
           ConnectorConfiguration.forJdbcContainer(postgresContainer)
               .with("database.server.name", "dbserver")
-              .with("slot.name", "debezium")
-      );
+              .with("slot.name", "debezium"));
     } catch (IOException e) {
       context.failNow(e);
       return;
     }
 
-    JsonObject config = new JsonObject()
-        .put("http.port", port)
-        .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
-        .put("datasource", JsonObject.mapFrom(DBTestUtils.datasourceConfig(postgresContainer)));
+    JsonObject config =
+        new JsonObject()
+            .put("http.port", port)
+            .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
+            .put("datasource", JsonObject.mapFrom(DBTestUtils.datasourceConfig(postgresContainer)));
 
-    DeploymentOptions options = new DeploymentOptions()
-        .setConfig(config);
-    vertx.rxDeployVerticle(new GraphQLServer(), options).subscribe(
-        deploymentID -> {
-          this.deploymentID = deploymentID;
-          context.completeNow();
-        }
-    );
+    DeploymentOptions options = new DeploymentOptions().setConfig(config);
+    vertx
+        .rxDeployVerticle(new GraphQLServer(), options)
+        .subscribe(
+            deploymentID -> {
+              this.deploymentID = deploymentID;
+              context.completeNow();
+            });
   }
 
   @AfterEach
   public void tearDown(Vertx vertx, VertxTestContext context) {
-    vertx.rxUndeploy(deploymentID)
+    vertx
+        .rxUndeploy(deploymentID)
         .subscribe(
             () -> {
               debeziumContainer.close();
@@ -235,7 +226,6 @@ public class GraphQLServerTest {
               postgresContainer.close();
               network.close();
               context.completeNow();
-            }
-        );
+            });
   }
 }

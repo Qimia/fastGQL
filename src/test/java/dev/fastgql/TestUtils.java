@@ -14,10 +14,7 @@ public class TestUtils {
 
   @SuppressWarnings("UnstableApiUsage")
   public static String readResource(String name) throws IOException {
-    return Resources.toString(
-        Resources.getResource(name),
-        Charsets.UTF_8
-    );
+    return Resources.toString(Resources.getResource(name), Charsets.UTF_8);
   }
 
   public static String readResource(String name, VertxTestContext context) {
