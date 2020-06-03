@@ -16,6 +16,10 @@ public class DatabaseSchema {
     return graph;
   }
 
+  public Set<String> getTableNames() {
+    return graph.keySet();
+  }
+
   @Override
   public String toString() {
     return "DatabaseSchema{" +

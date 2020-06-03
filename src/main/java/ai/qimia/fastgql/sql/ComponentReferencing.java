@@ -36,6 +36,7 @@ public class ComponentReferencing implements Component {
   @Override
   public void updateQuery(SQLQuery query) {
     Objects.requireNonNull(query);
+    query.addKey(table, key);
     query.addJoin(table, key, foreignTable, foreignTableAlias, foreignKey);
     components.forEach(component -> component.updateQuery(query));
   }

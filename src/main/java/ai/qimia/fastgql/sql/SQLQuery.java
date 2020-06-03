@@ -20,8 +20,8 @@ public class SQLQuery {
     this.suffixes = new ArrayList<>();
   }
 
-  public void addKey(String key) {
-    keys.add(key);
+  public void addKey(String table, String key) {
+    keys.add(String.format("%s.%s AS %s_%s", table, key, table, key));
   }
 
   public void addJoin(String thisTable, String thisKey, String foreignTable, String foreignTableAlias, String foreignKey) {

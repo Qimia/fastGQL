@@ -97,8 +97,11 @@ public class ExecutionRoot implements ComponentExecutable {
     query.reset();
     return sqlExecutor.apply(queryString).flatMap(
       input -> {
-        List<Single<Map<String, Object>>> observables = input.stream().map(row -> SQLResponseUtils.constructResponse(row, components)).collect(Collectors.toList());
-        return Single.zip(observables, values -> Arrays.stream(values).map(value -> (Map<String, Object>) value).collect(Collectors.toList()));
+        if (input.size() > 0) {
+          List<Single<Map<String, Object>>> observables = input.stream().map(row -> SQLResponseUtils.constructResponse(row, components)).collect(Collectors.toList());
+          return Single.zip(observables, values -> Arrays.stream(values).map(value -> (Map<String, Object>) value).collect(Collectors.toList()));
+        }
+        return Single.just(List.of());
       });
   }
 

@@ -23,23 +23,22 @@ public class GraphQLUtils {
     GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject()
       .name("Query");
     graphQLDatabaseSchema.applyToGraphQLObjectType(queryBuilder);
-    GraphQLObjectType query = queryBuilder.build();
 
+    VertxDataFetcher<List<Map<String, Object>>> vertxDataFetcher = new VertxDataFetcher<>(((env, listPromise) -> client.rxGetConnection().subscribe(
+      connection -> {
+        AliasGenerator aliasGenerator = new AliasGenerator();
+        ComponentExecutable executionRoot = new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), queryString -> SQLResponseUtils.executeQuery(queryString, connection));
+        SQLResponseUtils.traverseSelectionSet(connection, graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
+        executionRoot.execute().doOnSuccess(listPromise::complete).doOnError(listPromise::fail).doFinally(connection::close).subscribe();
+      },
+      listPromise::fail)));
 
-    VertxDataFetcher<List<Map<String, Object>>> vertxDataFetcher = new VertxDataFetcher<>(((env, listPromise) -> {
-      AliasGenerator aliasGenerator = new AliasGenerator();
-      ComponentExecutable executionRoot = new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), queryString -> SQLResponseUtils.executeQuery(queryString, client));
-      SQLResponseUtils.traverseSelectionSet(client, graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
-      executionRoot.execute().subscribe(listPromise::complete);
-    }));
-
-    GraphQLCodeRegistry codeRegistry = GraphQLCodeRegistry.newCodeRegistry()
-      .dataFetcher(FieldCoordinates.coordinates("Query", "customers"), vertxDataFetcher)
-      .build();
+    GraphQLCodeRegistry.Builder codeRegistryBuilder = GraphQLCodeRegistry.newCodeRegistry();
+    database.getTableNames().forEach(tableName -> codeRegistryBuilder.dataFetcher(FieldCoordinates.coordinates("Query", tableName), vertxDataFetcher));
 
     GraphQLSchema graphQLSchema = GraphQLSchema.newSchema()
-      .query(query)
-      .codeRegistry(codeRegistry)
+      .query(queryBuilder.build())
+      .codeRegistry(codeRegistryBuilder.build())
       .build();
 
     return GraphQL.newGraphQL(graphQLSchema).build();
