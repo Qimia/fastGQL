@@ -2,17 +2,15 @@ package ai.qimia.fastgql;
 
 import ai.qimia.fastgql.common.FieldType;
 import ai.qimia.fastgql.db.DatabaseSchema;
-import ai.qimia.fastgql.graphql.GraphQLUtils;
+import ai.qimia.fastgql.graphql.GraphQLDefinition;
 import ai.qimia.fastgql.router.RouterUpdatable;
 import graphql.GraphQL;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.ext.sql.SQLConnection;
 import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.reactivex.sqlclient.SqlConnection;
 import io.vertx.sqlclient.PoolOptions;
 
 public class FastGQL extends AbstractVerticle {
@@ -44,7 +42,7 @@ public class FastGQL extends AbstractVerticle {
       new PoolOptions().setMaxSize(5)
     );
 
-    GraphQL graphQL = GraphQLUtils.create(database, client);
+    GraphQL graphQL = GraphQLDefinition.create(database, client);
     RouterUpdatable routerUpdatable = new RouterUpdatable(vertx);
     routerUpdatable.update(graphQL);
 
@@ -52,6 +50,8 @@ public class FastGQL extends AbstractVerticle {
       .createHttpServer()
       .requestHandler(routerUpdatable.getRouter())
       .rxListen(config().getInteger("http.port", 8080))
-      .subscribe(server -> future.complete(), server -> future.fail(server.getCause()));
+      .doOnSuccess(server -> future.complete())
+      .doOnError(server -> future.fail(server.getCause()))
+      .subscribe();
   }
 }
