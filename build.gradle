@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'checkstyle'
     id 'io.vertx.vertx-plugin' version '1.0.2'
     id 'io.freefair.lombok' version '5.0.0-rc6'
 }
@@ -18,6 +19,10 @@ vertx {
     mainVerticle = 'dev.fastgql.FastGQL'
     vertxVersion = '3.8.3'
     config = 'src/main/conf.json'
+}
+
+checkstyle {
+    toolVersion '8.30'
 }
 
 dependencies {
