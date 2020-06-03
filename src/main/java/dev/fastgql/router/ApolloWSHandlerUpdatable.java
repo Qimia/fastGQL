@@ -13,17 +13,20 @@ import io.vertx.ext.web.handler.graphql.ApolloWSOptions;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSMessage;
-import org.dataloader.DataLoaderRegistry;
 import java.util.function.Function;
+import org.dataloader.DataLoaderRegistry;
 
 @SuppressWarnings({"ResultOfMethodCallIgnored"})
 public class ApolloWSHandlerUpdatable implements Handler<RoutingContext> {
-  private final Subject<ApolloWSHandler> apolloWSHandlerSubject = BehaviorSubject.<ApolloWSHandler>create().toSerialized();
+  private final Subject<ApolloWSHandler> apolloWSHandlerSubject =
+      BehaviorSubject.<ApolloWSHandler>create().toSerialized();
   private final ApolloWSOptions options;
   private static final Function<ApolloWSMessage, Object> DEFAULT_QUERY_CONTEXT_FACTORY = rc -> rc;
-  private static final Function<ApolloWSMessage, DataLoaderRegistry> DEFAULT_DATA_LOADER_REGISTRY_FACTORY = rc -> null;
+  private static final Function<ApolloWSMessage, DataLoaderRegistry>
+      DEFAULT_DATA_LOADER_REGISTRY_FACTORY = rc -> null;
   private Function<ApolloWSMessage, Object> queryContextFactory = DEFAULT_QUERY_CONTEXT_FACTORY;
-  private Function<ApolloWSMessage, DataLoaderRegistry> dataLoaderRegistryFactory = DEFAULT_DATA_LOADER_REGISTRY_FACTORY;
+  private Function<ApolloWSMessage, DataLoaderRegistry> dataLoaderRegistryFactory =
+      DEFAULT_DATA_LOADER_REGISTRY_FACTORY;
 
   private ApolloWSHandlerUpdatable(ApolloWSOptions options) {
     this.options = options;
@@ -39,19 +42,19 @@ public class ApolloWSHandlerUpdatable implements Handler<RoutingContext> {
 
   public synchronized void updateGraphQL(GraphQL graphQL) {
     apolloWSHandlerSubject.onNext(
-      ApolloWSHandler
-        .create(graphQL, options)
-        .queryContext(queryContextFactory)
-        .dataLoaderRegistry(dataLoaderRegistryFactory)
-    );
+        ApolloWSHandler.create(graphQL, options)
+            .queryContext(queryContextFactory)
+            .dataLoaderRegistry(dataLoaderRegistryFactory));
   }
 
-  public synchronized ApolloWSHandlerUpdatable queryContext(Function<ApolloWSMessage, Object> factory) {
+  public synchronized ApolloWSHandlerUpdatable queryContext(
+      Function<ApolloWSMessage, Object> factory) {
     queryContextFactory = factory != null ? factory : DEFAULT_QUERY_CONTEXT_FACTORY;
     return this;
   }
 
-  public synchronized ApolloWSHandlerUpdatable dataLoaderRegistry(Function<ApolloWSMessage, DataLoaderRegistry> factory) {
+  public synchronized ApolloWSHandlerUpdatable dataLoaderRegistry(
+      Function<ApolloWSMessage, DataLoaderRegistry> factory) {
     dataLoaderRegistryFactory = factory != null ? factory : DEFAULT_DATA_LOADER_REGISTRY_FACTORY;
     return this;
   }

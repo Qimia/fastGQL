@@ -5,12 +5,11 @@
  */
 package dev.fastgql.graphql;
 
-import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.common.QualifiedName;
+import dev.fastgql.db.DatabaseSchema;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -36,48 +35,60 @@ public class GraphQLDatabaseSchema {
   public GraphQLDatabaseSchema(DatabaseSchema databaseSchema) {
     Objects.requireNonNull(databaseSchema);
     graph = new HashMap<>();
-    databaseSchema.getGraph().forEach((parent, subgraph) -> {
-      graph.put(parent, new HashMap<>());
-      Map<String, GraphQLNodeDefinition> graphQLSubgraph = graph.get(parent);
-      subgraph.forEach((name, node) -> {
-        QualifiedName qualifiedName = node.getQualifiedName();
-        QualifiedName referencing = node.getReferencing();
-        Set<QualifiedName> referencedBySet = node.getReferencedBy();
-        graphQLSubgraph.put(name, GraphQLNodeDefinition.createLeaf(qualifiedName, node.getFieldType()));
-        if (referencing != null) {
-          String referencingName = getNameForReferencingField(qualifiedName);
-          graphQLSubgraph.put(referencingName, GraphQLNodeDefinition.createReferencing(qualifiedName, referencing));
-        }
-        referencedBySet.forEach(referencedBy -> {
-          String referencedByName = getNameForReferencedByField(referencedBy);
-          graphQLSubgraph.put(referencedByName, GraphQLNodeDefinition.createReferencedBy(qualifiedName, referencedBy));
-        });
-      });
-    });
+    databaseSchema
+        .getGraph()
+        .forEach(
+            (parent, subgraph) -> {
+              graph.put(parent, new HashMap<>());
+              Map<String, GraphQLNodeDefinition> graphQLSubgraph = graph.get(parent);
+              subgraph.forEach(
+                  (name, node) -> {
+                    QualifiedName qualifiedName = node.getQualifiedName();
+                    QualifiedName referencing = node.getReferencing();
+                    Set<QualifiedName> referencedBySet = node.getReferencedBy();
+                    graphQLSubgraph.put(
+                        name, GraphQLNodeDefinition.createLeaf(qualifiedName, node.getFieldType()));
+                    if (referencing != null) {
+                      String referencingName = getNameForReferencingField(qualifiedName);
+                      graphQLSubgraph.put(
+                          referencingName,
+                          GraphQLNodeDefinition.createReferencing(qualifiedName, referencing));
+                    }
+                    referencedBySet.forEach(
+                        referencedBy -> {
+                          String referencedByName = getNameForReferencedByField(referencedBy);
+                          graphQLSubgraph.put(
+                              referencedByName,
+                              GraphQLNodeDefinition.createReferencedBy(
+                                  qualifiedName, referencedBy));
+                        });
+                  });
+            });
   }
 
   public void applyToGraphQLObjectType(GraphQLObjectType.Builder builder) {
     Objects.requireNonNull(builder);
-    graph.forEach((parent, subgraph) -> {
-      GraphQLObjectType.Builder object = GraphQLObjectType.newObject()
-        .name(parent);
-      subgraph.forEach((name, node) -> {
-        object.field(GraphQLFieldDefinition.newFieldDefinition()
-          .name(name)
-          .type(node.getGraphQLType())
-          .build());
-      });
-      builder.field(GraphQLFieldDefinition.newFieldDefinition()
-        .name(parent)
-        .type(GraphQLList.list(object.build()))
-        .build());
-    });
+    graph.forEach(
+        (parent, subgraph) -> {
+          GraphQLObjectType.Builder object = GraphQLObjectType.newObject().name(parent);
+          subgraph.forEach(
+              (name, node) -> {
+                object.field(
+                    GraphQLFieldDefinition.newFieldDefinition()
+                        .name(name)
+                        .type(node.getGraphQLType())
+                        .build());
+              });
+          builder.field(
+              GraphQLFieldDefinition.newFieldDefinition()
+                  .name(parent)
+                  .type(GraphQLList.list(object.build()))
+                  .build());
+        });
   }
 
   @Override
   public String toString() {
-    return "GraphQLSchema{" +
-      "graph=" + graph +
-      '}';
+    return "GraphQLSchema{" + "graph=" + graph + '}';
   }
 }

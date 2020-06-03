@@ -29,8 +29,16 @@ public class SQLQuery {
     keys.add(String.format("%s.%s AS %s_%s", table, key, table, key));
   }
 
-  public void addJoin(String thisTable, String thisKey, String foreignTable, String foreignTableAlias, String foreignKey) {
-    joins.add(String.format("LEFT JOIN %s %s ON %s.%s = %s.%s", foreignTable, foreignTableAlias, thisTable, thisKey, foreignTableAlias, foreignKey));
+  public void addJoin(
+      String thisTable,
+      String thisKey,
+      String foreignTable,
+      String foreignTableAlias,
+      String foreignKey) {
+    joins.add(
+        String.format(
+            "LEFT JOIN %s %s ON %s.%s = %s.%s",
+            foreignTable, foreignTableAlias, thisTable, thisKey, foreignTableAlias, foreignKey));
   }
 
   public void addSuffix(String suffix) {
@@ -44,6 +52,8 @@ public class SQLQuery {
   }
 
   public String build() {
-    return String.format("SELECT %s FROM %s %s %s %s", String.join(", ", keys), table, alias, String.join(" ", joins), String.join(" ", suffixes));
+    return String.format(
+        "SELECT %s FROM %s %s %s %s",
+        String.join(", ", keys), table, alias, String.join(" ", joins), String.join(" ", suffixes));
   }
 }

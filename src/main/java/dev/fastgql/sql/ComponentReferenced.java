@@ -6,7 +6,6 @@
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -18,12 +17,13 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
   private final String foreignTableAlias;
   private final String foreignKey;
 
-  public ComponentReferenced(String field,
-                             String key,
-                             String foreignTable,
-                             String foreignTableAlias,
-                             String foreignKey,
-                             Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+  public ComponentReferenced(
+      String field,
+      String key,
+      String foreignTable,
+      String foreignTableAlias,
+      String foreignKey,
+      Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
     super(foreignTable, foreignTableAlias, sqlExecutor);
     this.key = key;
     this.field = field;
@@ -47,7 +47,11 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
     if (value == null) {
       return Single.just(Map.of());
     }
-    modifyQuery(query -> query.addSuffix(String.format("WHERE %s.%s = %s", foreignTableAlias, foreignKey, value.toString())));
+    modifyQuery(
+        query ->
+            query.addSuffix(
+                String.format(
+                    "WHERE %s.%s = %s", foreignTableAlias, foreignKey, value.toString())));
     return execute().map(response -> Map.of(field, response));
   }
 }

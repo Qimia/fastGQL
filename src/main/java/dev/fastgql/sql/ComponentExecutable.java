@@ -6,7 +6,6 @@
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
-
 import java.util.List;
 import java.util.Map;
 
