@@ -9,7 +9,6 @@ import dev.fastgql.common.QualifiedName;
 import dev.fastgql.common.ReferenceType;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.graphql.arguments.GraphQLArguments;
-
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
@@ -20,20 +19,6 @@ import java.util.Set;
 
 public class GraphQLDatabaseSchema {
   private Map<String, Map<String, GraphQLNodeDefinition>> graph;
-
-  private String getNameForReferencingField(QualifiedName qualifiedName) {
-    Objects.requireNonNull(qualifiedName);
-    return String.format("%s_ref", qualifiedName.getName());
-  }
-
-  private String getNameForReferencedByField(QualifiedName qualifiedName) {
-    Objects.requireNonNull(qualifiedName);
-    return String.format("%s_on_%s", qualifiedName.getParent(), qualifiedName.getName());
-  }
-
-  public GraphQLNodeDefinition nodeAt(String table, String field) {
-    return graph.get(table).get(field);
-  }
 
   public GraphQLDatabaseSchema(DatabaseSchema databaseSchema) {
     Objects.requireNonNull(databaseSchema);
@@ -52,7 +37,8 @@ public class GraphQLDatabaseSchema {
                     graphQLSubgraph.put(
                         name, GraphQLNodeDefinition.createLeaf(qualifiedName, node.getFieldType()));
                     if (referencing != null) {
-                      String referencingName = getNameForReferencingField(qualifiedName);
+                      String referencingName =
+                          GraphQLNaming.getNameForReferencingField(qualifiedName);
                       graphQLSubgraph.put(
                           referencingName,
                           GraphQLNodeDefinition.createReferencing(qualifiedName, referencing));
@@ -69,6 +55,15 @@ public class GraphQLDatabaseSchema {
             });
   }
 
+  private String getNameForReferencedByField(QualifiedName qualifiedName) {
+    Objects.requireNonNull(qualifiedName);
+    return String.format("%s_on_%s", qualifiedName.getParent(), qualifiedName.getName());
+  }
+
+  public GraphQLNodeDefinition nodeAt(String table, String field) {
+    return graph.get(table).get(field);
+  }
+
   public void applyToGraphQLObjectType(GraphQLObjectType.Builder builder, GraphQLArguments args) {
     Objects.requireNonNull(builder);
     graph.forEach(
@@ -81,7 +76,11 @@ public class GraphQLDatabaseSchema {
                         .name(name)
                         .type(node.getGraphQLType());
                 if (node.getReferenceType() == ReferenceType.REFERENCED) {
-                  subBuilder.argument(args.getLimit()).argument(args.getOffset());
+                  String parentName = node.getForeignName().getParent();
+                  subBuilder
+                      .argument(args.getLimit())
+                      .argument(args.getOffset())
+                      .argument(args.getOrderBys().get(parentName));
                 }
                 object.field(subBuilder.build());
               });
@@ -91,6 +90,7 @@ public class GraphQLDatabaseSchema {
                   .type(GraphQLList.list(object.build()))
                   .argument(args.getLimit())
                   .argument(args.getOffset())
+                  .argument(args.getOrderBys().get(parent))
                   .build());
         });
   }
