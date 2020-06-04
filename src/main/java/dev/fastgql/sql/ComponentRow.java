@@ -7,11 +7,9 @@ package dev.fastgql.sql;
 
 import io.reactivex.Single;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 
 public class ComponentRow implements Component {
   private String table;
@@ -33,7 +31,7 @@ public class ComponentRow implements Component {
   }
 
   @Override
-  public void setSqlExecutor(Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+  public void setSqlExecutor(SqlExecutor sqlExecutor) {
 
   }
 

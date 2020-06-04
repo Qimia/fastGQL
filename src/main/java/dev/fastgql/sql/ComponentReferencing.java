@@ -7,7 +7,6 @@ package dev.fastgql.sql;
 
 import io.reactivex.Single;
 import java.util.*;
-import java.util.function.Function;
 
 public class ComponentReferencing implements Component {
   private final String field;
@@ -18,7 +17,7 @@ public class ComponentReferencing implements Component {
   private final String foreignKey;
   private List<Component> components;
   private Set<String> queriedTables = new HashSet<>();
-  private Function<String, Single<List<Map<String, Object>>>> sqlExecutor;
+  private SqlExecutor sqlExecutor;
 
   public ComponentReferencing(
       String field, String key, String foreignTable, String foreignTableAlias, String foreignKey) {
@@ -58,7 +57,7 @@ public class ComponentReferencing implements Component {
   }
 
   @Override
-  public void setSqlExecutor(Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+  public void setSqlExecutor(SqlExecutor sqlExecutor) {
     this.sqlExecutor = sqlExecutor;
   }
 

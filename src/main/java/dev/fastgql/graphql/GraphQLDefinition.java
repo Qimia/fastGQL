@@ -61,7 +61,6 @@ public class GraphQLDefinition {
     }
 
     private static void traverseSelectionSet(
-        Function<String, Single<List<Map<String, Object>>>> sqlExecutor,
         GraphQLDatabaseSchema graphQLDatabaseSchema,
         ComponentParent parent,
         AliasGenerator aliasGenerator,
@@ -88,7 +87,6 @@ public class GraphQLDefinition {
                             aliasGenerator.getAlias(),
                             node.getForeignName().getName());
                     traverseSelectionSet(
-                        sqlExecutor,
                         graphQLDatabaseSchema,
                         componentReferencing,
                         aliasGenerator,
@@ -104,7 +102,6 @@ public class GraphQLDefinition {
                             aliasGenerator.getAlias(),
                             node.getForeignName().getName());
                     traverseSelectionSet(
-                        sqlExecutor,
                         graphQLDatabaseSchema,
                         componentReferenced,
                         aliasGenerator,
@@ -117,21 +114,24 @@ public class GraphQLDefinition {
               });
     }
 
-    private ComponentExecutable getExecutionRoot(DataFetchingEnvironment env, SqlConnection connection) {
+    private ComponentExecutable getExecutionRoot(DataFetchingEnvironment env, SqlExecutor sqlExecutor) {
       AliasGenerator aliasGenerator = new AliasGenerator();
       ComponentExecutable executionRoot =
         new ExecutionRoot(
           env.getField().getName(),
           aliasGenerator.getAlias());
-      executionRoot.setSqlExecutor(queryString -> executeQuery(queryString, connection));
+      executionRoot.setSqlExecutor(sqlExecutor);
       traverseSelectionSet(
-        queryString -> executeQuery(queryString, connection), graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
+        graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
       return executionRoot;
     }
 
     private Single<List<Map<String, Object>>> getResponse(
         DataFetchingEnvironment env, SqlConnection connection) {
-      return getExecutionRoot(env, connection).execute();
+      SqlExecutor sqlExecutor = new SqlExecutor();
+      ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
+      sqlExecutor.setSqlExecutorFunction(queryString -> executeQuery(queryString, connection));
+      return executionRoot.execute();
     }
 
     public Builder enableQuery() {
@@ -166,6 +166,19 @@ public class GraphQLDefinition {
       if (subscriptionEnabled) {
         return this;
       }
+      DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher = env -> {
+        SqlExecutor sqlExecutor = new SqlExecutor();
+        ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
+        Set<String> queriedTables = executionRoot.getQueriedTables();
+        return modifiedTablesStream
+          .filter(queriedTables::contains)
+          .flatMap(table -> client.rxGetConnection().toFlowable())
+          .flatMap(connection -> {
+            sqlExecutor.setSqlExecutorFunction(query -> executeQuery(query, connection));
+            return executionRoot.execute().doFinally(connection::close).toFlowable();
+          });
+      };
+/*
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
           env ->
               modifiedTablesStream
@@ -174,6 +187,7 @@ public class GraphQLDefinition {
                   .flatMap(
                       connection ->
                           getResponse(env, connection).doFinally(connection::close).toFlowable());
+*/
       databaseSchema
           .getTableNames()
           .forEach(

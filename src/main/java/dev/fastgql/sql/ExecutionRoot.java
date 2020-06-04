@@ -8,13 +8,12 @@ package dev.fastgql.sql;
 import io.reactivex.Single;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ExecutionRoot implements ComponentExecutable {
   private final String table;
   private final String alias;
-  private Function<String, Single<List<Map<String, Object>>>> sqlExecutor;
+  private SqlExecutor sqlExecutor;
   private SQLQuery query;
   private List<Component> components;
   private Set<String> queriedTables = new HashSet<>();
@@ -59,7 +58,7 @@ public class ExecutionRoot implements ComponentExecutable {
 
     ComponentExecutable executionRoot =
         new ExecutionRoot("customers", aliasGenerator.getAlias());
-    executionRoot.setSqlExecutor(query -> Single.just(forged));
+    executionRoot.setSqlExecutor(new SqlExecutor(query -> Single.just(forged)));
     executionRoot.addComponent(new ComponentRow("id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
 
@@ -96,7 +95,7 @@ public class ExecutionRoot implements ComponentExecutable {
     vehiclesOnCustomer.addComponent(customerRef);
 
     executionRoot.addComponent(vehiclesOnCustomer);
-    vehiclesOnCustomer.setSqlExecutor(query -> Single.just(forged2));
+    vehiclesOnCustomer.setSqlExecutor(new SqlExecutor(query -> Single.just(forged2)));
     System.out.println(executionRoot.getQueriedTables());
     System.out.println(executionRoot.execute().blockingGet());
   }
@@ -108,6 +107,7 @@ public class ExecutionRoot implements ComponentExecutable {
     this.query = new SQLQuery(table, alias);
     this.components = new ArrayList<>();
     this.queriedTables.add(table);
+    this.sqlExecutor = new SqlExecutor();
   }
 
   @Override
@@ -116,7 +116,7 @@ public class ExecutionRoot implements ComponentExecutable {
     String queryString = query.build();
     System.out.println(queryString);
     query.reset();
-    return sqlExecutor
+    return sqlExecutor.getSqlExecutorFunction()
         .apply(queryString)
         .flatMap(
             input -> {
@@ -150,7 +150,7 @@ public class ExecutionRoot implements ComponentExecutable {
   }
 
   @Override
-  public void setSqlExecutor(Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+  public void setSqlExecutor(SqlExecutor sqlExecutor) {
     this.sqlExecutor = sqlExecutor;
   }
 

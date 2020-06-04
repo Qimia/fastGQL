@@ -17,7 +17,7 @@ public interface ComponentParent {
 
   String trueTableNameWhenParent();
 
-  void setSqlExecutor(Function<String, Single<List<Map<String, Object>>>> sqlExecutor);
+  void setSqlExecutor(SqlExecutor sqlExecutor);
 
   Set<String> getQueriedTables();
 }
