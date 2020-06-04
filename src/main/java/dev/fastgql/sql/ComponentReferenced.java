@@ -3,6 +3,7 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
@@ -16,11 +17,7 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
   private final String foreignKey;
 
   public ComponentReferenced(
-      String field,
-      String key,
-      String foreignTable,
-      String foreignTableAlias,
-      String foreignKey) {
+      String field, String key, String foreignTable, String foreignTableAlias, String foreignKey) {
     super(foreignTable, foreignTableAlias);
     this.key = key;
     this.field = field;

@@ -1,7 +1,6 @@
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -17,7 +16,8 @@ public class SqlExecutor {
     this.sqlExecutorFunction = sqlExecutor;
   }
 
-  public void setSqlExecutorFunction(Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+  public void setSqlExecutorFunction(
+      Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
     this.sqlExecutorFunction = sqlExecutor;
   }
 

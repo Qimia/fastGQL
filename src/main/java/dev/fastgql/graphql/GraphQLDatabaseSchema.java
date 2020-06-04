@@ -3,6 +3,7 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.graphql;
 
 import dev.fastgql.common.QualifiedName;
@@ -10,7 +11,11 @@ import dev.fastgql.db.DatabaseSchema;
 import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class GraphQLDatabaseSchema {
   private Map<String, Map<String, GraphQLNodeDefinition>> graph;

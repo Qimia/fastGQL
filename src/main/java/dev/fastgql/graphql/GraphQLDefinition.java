@@ -3,22 +3,43 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.graphql;
 
 import dev.fastgql.db.DatabaseSchema;
-import dev.fastgql.sql.*;
+import dev.fastgql.sql.AliasGenerator;
+import dev.fastgql.sql.Component;
+import dev.fastgql.sql.ComponentExecutable;
+import dev.fastgql.sql.ComponentParent;
+import dev.fastgql.sql.ComponentReferenced;
+import dev.fastgql.sql.ComponentReferencing;
+import dev.fastgql.sql.ComponentRow;
+import dev.fastgql.sql.ExecutionRoot;
+import dev.fastgql.sql.SqlExecutor;
 import graphql.GraphQL;
-import graphql.schema.*;
+import graphql.schema.DataFetcher;
+import graphql.schema.DataFetchingEnvironment;
+import graphql.schema.DataFetchingFieldSelectionSet;
+import graphql.schema.FieldCoordinates;
+import graphql.schema.GraphQLCodeRegistry;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLSchema;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.SqlConnection;
-
-import java.util.*;
-import java.util.function.Function;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GraphQLDefinition {
+
+  private static final Logger log = LoggerFactory.getLogger(GraphQLDefinition.class);
 
   public static Builder newGraphQL(DatabaseSchema databaseSchema, Pool client) {
     return new Builder(databaseSchema, client);
@@ -114,15 +135,14 @@ public class GraphQLDefinition {
               });
     }
 
-    private ComponentExecutable getExecutionRoot(DataFetchingEnvironment env, SqlExecutor sqlExecutor) {
+    private ComponentExecutable getExecutionRoot(
+        DataFetchingEnvironment env, SqlExecutor sqlExecutor) {
       AliasGenerator aliasGenerator = new AliasGenerator();
       ComponentExecutable executionRoot =
-        new ExecutionRoot(
-          env.getField().getName(),
-          aliasGenerator.getAlias());
+          new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias());
       executionRoot.setSqlExecutor(sqlExecutor);
       traverseSelectionSet(
-        graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
+          graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
       return executionRoot;
     }
 
@@ -166,28 +186,22 @@ public class GraphQLDefinition {
       if (subscriptionEnabled) {
         return this;
       }
-      DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher = env -> {
-        SqlExecutor sqlExecutor = new SqlExecutor();
-        ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
-        Set<String> queriedTables = executionRoot.getQueriedTables();
-        return modifiedTablesStream
-          .filter(queriedTables::contains)
-          .flatMap(table -> client.rxGetConnection().toFlowable())
-          .flatMap(connection -> {
-            sqlExecutor.setSqlExecutorFunction(query -> executeQuery(query, connection));
-            return executionRoot.execute().doFinally(connection::close).toFlowable();
-          });
-      };
-/*
+
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
-          env ->
-              modifiedTablesStream
-                  .filter(table -> databaseSchema.getTableNames().contains(table))
-                  .flatMap(table -> client.rxGetConnection().toFlowable())
-                  .flatMap(
-                      connection ->
-                          getResponse(env, connection).doFinally(connection::close).toFlowable());
-*/
+          env -> {
+            log.info("new subscription");
+            SqlExecutor sqlExecutor = new SqlExecutor();
+            ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
+            Set<String> queriedTables = executionRoot.getQueriedTables();
+            return modifiedTablesStream
+                .filter(queriedTables::contains)
+                .flatMap(table -> client.rxGetConnection().toFlowable())
+                .flatMap(
+                    connection -> {
+                      sqlExecutor.setSqlExecutorFunction(query -> executeQuery(query, connection));
+                      return executionRoot.execute().doFinally(connection::close).toFlowable();
+                    });
+          };
       databaseSchema
           .getTableNames()
           .forEach(

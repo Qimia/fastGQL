@@ -3,11 +3,15 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.db;
 
 import dev.fastgql.common.FieldType;
 import dev.fastgql.common.QualifiedName;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class DatabaseSchema {
   private final Map<String, Map<String, NodeDefinition>> graph;

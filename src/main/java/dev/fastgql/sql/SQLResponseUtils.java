@@ -3,10 +3,15 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SQLResponseUtils {
@@ -29,7 +34,11 @@ public class SQLResponseUtils {
         observables,
         values -> {
           Map<String, Object> r = new HashMap<>();
-          Arrays.stream(values).map(value -> (Map<String, Object>) value).forEach(r::putAll);
+          Arrays.stream(values).map(value -> {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> retValue = (Map<String, Object>) value;
+            return retValue;
+          }).forEach(r::putAll);
           return r;
         });
   }

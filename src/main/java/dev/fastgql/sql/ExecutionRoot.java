@@ -3,14 +3,23 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExecutionRoot implements ComponentExecutable {
+  private final Logger log = LoggerFactory.getLogger(ExecutionRoot.class);
   private final String table;
   private final String alias;
   private SqlExecutor sqlExecutor;
@@ -56,8 +65,7 @@ public class ExecutionRoot implements ComponentExecutable {
 
     AliasGenerator aliasGenerator = new AliasGenerator();
 
-    ComponentExecutable executionRoot =
-        new ExecutionRoot("customers", aliasGenerator.getAlias());
+    ComponentExecutable executionRoot = new ExecutionRoot("customers", aliasGenerator.getAlias());
     executionRoot.setSqlExecutor(new SqlExecutor(query -> Single.just(forged)));
     executionRoot.addComponent(new ComponentRow("id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
@@ -79,11 +87,7 @@ public class ExecutionRoot implements ComponentExecutable {
 
     Component vehiclesOnCustomer =
         new ComponentReferenced(
-            "vehicles_on_customer",
-            "id",
-            "vehicles",
-            aliasGenerator.getAlias(),
-            "customer");
+            "vehicles_on_customer", "id", "vehicles", aliasGenerator.getAlias(), "customer");
     vehiclesOnCustomer.addComponent(new ComponentRow("model"));
     vehiclesOnCustomer.addComponent(new ComponentRow("year"));
 
@@ -100,8 +104,7 @@ public class ExecutionRoot implements ComponentExecutable {
     System.out.println(executionRoot.execute().blockingGet());
   }
 
-  public ExecutionRoot(
-      String table, String alias) {
+  public ExecutionRoot(String table, String alias) {
     this.table = table;
     this.alias = alias;
     this.query = new SQLQuery(table, alias);
@@ -114,9 +117,10 @@ public class ExecutionRoot implements ComponentExecutable {
   public Single<List<Map<String, Object>>> execute() {
     components.forEach(component -> component.updateQuery(query));
     String queryString = query.build();
-    System.out.println(queryString);
+    log.debug("executing query: {}", queryString);
     query.reset();
-    return sqlExecutor.getSqlExecutorFunction()
+    return sqlExecutor
+        .getSqlExecutorFunction()
         .apply(queryString)
         .flatMap(
             input -> {

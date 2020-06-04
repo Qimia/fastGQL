@@ -3,10 +3,10 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -31,9 +31,7 @@ public class ComponentRow implements Component {
   }
 
   @Override
-  public void setSqlExecutor(SqlExecutor sqlExecutor) {
-
-  }
+  public void setSqlExecutor(SqlExecutor sqlExecutor) {}
 
   @Override
   public Single<Map<String, Object>> extractValues(Map<String, Object> row) {

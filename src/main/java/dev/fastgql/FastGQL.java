@@ -3,6 +3,7 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql;
 
 import dev.fastgql.db.DatabaseSchema;
@@ -55,7 +56,7 @@ public class FastGQL extends AbstractVerticle {
             .enableQuery()
             .enableSubscription(fake)
             .build();
-    RouterUpdatable routerUpdatable = RouterUpdatable.createWithApollo(vertx);
+    RouterUpdatable routerUpdatable = RouterUpdatable.createWithQueryAndSubscription(vertx);
     routerUpdatable.update(graphQL);
 
     vertx

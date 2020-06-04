@@ -3,14 +3,20 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.graphql;
 
-import static graphql.Scalars.*;
+import static graphql.Scalars.GraphQLFloat;
+import static graphql.Scalars.GraphQLInt;
+import static graphql.Scalars.GraphQLString;
 
 import dev.fastgql.common.FieldType;
 import dev.fastgql.common.QualifiedName;
 import dev.fastgql.common.ReferenceType;
-import graphql.schema.*;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLOutputType;
+import graphql.schema.GraphQLScalarType;
+import graphql.schema.GraphQLTypeReference;
 import java.util.Map;
 
 public class GraphQLNodeDefinition {
