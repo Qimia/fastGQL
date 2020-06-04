@@ -3,6 +3,7 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.router;
 
 import graphql.GraphQL;
@@ -16,7 +17,6 @@ import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSMessage;
 import java.util.function.Function;
 import org.dataloader.DataLoaderRegistry;
 
-@SuppressWarnings({"ResultOfMethodCallIgnored"})
 public class ApolloWSHandlerUpdatable implements Handler<RoutingContext> {
   private final Subject<ApolloWSHandler> apolloWSHandlerSubject =
       BehaviorSubject.<ApolloWSHandler>create().toSerialized();
@@ -61,6 +61,9 @@ public class ApolloWSHandlerUpdatable implements Handler<RoutingContext> {
 
   @Override
   public void handle(RoutingContext ctx) {
-    apolloWSHandlerSubject.take(1).subscribe(apolloWSHandler -> apolloWSHandler.handle(ctx));
+    apolloWSHandlerSubject
+        .take(1)
+        .doOnNext(apolloWSHandler -> apolloWSHandler.handle(ctx))
+        .subscribe();
   }
 }

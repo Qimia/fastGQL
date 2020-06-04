@@ -2,15 +2,13 @@
 
 Realtime GraphQL on PostgreSQL / MySQL
 
-#### Quick start
+#### Development
 
-Run all tests:
+Check style:
 
 ```shell script
-./gradlew test
+./gradlew clean checkstyleMain
 ```
-
-#### Development
 
 Start Postgres container:
 
@@ -23,6 +21,8 @@ Start FastGQL in dev mode with hot reload:
 ```shell script
 ./gradlew vertxRun
 ````
+
+Go to [localhost:8080/graphiql](http://localhost:8080/graphiql) or query ```localhost:8080/graphql```
 
 #### Production
 

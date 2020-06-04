@@ -3,24 +3,33 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExecutionRoot implements ComponentExecutable {
+  private final Logger log = LoggerFactory.getLogger(ExecutionRoot.class);
   private final String table;
   private final String alias;
-  private final Function<String, Single<List<Map<String, Object>>>> sqlExecutor;
+  private SqlExecutor sqlExecutor;
   private SQLQuery query;
   private List<Component> components;
+  private Set<String> queriedTables = new HashSet<>();
 
   public static void main(String[] args) {
 
-    List<Map<String, Object>> forged =
+    final List<Map<String, Object>> forged =
         List.of(
             Map.of(
                 "a0_id",
@@ -49,15 +58,15 @@ public class ExecutionRoot implements ComponentExecutable {
                 "a2_model",
                 "Ford"));
 
-    List<Map<String, Object>> forged2 =
+    final List<Map<String, Object>> forged2 =
         List.of(
             Map.of("a3_model", "Subaru", "a3_year", 2010, "a4_id", 101, "a4_first_name", "Klaus"),
             Map.of("a3_model", "BMW", "a3_year", 2012, "a4_id", 102, "a4_first_name", "John"));
 
     AliasGenerator aliasGenerator = new AliasGenerator();
 
-    ComponentExecutable executionRoot =
-        new ExecutionRoot("customers", aliasGenerator.getAlias(), query -> Single.just(forged));
+    ComponentExecutable executionRoot = new ExecutionRoot("customers", aliasGenerator.getAlias());
+    executionRoot.setSqlExecutor(new SqlExecutor(query -> Single.just(forged)));
     executionRoot.addComponent(new ComponentRow("id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
 
@@ -78,12 +87,7 @@ public class ExecutionRoot implements ComponentExecutable {
 
     Component vehiclesOnCustomer =
         new ComponentReferenced(
-            "vehicles_on_customer",
-            "id",
-            "vehicles",
-            aliasGenerator.getAlias(),
-            "customer",
-            query -> Single.just(forged2));
+            "vehicles_on_customer", "id", "vehicles", aliasGenerator.getAlias(), "customer");
     vehiclesOnCustomer.addComponent(new ComponentRow("model"));
     vehiclesOnCustomer.addComponent(new ComponentRow("year"));
 
@@ -95,25 +99,28 @@ public class ExecutionRoot implements ComponentExecutable {
     vehiclesOnCustomer.addComponent(customerRef);
 
     executionRoot.addComponent(vehiclesOnCustomer);
+    vehiclesOnCustomer.setSqlExecutor(new SqlExecutor(query -> Single.just(forged2)));
+    System.out.println(executionRoot.getQueriedTables());
     System.out.println(executionRoot.execute().blockingGet());
   }
 
-  public ExecutionRoot(
-      String table, String alias, Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+  public ExecutionRoot(String table, String alias) {
     this.table = table;
     this.alias = alias;
     this.query = new SQLQuery(table, alias);
     this.components = new ArrayList<>();
-    this.sqlExecutor = sqlExecutor;
+    this.queriedTables.add(table);
+    this.sqlExecutor = new SqlExecutor();
   }
 
   @Override
   public Single<List<Map<String, Object>>> execute() {
     components.forEach(component -> component.updateQuery(query));
     String queryString = query.build();
-    System.out.println(queryString);
+    log.debug("executing query: {}", queryString);
     query.reset();
     return sqlExecutor
+        .getSqlExecutorFunction()
         .apply(queryString)
         .flatMap(
             input -> {
@@ -126,7 +133,12 @@ public class ExecutionRoot implements ComponentExecutable {
                     observables,
                     values ->
                         Arrays.stream(values)
-                            .map(value -> (Map<String, Object>) value)
+                            .map(
+                                value -> {
+                                  @SuppressWarnings("unchecked")
+                                  Map<String, Object> retValue = (Map<String, Object>) value;
+                                  return retValue;
+                                })
                             .collect(Collectors.toList()));
               }
               return Single.just(List.of());
@@ -136,12 +148,24 @@ public class ExecutionRoot implements ComponentExecutable {
   @Override
   public void addComponent(Component component) {
     component.setTable(alias);
+    component.setSqlExecutor(sqlExecutor);
     components.add(component);
+    queriedTables.addAll(component.getQueriedTables());
   }
 
   @Override
   public String trueTableNameWhenParent() {
     return table;
+  }
+
+  @Override
+  public void setSqlExecutor(SqlExecutor sqlExecutor) {
+    this.sqlExecutor = sqlExecutor;
+  }
+
+  @Override
+  public Set<String> getQueriedTables() {
+    return queriedTables;
   }
 
   protected void modifyQuery(Consumer<SQLQuery> modifier) {

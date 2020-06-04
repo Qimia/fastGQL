@@ -3,6 +3,7 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.graphql;
 
 import dev.fastgql.common.QualifiedName;
@@ -11,6 +12,7 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -66,24 +68,27 @@ public class GraphQLDatabaseSchema {
             });
   }
 
-  public void applyToGraphQLObjectType(GraphQLObjectType.Builder builder) {
-    Objects.requireNonNull(builder);
+  public void applyToGraphQLObjectTypes(List<GraphQLObjectType.Builder> builders) {
+    Objects.requireNonNull(builders);
     graph.forEach(
         (parent, subgraph) -> {
-          GraphQLObjectType.Builder object = GraphQLObjectType.newObject().name(parent);
+          GraphQLObjectType.Builder objectBuilder = GraphQLObjectType.newObject().name(parent);
           subgraph.forEach(
               (name, node) -> {
-                object.field(
+                objectBuilder.field(
                     GraphQLFieldDefinition.newFieldDefinition()
                         .name(name)
                         .type(node.getGraphQLType())
                         .build());
               });
-          builder.field(
-              GraphQLFieldDefinition.newFieldDefinition()
-                  .name(parent)
-                  .type(GraphQLList.list(object.build()))
-                  .build());
+          GraphQLObjectType object = objectBuilder.build();
+          builders.forEach(
+              builder ->
+                  builder.field(
+                      GraphQLFieldDefinition.newFieldDefinition()
+                          .name(parent)
+                          .type(GraphQLList.list(object))
+                          .build()));
         });
   }
 

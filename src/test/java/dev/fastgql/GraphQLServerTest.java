@@ -5,12 +5,11 @@
  */
 package dev.fastgql;
 
+/*
 import dev.fastgql.oldarch.GraphQLServer;
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
-import io.debezium.testing.testcontainers.DebeziumContainer;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
-import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
@@ -21,6 +20,10 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.lifecycle.Startables;
+*/
+import io.debezium.testing.testcontainers.DebeziumContainer;
+import io.vertx.junit5.VertxExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +31,6 @@ import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.lifecycle.Startables;
 
 @ExtendWith(VertxExtension.class)
 @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -55,6 +57,7 @@ public class GraphQLServerTest {
           .withLogConsumer(new Slf4jLogConsumer(LOGGER))
           .dependsOn(kafkaContainer);
 
+  /*
   @Test
   public void shouldReceiveResponseForSimpleQuery(Vertx vertx, VertxTestContext context) {
     String inputResource = "test-simple/test-query-input.graphql";
@@ -228,4 +231,5 @@ public class GraphQLServerTest {
               context.completeNow();
             });
   }
+   */
 }

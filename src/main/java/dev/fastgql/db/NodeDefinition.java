@@ -3,11 +3,14 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.db;
 
 import dev.fastgql.common.FieldType;
 import dev.fastgql.common.QualifiedName;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
 public class NodeDefinition {
   private final QualifiedName qualifiedName;
