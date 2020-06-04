@@ -57,7 +57,8 @@ public class ExecutionRoot implements ComponentExecutable {
 
     AliasGenerator aliasGenerator = new AliasGenerator();
     SQLArguments myArgs =
-        new SQLArguments("customers",
+        new SQLArguments(
+            "customers",
             Map.of(
                 "limit", 1,
                 "offset", 1));

@@ -18,5 +18,4 @@ public class GraphQLNaming {
     Objects.requireNonNull(qualifiedName);
     return String.format("%s_ref", qualifiedName.getName());
   }
-
 }

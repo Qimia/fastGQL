@@ -28,8 +28,7 @@ public class GraphQLDefinition {
     GraphQLDatabaseSchema graphQLDatabaseSchema = new GraphQLDatabaseSchema(database);
     GraphQLArguments graphQLArguments = new GraphQLArguments(database);
 
-    GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject()
-      .name("Query");
+    GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject().name("Query");
     graphQLDatabaseSchema.applyToGraphQLObjectType(queryBuilder, graphQLArguments);
 
     VertxDataFetcher<List<Map<String, Object>>> vertxDataFetcher =
@@ -41,7 +40,8 @@ public class GraphQLDefinition {
                         connection -> {
                           AliasGenerator aliasGenerator = new AliasGenerator();
                           String tableName = env.getField().getName();
-                          SQLArguments sqlArguments = new SQLArguments(tableName, env.getArguments());
+                          SQLArguments sqlArguments =
+                              new SQLArguments(tableName, env.getArguments());
                           ComponentExecutable executionRoot =
                               new ExecutionRoot(
                                   tableName,

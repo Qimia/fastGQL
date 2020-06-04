@@ -83,8 +83,7 @@ public class SQLQuery {
   }
 
   private String buildConstraints() {
-    return String.format(
-        "%s %s %s", buildOrderByQuery(), args.getLimitQuery(), args.getOffsetQuery());
+    return String.format("%s %s %s", buildOrderByQuery(), buildLimitQuery(), buildOffsetQuery());
   }
 
   private String buildOrderByQuery() {
@@ -108,6 +107,20 @@ public class SQLQuery {
       }
     }
     return String.format("ORDER BY %s", String.join(", ", orderBys));
+  }
+
+  private String buildLimitQuery() {
+    if (args.getLimit() == null) {
+      return "";
+    }
+    return String.format("LIMIT %d", args.getLimit());
+  }
+
+  private String buildOffsetQuery() {
+    if (args.getOffset() == null) {
+      return "";
+    }
+    return String.format("OFFSET %d", args.getOffset());
   }
 
   private String getKeyAlias(String table, String key) {
