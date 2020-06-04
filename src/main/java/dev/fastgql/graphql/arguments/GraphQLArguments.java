@@ -58,7 +58,8 @@ public class GraphQLArguments {
                             .name(name)
                             .type(OrderBy.enumType)
                             .build());
-                    // if node is referencing, add schema field referencing to corresponding schema type
+                    // if node is referencing, add schema field referencing to corresponding schema
+                    // type
                     if (node.getReferencing() != null) {
                       String referencingName =
                           GraphQLNaming.getNameForReferencingField(node.getQualifiedName());

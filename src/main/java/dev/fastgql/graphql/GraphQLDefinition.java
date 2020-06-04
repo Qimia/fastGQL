@@ -40,10 +40,11 @@ public class GraphQLDefinition {
                     .doOnSuccess(
                         connection -> {
                           AliasGenerator aliasGenerator = new AliasGenerator();
-                          SQLArguments sqlArguments = new SQLArguments(env.getArguments());
+                          String tableName = env.getField().getName();
+                          SQLArguments sqlArguments = new SQLArguments(tableName, env.getArguments());
                           ComponentExecutable executionRoot =
                               new ExecutionRoot(
-                                  env.getField().getName(),
+                                  tableName,
                                   aliasGenerator.getAlias(),
                                   sqlArguments,
                                   queryString ->
