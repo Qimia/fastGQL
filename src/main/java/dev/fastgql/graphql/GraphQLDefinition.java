@@ -6,16 +6,17 @@
 package dev.fastgql.graphql;
 
 import dev.fastgql.db.DatabaseSchema;
-import dev.fastgql.sql.AliasGenerator;
-import dev.fastgql.sql.ComponentExecutable;
-import dev.fastgql.sql.ExecutionRoot;
-import dev.fastgql.sql.SQLResponseUtils;
+import dev.fastgql.sql.*;
 import graphql.GraphQL;
 import graphql.schema.*;
+import io.reactivex.Flowable;
+import io.reactivex.Single;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.sqlclient.Pool;
-import java.util.List;
-import java.util.Map;
+import io.vertx.reactivex.sqlclient.SqlConnection;
+
+import java.util.*;
+import java.util.function.Function;
 
 public class GraphQLDefinition {
 
@@ -40,44 +41,147 @@ public class GraphQLDefinition {
       this.graphQLCodeRegistryBuilder = GraphQLCodeRegistry.newCodeRegistry();
     }
 
+    private static Single<List<Map<String, Object>>> executeQuery(
+        String query, SqlConnection connection) {
+      return connection
+          .rxQuery(query)
+          .map(
+              rowSet -> {
+                List<String> columnNames = rowSet.columnsNames();
+                List<Map<String, Object>> rList = new ArrayList<>();
+                rowSet.forEach(
+                    row -> {
+                      Map<String, Object> r = new HashMap<>();
+                      columnNames.forEach(
+                          columnName -> r.put(columnName, row.getValue(columnName)));
+                      rList.add(r);
+                    });
+                return rList;
+              });
+    }
+
+    private static void traverseSelectionSet(
+        Function<String, Single<List<Map<String, Object>>>> sqlExecutor,
+        GraphQLDatabaseSchema graphQLDatabaseSchema,
+        ComponentParent parent,
+        AliasGenerator aliasGenerator,
+        DataFetchingFieldSelectionSet selectionSet) {
+      selectionSet
+          .getFields()
+          .forEach(
+              field -> {
+                if (field.getQualifiedName().contains("/")) {
+                  return;
+                }
+                GraphQLNodeDefinition node =
+                    graphQLDatabaseSchema.nodeAt(parent.trueTableNameWhenParent(), field.getName());
+                switch (node.getReferenceType()) {
+                  case NONE:
+                    parent.addComponent(new ComponentRow(node.getQualifiedName().getName()));
+                    break;
+                  case REFERENCING:
+                    Component componentReferencing =
+                        new ComponentReferencing(
+                            field.getName(),
+                            node.getQualifiedName().getName(),
+                            node.getForeignName().getParent(),
+                            aliasGenerator.getAlias(),
+                            node.getForeignName().getName());
+                    traverseSelectionSet(
+                        sqlExecutor,
+                        graphQLDatabaseSchema,
+                        componentReferencing,
+                        aliasGenerator,
+                        field.getSelectionSet());
+                    parent.addComponent(componentReferencing);
+                    break;
+                  case REFERENCED:
+                    Component componentReferenced =
+                        new ComponentReferenced(
+                            field.getName(),
+                            node.getQualifiedName().getName(),
+                            node.getForeignName().getParent(),
+                            aliasGenerator.getAlias(),
+                            node.getForeignName().getName());
+                    traverseSelectionSet(
+                        sqlExecutor,
+                        graphQLDatabaseSchema,
+                        componentReferenced,
+                        aliasGenerator,
+                        field.getSelectionSet());
+                    parent.addComponent(componentReferenced);
+                    break;
+                  default:
+                    throw new RuntimeException("Unrecognized reference type");
+                }
+              });
+    }
+
+    private ComponentExecutable getExecutionRoot(DataFetchingEnvironment env, SqlConnection connection) {
+      AliasGenerator aliasGenerator = new AliasGenerator();
+      ComponentExecutable executionRoot =
+        new ExecutionRoot(
+          env.getField().getName(),
+          aliasGenerator.getAlias());
+      executionRoot.setSqlExecutor(queryString -> executeQuery(queryString, connection));
+      traverseSelectionSet(
+        queryString -> executeQuery(queryString, connection), graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
+      return executionRoot;
+    }
+
+    private Single<List<Map<String, Object>>> getResponse(
+        DataFetchingEnvironment env, SqlConnection connection) {
+      return getExecutionRoot(env, connection).execute();
+    }
+
     public Builder enableQuery() {
       if (queryEnabled) {
         return this;
       }
-      GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject()
-        .name("Query");
-      graphQLDatabaseSchema.applyToGraphQLObjectType(queryBuilder);
-      VertxDataFetcher<List<Map<String, Object>>> vertxDataFetcher = new VertxDataFetcher<>((env, listPromise) -> client
-        .rxGetConnection()
-        .doOnSuccess(
-          connection -> {
-            AliasGenerator aliasGenerator = new AliasGenerator();
-            ComponentExecutable executionRoot = new ExecutionRoot(
-              env.getField().getName(),
-              aliasGenerator.getAlias(),
-              queryString -> SQLResponseUtils.executeQuery(queryString, connection)
-            );
-            SQLResponseUtils.traverseSelectionSet(connection, graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
-            executionRoot
-              .execute()
-              .doOnSuccess(listPromise::complete)
-              .doOnError(listPromise::fail)
-              .doFinally(connection::close)
-              .subscribe();
-          })
-        .doOnError(listPromise::fail)
-        .subscribe()
-      );
-      databaseSchema.getTableNames().forEach(tableName -> graphQLCodeRegistryBuilder.dataFetcher(FieldCoordinates.coordinates("Query", tableName), vertxDataFetcher));
-      graphQLSchemaBuilder.query(queryBuilder.build());
+      VertxDataFetcher<List<Map<String, Object>>> queryDataFetcher =
+          new VertxDataFetcher<>(
+              (env, listPromise) ->
+                  client
+                      .rxGetConnection()
+                      .doOnSuccess(
+                          connection ->
+                              getResponse(env, connection)
+                                  .doOnSuccess(listPromise::complete)
+                                  .doOnError(listPromise::fail)
+                                  .doFinally(connection::close)
+                                  .subscribe())
+                      .doOnError(listPromise::fail)
+                      .subscribe());
+      databaseSchema
+          .getTableNames()
+          .forEach(
+              tableName ->
+                  graphQLCodeRegistryBuilder.dataFetcher(
+                      FieldCoordinates.coordinates("Query", tableName), queryDataFetcher));
       queryEnabled = true;
       return this;
     }
 
-    public Builder enableSubscription() {
+    public Builder enableSubscription(Flowable<String> modifiedTablesStream) {
       if (subscriptionEnabled) {
         return this;
       }
+      DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
+          env ->
+              modifiedTablesStream
+                  .filter(table -> databaseSchema.getTableNames().contains(table))
+                  .flatMap(table -> client.rxGetConnection().toFlowable())
+                  .flatMap(
+                      connection ->
+                          getResponse(env, connection).doFinally(connection::close).toFlowable());
+      databaseSchema
+          .getTableNames()
+          .forEach(
+              tableName ->
+                  graphQLCodeRegistryBuilder.dataFetcher(
+                      FieldCoordinates.coordinates("Subscription", tableName),
+                      subscriptionDataFetcher));
+      subscriptionEnabled = true;
       return this;
     }
 
@@ -85,7 +189,25 @@ public class GraphQLDefinition {
       if (!(queryEnabled || subscriptionEnabled)) {
         throw new RuntimeException("query or subscription has to be enabled");
       }
-      GraphQLSchema graphQLSchema = graphQLSchemaBuilder.codeRegistry(graphQLCodeRegistryBuilder.build()).build();
+      GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject().name("Query");
+      GraphQLObjectType.Builder subscriptionBuilder =
+          GraphQLObjectType.newObject().name("Subscription");
+      List<GraphQLObjectType.Builder> builders = new ArrayList<>();
+      if (queryEnabled) {
+        builders.add(queryBuilder);
+      }
+      if (subscriptionEnabled) {
+        builders.add(subscriptionBuilder);
+      }
+      graphQLDatabaseSchema.applyToGraphQLObjectTypes(builders);
+      if (queryEnabled) {
+        graphQLSchemaBuilder.query(queryBuilder);
+      }
+      if (subscriptionEnabled) {
+        graphQLSchemaBuilder.subscription(subscriptionBuilder);
+      }
+      GraphQLSchema graphQLSchema =
+          graphQLSchemaBuilder.codeRegistry(graphQLCodeRegistryBuilder.build()).build();
       return GraphQL.newGraphQL(graphQLSchema).build();
     }
   }

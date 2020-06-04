@@ -3,11 +3,10 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
-package dev.fastgql.metadata;
+package dev.fastgql.db;
 
 import dev.fastgql.common.FieldType;
 import dev.fastgql.common.QualifiedName;
-import dev.fastgql.db.DatabaseSchema;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;

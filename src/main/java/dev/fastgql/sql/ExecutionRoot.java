@@ -14,9 +14,10 @@ import java.util.stream.Collectors;
 public class ExecutionRoot implements ComponentExecutable {
   private final String table;
   private final String alias;
-  private final Function<String, Single<List<Map<String, Object>>>> sqlExecutor;
+  private Function<String, Single<List<Map<String, Object>>>> sqlExecutor;
   private SQLQuery query;
   private List<Component> components;
+  private Set<String> queriedTables = new HashSet<>();
 
   public static void main(String[] args) {
 
@@ -57,7 +58,8 @@ public class ExecutionRoot implements ComponentExecutable {
     AliasGenerator aliasGenerator = new AliasGenerator();
 
     ComponentExecutable executionRoot =
-        new ExecutionRoot("customers", aliasGenerator.getAlias(), query -> Single.just(forged));
+        new ExecutionRoot("customers", aliasGenerator.getAlias());
+    executionRoot.setSqlExecutor(query -> Single.just(forged));
     executionRoot.addComponent(new ComponentRow("id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
 
@@ -82,8 +84,7 @@ public class ExecutionRoot implements ComponentExecutable {
             "id",
             "vehicles",
             aliasGenerator.getAlias(),
-            "customer",
-            query -> Single.just(forged2));
+            "customer");
     vehiclesOnCustomer.addComponent(new ComponentRow("model"));
     vehiclesOnCustomer.addComponent(new ComponentRow("year"));
 
@@ -95,16 +96,18 @@ public class ExecutionRoot implements ComponentExecutable {
     vehiclesOnCustomer.addComponent(customerRef);
 
     executionRoot.addComponent(vehiclesOnCustomer);
+    vehiclesOnCustomer.setSqlExecutor(query -> Single.just(forged2));
+    System.out.println(executionRoot.getQueriedTables());
     System.out.println(executionRoot.execute().blockingGet());
   }
 
   public ExecutionRoot(
-      String table, String alias, Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+      String table, String alias) {
     this.table = table;
     this.alias = alias;
     this.query = new SQLQuery(table, alias);
     this.components = new ArrayList<>();
-    this.sqlExecutor = sqlExecutor;
+    this.queriedTables.add(table);
   }
 
   @Override
@@ -136,12 +139,24 @@ public class ExecutionRoot implements ComponentExecutable {
   @Override
   public void addComponent(Component component) {
     component.setTable(alias);
+    component.setSqlExecutor(sqlExecutor);
     components.add(component);
+    queriedTables.addAll(component.getQueriedTables());
   }
 
   @Override
   public String trueTableNameWhenParent() {
     return table;
+  }
+
+  @Override
+  public void setSqlExecutor(Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+    this.sqlExecutor = sqlExecutor;
+  }
+
+  @Override
+  public Set<String> getQueriedTables() {
+    return queriedTables;
   }
 
   protected void modifyQuery(Consumer<SQLQuery> modifier) {

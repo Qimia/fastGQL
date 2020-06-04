@@ -6,9 +6,7 @@
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 public class ComponentReferenced extends ExecutionRoot implements Component {
   private String table;
@@ -22,9 +20,8 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
       String key,
       String foreignTable,
       String foreignTableAlias,
-      String foreignKey,
-      Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
-    super(foreignTable, foreignTableAlias, sqlExecutor);
+      String foreignKey) {
+    super(foreignTable, foreignTableAlias);
     this.key = key;
     this.field = field;
     this.foreignTableAlias = foreignTableAlias;

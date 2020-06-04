@@ -6,8 +6,12 @@
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
+
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
 
 public class ComponentRow implements Component {
   private String table;
@@ -29,12 +33,22 @@ public class ComponentRow implements Component {
   }
 
   @Override
+  public void setSqlExecutor(Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+
+  }
+
+  @Override
   public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
     Object value = SQLResponseUtils.getValue(row, table, key);
     if (value == null) {
       return Single.just(Map.of());
     }
     return Single.just(Map.of(key, value));
+  }
+
+  @Override
+  public Set<String> getQueriedTables() {
+    return Set.of();
   }
 
   @Override

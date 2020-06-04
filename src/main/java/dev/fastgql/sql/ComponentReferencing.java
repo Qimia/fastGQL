@@ -7,6 +7,7 @@ package dev.fastgql.sql;
 
 import io.reactivex.Single;
 import java.util.*;
+import java.util.function.Function;
 
 public class ComponentReferencing implements Component {
   private final String field;
@@ -16,6 +17,8 @@ public class ComponentReferencing implements Component {
   private final String foreignTableAlias;
   private final String foreignKey;
   private List<Component> components;
+  private Set<String> queriedTables = new HashSet<>();
+  private Function<String, Single<List<Map<String, Object>>>> sqlExecutor;
 
   public ComponentReferencing(
       String field, String key, String foreignTable, String foreignTableAlias, String foreignKey) {
@@ -25,12 +28,15 @@ public class ComponentReferencing implements Component {
     this.foreignTableAlias = foreignTableAlias;
     this.foreignKey = foreignKey;
     this.components = new ArrayList<>();
+    this.queriedTables.add(foreignTable);
   }
 
   @Override
   public void addComponent(Component component) {
     component.setTable(foreignTableAlias);
+    component.setSqlExecutor(sqlExecutor);
     components.add(component);
+    queriedTables.addAll(component.getQueriedTables());
   }
 
   @Override
@@ -52,11 +58,21 @@ public class ComponentReferencing implements Component {
   }
 
   @Override
+  public void setSqlExecutor(Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+    this.sqlExecutor = sqlExecutor;
+  }
+
+  @Override
   public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
     if (SQLResponseUtils.getValue(row, table, key) == null) {
       return Single.just(Map.of());
     }
     return SQLResponseUtils.constructResponse(row, components)
         .map(response -> Map.of(field, response));
+  }
+
+  @Override
+  public Set<String> getQueriedTables() {
+    return queriedTables;
   }
 }
