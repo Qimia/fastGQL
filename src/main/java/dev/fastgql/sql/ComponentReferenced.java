@@ -3,12 +3,11 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.sql;
 
 import io.reactivex.Single;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 public class ComponentReferenced extends ExecutionRoot implements Component {
   private String table;
@@ -23,9 +22,8 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
       String key,
       String foreignTable,
       String foreignTableAlias,
-      String foreignKey,
-      Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
-    super(foreignTable, foreignTableAlias, args, sqlExecutor);
+      String foreignKey) {
+    super(foreignTable, foreignTableAlias, args);
     this.key = key;
     this.field = field;
     this.foreignTableAlias = foreignTableAlias;

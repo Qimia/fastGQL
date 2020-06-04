@@ -3,6 +3,7 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.router;
 
 import graphql.GraphQL;
@@ -15,7 +16,6 @@ import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
 import java.util.function.Function;
 import org.dataloader.DataLoaderRegistry;
 
-@SuppressWarnings({"ResultOfMethodCallIgnored"})
 public class GraphQLHandlerUpdatable implements Handler<RoutingContext> {
   private final Subject<GraphQLHandler> graphQLHandlerSubject =
       BehaviorSubject.<GraphQLHandler>create().toSerialized();
@@ -60,6 +60,9 @@ public class GraphQLHandlerUpdatable implements Handler<RoutingContext> {
 
   @Override
   public void handle(RoutingContext ctx) {
-    graphQLHandlerSubject.take(1).subscribe(graphQLHandler -> graphQLHandler.handle(ctx));
+    graphQLHandlerSubject
+        .take(1)
+        .doOnNext(graphQLHandler -> graphQLHandler.handle(ctx))
+        .subscribe();
   }
 }
