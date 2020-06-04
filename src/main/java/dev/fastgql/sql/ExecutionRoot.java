@@ -29,7 +29,7 @@ public class ExecutionRoot implements ComponentExecutable {
 
   public static void main(String[] args) {
 
-    List<Map<String, Object>> forged =
+    final List<Map<String, Object>> forged =
         List.of(
             Map.of(
                 "a0_id",
@@ -58,7 +58,7 @@ public class ExecutionRoot implements ComponentExecutable {
                 "a2_model",
                 "Ford"));
 
-    List<Map<String, Object>> forged2 =
+    final List<Map<String, Object>> forged2 =
         List.of(
             Map.of("a3_model", "Subaru", "a3_year", 2010, "a4_id", 101, "a4_first_name", "Klaus"),
             Map.of("a3_model", "BMW", "a3_year", 2012, "a4_id", 102, "a4_first_name", "John"));
@@ -133,11 +133,12 @@ public class ExecutionRoot implements ComponentExecutable {
                     observables,
                     values ->
                         Arrays.stream(values)
-                            .map(value -> {
-                              @SuppressWarnings("unchecked")
-                              Map<String, Object> retValue = (Map<String, Object>) value;
-                              return retValue;
-                            })
+                            .map(
+                                value -> {
+                                  @SuppressWarnings("unchecked")
+                                  Map<String, Object> retValue = (Map<String, Object>) value;
+                                  return retValue;
+                                })
                             .collect(Collectors.toList()));
               }
               return Single.just(List.of());
