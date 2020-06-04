@@ -34,11 +34,14 @@ public class SQLResponseUtils {
         observables,
         values -> {
           Map<String, Object> r = new HashMap<>();
-          Arrays.stream(values).map(value -> {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> retValue = (Map<String, Object>) value;
-            return retValue;
-          }).forEach(r::putAll);
+          Arrays.stream(values)
+              .map(
+                  value -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> retValue = (Map<String, Object>) value;
+                    return retValue;
+                  })
+              .forEach(r::putAll);
           return r;
         });
   }

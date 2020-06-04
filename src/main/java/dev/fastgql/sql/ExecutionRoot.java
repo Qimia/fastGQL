@@ -133,7 +133,11 @@ public class ExecutionRoot implements ComponentExecutable {
                     observables,
                     values ->
                         Arrays.stream(values)
-                            .map(value -> (Map<String, Object>) value)
+                            .map(value -> {
+                              @SuppressWarnings("unchecked")
+                              Map<String, Object> retValue = (Map<String, Object>) value;
+                              return retValue;
+                            })
                             .collect(Collectors.toList()));
               }
               return Single.just(List.of());

@@ -69,15 +69,15 @@ public class GraphQLDefinition {
           .map(
               rowSet -> {
                 List<String> columnNames = rowSet.columnsNames();
-                List<Map<String, Object>> rList = new ArrayList<>();
+                List<Map<String, Object>> retList = new ArrayList<>();
                 rowSet.forEach(
                     row -> {
                       Map<String, Object> r = new HashMap<>();
                       columnNames.forEach(
                           columnName -> r.put(columnName, row.getValue(columnName)));
-                      rList.add(r);
+                      retList.add(r);
                     });
-                return rList;
+                return retList;
               });
     }
 
