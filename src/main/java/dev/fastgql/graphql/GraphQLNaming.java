@@ -14,8 +14,17 @@ public class GraphQLNaming {
     return String.format("%s_order_by", name);
   }
 
+  public static String getNameBoolType(String name) {
+    return String.format("%s_bool_exp", name);
+  }
+
   public static String getNameForReferencingField(QualifiedName qualifiedName) {
     Objects.requireNonNull(qualifiedName);
     return String.format("%s_ref", qualifiedName.getName());
+  }
+
+  public static String getNameForReferencedByField(QualifiedName qualifiedName) {
+    Objects.requireNonNull(qualifiedName);
+    return String.format("%s_on_%s", qualifiedName.getParent(), qualifiedName.getName());
   }
 }

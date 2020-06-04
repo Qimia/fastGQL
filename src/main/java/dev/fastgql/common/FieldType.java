@@ -10,4 +10,5 @@ public enum FieldType {
   INT,
   FLOAT,
   STRING,
+  BOOL,
 }

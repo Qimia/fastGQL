@@ -6,6 +6,9 @@
 
 package dev.fastgql.graphql;
 
+import static dev.fastgql.graphql.GraphQLNaming.getNameForReferencedByField;
+import static dev.fastgql.graphql.GraphQLNaming.getNameForReferencingField;
+
 import dev.fastgql.common.QualifiedName;
 import dev.fastgql.common.ReferenceType;
 import dev.fastgql.db.DatabaseSchema;
@@ -39,8 +42,7 @@ public class GraphQLDatabaseSchema {
                     graphQLSubgraph.put(
                         name, GraphQLNodeDefinition.createLeaf(qualifiedName, node.getFieldType()));
                     if (referencing != null) {
-                      String referencingName =
-                          GraphQLNaming.getNameForReferencingField(qualifiedName);
+                      String referencingName = getNameForReferencingField(qualifiedName);
                       graphQLSubgraph.put(
                           referencingName,
                           GraphQLNodeDefinition.createReferencing(qualifiedName, referencing));
@@ -55,11 +57,6 @@ public class GraphQLDatabaseSchema {
                         });
                   });
             });
-  }
-
-  private String getNameForReferencedByField(QualifiedName qualifiedName) {
-    Objects.requireNonNull(qualifiedName);
-    return String.format("%s_on_%s", qualifiedName.getParent(), qualifiedName.getName());
   }
 
   public GraphQLNodeDefinition nodeAt(String table, String field) {
@@ -83,7 +80,8 @@ public class GraphQLDatabaseSchema {
                   subBuilder
                       .argument(args.getLimit())
                       .argument(args.getOffset())
-                      .argument(args.getOrderBys().get(parentName));
+                      .argument(args.getOrderBys().get(parentName))
+                      .argument(args.getWheres().get(parentName));
                 }
                 objectBuilder.field(subBuilder.build());
               });
@@ -98,6 +96,7 @@ public class GraphQLDatabaseSchema {
                           .argument(args.getLimit())
                           .argument(args.getOffset())
                           .argument(args.getOrderBys().get(parent))
+                          .argument(args.getWheres().get(parent))
                           .build()));
         });
   }
