@@ -13,13 +13,15 @@ import java.util.Set;
 public class SQLQuery {
   private final String table;
   private final String alias;
+  private final SQLArguments args;
   private Set<String> keys;
   private List<String> joins;
   private List<String> suffixes;
 
-  public SQLQuery(String table, String alias) {
+  public SQLQuery(String table, String alias, SQLArguments args) {
     this.table = table;
     this.alias = alias;
+    this.args = args;
     this.keys = new HashSet<>();
     this.joins = new ArrayList<>();
     this.suffixes = new ArrayList<>();
@@ -53,7 +55,13 @@ public class SQLQuery {
 
   public String build() {
     return String.format(
-        "SELECT %s FROM %s %s %s %s",
-        String.join(", ", keys), table, alias, String.join(" ", joins), String.join(" ", suffixes));
+        "SELECT %s FROM %s %s %s %s %s %s",
+        String.join(", ", keys),
+        table,
+        alias,
+        String.join(" ", joins),
+        String.join(" ", suffixes),
+        args.getLimitQuery(),
+        args.getOffsetQuery());
   }
 }

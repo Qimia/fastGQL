@@ -96,6 +96,7 @@ public class SQLResponseUtils {
                   Component componentReferenced =
                       new ComponentReferenced(
                           field.getName(),
+                          new SQLArguments(field.getArguments()),
                           node.getQualifiedName().getName(),
                           node.getForeignName().getParent(),
                           aliasGenerator.getAlias(),

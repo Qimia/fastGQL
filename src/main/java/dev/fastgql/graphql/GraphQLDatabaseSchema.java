@@ -6,6 +6,7 @@
 package dev.fastgql.graphql;
 
 import dev.fastgql.common.QualifiedName;
+import dev.fastgql.common.ReferenceType;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.graphql.arguments.GraphQLArguments;
 
@@ -75,13 +76,14 @@ public class GraphQLDatabaseSchema {
           GraphQLObjectType.Builder object = GraphQLObjectType.newObject().name(parent);
           subgraph.forEach(
               (name, node) -> {
-                object.field(
+                GraphQLFieldDefinition.Builder subBuilder =
                     GraphQLFieldDefinition.newFieldDefinition()
                         .name(name)
-                        .type(node.getGraphQLType())
-                        .argument(args.getLimit())
-                        .argument(args.getOffset())
-                        .build());
+                        .type(node.getGraphQLType());
+                if (node.getReferenceType() == ReferenceType.REFERENCED) {
+                  subBuilder.argument(args.getLimit()).argument(args.getOffset());
+                }
+                object.field(subBuilder.build());
               });
           builder.field(
               GraphQLFieldDefinition.newFieldDefinition()

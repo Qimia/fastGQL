@@ -10,6 +10,7 @@ import dev.fastgql.graphql.arguments.GraphQLArguments;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.ComponentExecutable;
 import dev.fastgql.sql.ExecutionRoot;
+import dev.fastgql.sql.SQLArguments;
 import dev.fastgql.sql.SQLResponseUtils;
 import graphql.GraphQL;
 import graphql.schema.FieldCoordinates;
@@ -39,10 +40,12 @@ public class GraphQLDefinition {
                     .doOnSuccess(
                         connection -> {
                           AliasGenerator aliasGenerator = new AliasGenerator();
+                          SQLArguments sqlArguments = new SQLArguments(env.getArguments());
                           ComponentExecutable executionRoot =
                               new ExecutionRoot(
                                   env.getField().getName(),
                                   aliasGenerator.getAlias(),
+                                  sqlArguments,
                                   queryString ->
                                       SQLResponseUtils.executeQuery(queryString, connection));
                           SQLResponseUtils.traverseSelectionSet(

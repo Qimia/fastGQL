@@ -19,12 +19,13 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
 
   public ComponentReferenced(
       String field,
+      SQLArguments args,
       String key,
       String foreignTable,
       String foreignTableAlias,
       String foreignKey,
       Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
-    super(foreignTable, foreignTableAlias, sqlExecutor);
+    super(foreignTable, foreignTableAlias, args, sqlExecutor);
     this.key = key;
     this.field = field;
     this.foreignTableAlias = foreignTableAlias;

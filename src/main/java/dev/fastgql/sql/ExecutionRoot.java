@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 public class ExecutionRoot implements ComponentExecutable {
   private final String table;
+  private final SQLArguments args;
   private final String alias;
   private final Function<String, Single<List<Map<String, Object>>>> sqlExecutor;
   private SQLQuery query;
@@ -55,9 +56,15 @@ public class ExecutionRoot implements ComponentExecutable {
             Map.of("a3_model", "BMW", "a3_year", 2012, "a4_id", 102, "a4_first_name", "John"));
 
     AliasGenerator aliasGenerator = new AliasGenerator();
+    SQLArguments myArgs =
+        new SQLArguments(
+            Map.of(
+                "limit", 1,
+                "offset", 1));
 
     ComponentExecutable executionRoot =
-        new ExecutionRoot("customers", aliasGenerator.getAlias(), query -> Single.just(forged));
+        new ExecutionRoot(
+            "customers", aliasGenerator.getAlias(), myArgs, query -> Single.just(forged));
     executionRoot.addComponent(new ComponentRow("id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
 
@@ -79,6 +86,7 @@ public class ExecutionRoot implements ComponentExecutable {
     Component vehiclesOnCustomer =
         new ComponentReferenced(
             "vehicles_on_customer",
+            myArgs,
             "id",
             "vehicles",
             aliasGenerator.getAlias(),
@@ -99,10 +107,14 @@ public class ExecutionRoot implements ComponentExecutable {
   }
 
   public ExecutionRoot(
-      String table, String alias, Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+      String table,
+      String alias,
+      SQLArguments args,
+      Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
     this.table = table;
+    this.args = args;
     this.alias = alias;
-    this.query = new SQLQuery(table, alias);
+    this.query = new SQLQuery(table, alias, args);
     this.components = new ArrayList<>();
     this.sqlExecutor = sqlExecutor;
   }
