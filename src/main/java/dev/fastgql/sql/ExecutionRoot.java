@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 
 public class ExecutionRoot implements ComponentExecutable {
   private final String table;
-  private final SQLArguments args;
   private final String alias;
   private final Function<String, Single<List<Map<String, Object>>>> sqlExecutor;
   private SQLQuery query;
@@ -113,7 +112,6 @@ public class ExecutionRoot implements ComponentExecutable {
       SQLArguments args,
       Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
     this.table = table;
-    this.args = args;
     this.alias = alias;
     this.query = new SQLQuery(table, alias, args);
     this.components = new ArrayList<>();
