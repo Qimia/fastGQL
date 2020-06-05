@@ -13,7 +13,9 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SQLQuery {
   private final String table;
@@ -92,21 +94,25 @@ public class SQLQuery {
     if (qualifiedNameToOrder.isEmpty()) {
       return "";
     }
-    List<String> orderBys = new ArrayList<>();
-    for (String qualifiedName : qualifiedNameToOrder.keySet()) {
-      QualifiedName qualifiedNameObject = new QualifiedName(qualifiedName);
-      String table = qualifiedNameObject.getParent();
-      String key = qualifiedNameObject.getName();
-      if (tableFieldToAlias.containsKey(table)
-          && aliasToKeys.containsKey(tableFieldToAlias.get(table))
-          && aliasToKeys.get(tableFieldToAlias.get(table)).contains(key)) {
-        String alias = tableFieldToAlias.get(table);
-        String keyAlias = getKeyAlias(alias, key);
-        String orderByQuery =
-            String.format("%s %s", keyAlias, qualifiedNameToOrder.get(qualifiedName));
-        orderBys.add(orderByQuery);
-      }
-    }
+    List<String> orderBys =
+        qualifiedNameToOrder.keySet().stream()
+            .map(
+                (qualifiedName) -> {
+                  QualifiedName qualifiedNameObject = new QualifiedName(qualifiedName);
+                  String table = qualifiedNameObject.getParent();
+                  String key = qualifiedNameObject.getName();
+                  if (tableFieldToAlias.containsKey(table)
+                      && aliasToKeys.containsKey(tableFieldToAlias.get(table))
+                      && aliasToKeys.get(tableFieldToAlias.get(table)).contains(key)) {
+                    String alias = tableFieldToAlias.get(table);
+                    String keyAlias = getKeyAlias(alias, key);
+                    return String.format(
+                        "%s %s", keyAlias, qualifiedNameToOrder.get(qualifiedName));
+                  }
+                  return null;
+                })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     return String.format("ORDER BY %s", String.join(", ", orderBys));
   }
 

@@ -89,17 +89,14 @@ public class ConditionalOperatorTypes {
           GraphQLFloat, comparisonExpBuilder("Float", GraphQLFloat).build(),
           GraphQLString, stringComparisonExpBuilder().build());
 
-  private static Builder comparisonExpBuilder(
-      String prefix, GraphQLScalarType type) {
-    Builder builder =
-        GraphQLInputObjectType.newInputObject().name(prefix + "_comparison_exp");
+  private static Builder comparisonExpBuilder(String prefix, GraphQLScalarType type) {
+    Builder builder = GraphQLInputObjectType.newInputObject().name(prefix + "_comparison_exp");
     addGenericOperators(builder, type);
     return builder;
   }
 
   private static Builder stringComparisonExpBuilder() {
-    Builder builder =
-        GraphQLInputObjectType.newInputObject().name("String_comparison_exp");
+    Builder builder = GraphQLInputObjectType.newInputObject().name("String_comparison_exp");
     addGenericOperators(builder, GraphQLString);
     addTextOperators(builder, GraphQLString);
     return builder;
