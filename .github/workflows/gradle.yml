@@ -16,16 +16,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
     - name: Set up JDK 11
       uses: actions/setup-java@v1
       with:
         java-version: 11
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Initialize submodules
-      run: git submodule init && git submodule update
     - name: Build debezium
-      run: cd debezium && mvn clean package -pl debezium-core,debezium-connector-postgres && cd ..
+      run: cd debezium && mvn clean package -B -pl debezium-core,debezium-connector-postgres -am -Passembly -Dformat.formatter.goal=validate
+        -Dformat.imports.goal=check -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn && cd ..
     - name: Build debezium container
       run: cd debezium && chmod +x docker-build.sh && ./docker-build.sh && cd ..
     - name: Build with Gradle
