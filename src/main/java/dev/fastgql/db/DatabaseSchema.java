@@ -13,6 +13,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Data structure defining database schema, including tables, fields, field types and foreign keys
+ * relationships.
+ *
+ * @author Kamil Bobrowski
+ */
 public class DatabaseSchema {
   private final Map<String, Map<String, NodeDefinition>> graph;
 
@@ -42,26 +48,14 @@ public class DatabaseSchema {
       return new DatabaseSchema(graph);
     }
 
-    public Builder row(
-        String table,
-        String field,
-        FieldType type,
-        String referencingTable,
-        String referencingField) {
-      Objects.requireNonNull(table);
-      Objects.requireNonNull(field);
-      Objects.requireNonNull(type);
-      Objects.requireNonNull(referencingTable);
-      Objects.requireNonNull(referencingField);
-      addNode(
-          new NodeDefinition(
-              new QualifiedName(table, field),
-              type,
-              new QualifiedName(referencingTable, referencingField),
-              null));
-      return this;
-    }
-
+    /**
+     * Add field to the table which is referencing another field.
+     *
+     * @param qualifiedName qualified name of the field in a form of "table/field"
+     * @param type type of the field
+     * @param qualifiedReferencingName qualified name of a field which is referenced by this field
+     * @return builder of DatabaseSchema
+     */
     public Builder row(String qualifiedName, FieldType type, String qualifiedReferencingName) {
       Objects.requireNonNull(qualifiedName);
       Objects.requireNonNull(type);
@@ -75,14 +69,13 @@ public class DatabaseSchema {
       return this;
     }
 
-    public Builder row(String table, String field, FieldType type) {
-      Objects.requireNonNull(table);
-      Objects.requireNonNull(field);
-      Objects.requireNonNull(type);
-      addNode(new NodeDefinition(new QualifiedName(table, field), type, null, null));
-      return this;
-    }
-
+    /**
+     * Add field to the table.
+     *
+     * @param qualifiedName - qualified name of the field in a form of "table/field"
+     * @param type - type of the field
+     * @return builder of DatabaseSchema
+     */
     public Builder row(String qualifiedName, FieldType type) {
       Objects.requireNonNull(qualifiedName);
       Objects.requireNonNull(type);

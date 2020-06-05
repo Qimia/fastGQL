@@ -9,6 +9,12 @@ package dev.fastgql.common;
 import java.util.Objects;
 import org.antlr.v4.runtime.misc.Pair;
 
+/**
+ * Class to handle qualified name of a field in a table. It is defined by two elements: parent and
+ * child, and has string representation of "parent/child".
+ *
+ * @author Kamil Bobrowski
+ */
 public class QualifiedName {
   private final String parent;
   private final String name;
@@ -19,6 +25,11 @@ public class QualifiedName {
     return tmp.getQualifiedName();
   }
 
+  /**
+   * Construct qualified name from single string.
+   *
+   * @param qualifiedName qualified name in a format "parent/name"
+   */
   public QualifiedName(String qualifiedName) {
     Objects.requireNonNull(qualifiedName);
     Pair<String, String> splitted = splitName(qualifiedName);
@@ -27,6 +38,12 @@ public class QualifiedName {
     this.qualifiedName = qualifiedName;
   }
 
+  /**
+   * Construct qualified name from two separate strings for parent and name.
+   *
+   * @param parent name of a parent
+   * @param name name of a child
+   */
   public QualifiedName(String parent, String name) {
     Objects.requireNonNull(parent);
     Objects.requireNonNull(name);

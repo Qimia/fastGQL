@@ -11,10 +11,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Class to handle part of SQL query related to extracting value of single key.
+ *
+ * @author Kamil Bobrowski
+ */
 public class ComponentRow implements Component {
   private String table;
   private final String key;
 
+  /**
+   * Construct new component by providing key name to be queried.
+   *
+   * @param key key name
+   */
   public ComponentRow(String key) {
     this.key = key;
   }
@@ -31,7 +41,7 @@ public class ComponentRow implements Component {
   }
 
   @Override
-  public void setSqlExecutor(SqlExecutor sqlExecutor) {}
+  public void setSqlExecutor(SQLExecutor sqlExecutor) {}
 
   @Override
   public Single<Map<String, Object>> extractValues(Map<String, Object> row) {

@@ -16,6 +16,11 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Class to extract metadata from a database which are necessary to build {@link DatabaseSchema}.
+ *
+ * @author Mingyi Zhang
+ */
 public class MetadataUtils {
 
   private static final Map<Integer, FieldType> sqlDataTypeToFieldType =
@@ -23,6 +28,13 @@ public class MetadataUtils {
           4, FieldType.INT,
           12, FieldType.STRING);
 
+  /**
+   * Creates {@link DatabaseSchema} given {@link Connection} to the database.
+   *
+   * @param connection connection to the database
+   * @return database schema extracted using given connection
+   * @throws SQLException in case metadata cannot be extracted
+   */
   public static DatabaseSchema createDatabaseSchema(Connection connection) throws SQLException {
     DatabaseMetaData databaseMetaData = connection.getMetaData();
     Statement statement = connection.createStatement();

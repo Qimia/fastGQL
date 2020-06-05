@@ -12,12 +12,25 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Definition of a single field in a table, intended to be use as part of {@link DatabaseSchema}.
+ *
+ * @author Kamil Bobrowski
+ */
 public class NodeDefinition {
   private final QualifiedName qualifiedName;
   private final FieldType fieldType;
   private QualifiedName referencing;
   private Set<QualifiedName> referencedBy;
 
+  /**
+   * Define table field.
+   *
+   * @param qualifiedName qualified name which specifies which field of which table is being defined
+   * @param fieldType type of field
+   * @param referencing which field is being referenced by this field
+   * @param referencedBySet set of fields which are referencing this field
+   */
   public NodeDefinition(
       QualifiedName qualifiedName,
       FieldType fieldType,
@@ -66,6 +79,13 @@ public class NodeDefinition {
         && Objects.equals(referencedBy, otherNode.referencedBy);
   }
 
+  /**
+   * Merge information from other field to this field. If two nodes are compatible (the same
+   * qualified name, field type and another field being referenced) it will add all fields which are
+   * referencing another field to this field.
+   *
+   * @param otherNode - other field to be merged with this field
+   */
   public void merge(NodeDefinition otherNode) {
     if (this == otherNode) {
       return;
