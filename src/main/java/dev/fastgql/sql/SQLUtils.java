@@ -22,21 +22,6 @@ public class SQLUtils {
     return name.endsWith("_ref");
   }
 
-  //  public static JsonObject replaceFieldWithAlias(
-  //      JsonObject object, Map<String, String> tableFieldToAlias) {
-  //    for (String key : object.keySet()) {
-  //      if (isReferencingName(key)) {
-  //        if (tableFieldToAlias.containsKey(key)) {
-  //          JsonObject referencingObject =
-  //              replaceFieldWithAlias(object.getAsJsonObject(key), tableFieldToAlias);
-  //          object.add(tableFieldToAlias.get(key), referencingObject);
-  //        }
-  //        object.remove(key);
-  //      }
-  //    }
-  //    return object;
-  //  }
-
   public static String buildBoolQuery(
       JsonObject obj, String fieldName, Map<String, String> tableFieldToAlias) {
     if (obj.size() == 0) {
