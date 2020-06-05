@@ -20,6 +20,7 @@ public class SQLArguments {
   private final Integer limit;
   private final Integer offset;
   private final JsonElement orderBy;
+  private final JsonElement where;
 
   public SQLArguments(String table, Map<String, Object> args) {
     this.table = table;
@@ -27,6 +28,8 @@ public class SQLArguments {
     this.offset = (Integer) args.get("offset");
     Gson gson = new Gson();
     this.orderBy = gson.toJsonTree(args.get("order_by"));
+    this.where = gson.toJsonTree(args.get("where"));
+    System.out.println(where);
   }
 
   public Integer getLimit() {
@@ -35,6 +38,10 @@ public class SQLArguments {
 
   public Integer getOffset() {
     return offset;
+  }
+
+  public JsonElement getWhere() {
+    return where;
   }
 
   public LinkedHashMap<String, String> getQualifiedNameToOrderMap() {

@@ -6,6 +6,8 @@
 
 package dev.fastgql.sql;
 
+import static dev.fastgql.sql.SQLUtils.buildBoolQuery;
+
 import dev.fastgql.common.QualifiedName;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -74,6 +76,7 @@ public class SQLQuery {
   }
 
   public String build() {
+    System.out.println(buildWhereQuery());
     return String.format(
             "SELECT %s FROM %s %s %s %s %s",
             String.join(", ", keys),
@@ -86,7 +89,9 @@ public class SQLQuery {
   }
 
   private String buildConstraints() {
-    return String.format("%s %s %s", buildOrderByQuery(), buildLimitQuery(), buildOffsetQuery());
+    return String.format(
+        "%s %s %s %s",
+        buildWhereQuery(), buildOrderByQuery(), buildLimitQuery(), buildOffsetQuery());
   }
 
   private String buildOrderByQuery() {
@@ -128,6 +133,14 @@ public class SQLQuery {
       return "";
     }
     return String.format("OFFSET %d", args.getOffset());
+  }
+
+  private String buildWhereQuery() {
+    if (args.getWhere() == null || !args.getWhere().isJsonObject()) {
+      return "";
+    }
+    return String.format(
+        "WHERE %s", buildBoolQuery(args.getWhere().getAsJsonObject(), alias, tableFieldToAlias));
   }
 
   private String getKeyAlias(String table, String key) {
