@@ -44,7 +44,7 @@ public class SQLUtils {
           addOrderByQueryList(
               queryList, value.getAsJsonObject(), tableFieldToAlias.get(key), tableFieldToAlias);
         }
-      } else if (value.isJsonPrimitive()){
+      } else {
         queryList.add(String.format("%s.%s %s", aliasName, key, value.getAsString()));
       }
     }

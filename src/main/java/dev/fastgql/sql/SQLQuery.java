@@ -9,16 +9,12 @@ package dev.fastgql.sql;
 import static dev.fastgql.sql.SQLUtils.createBoolQuery;
 import static dev.fastgql.sql.SQLUtils.createOrderByQuery;
 
-import dev.fastgql.common.QualifiedName;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Class to construct SQL query from simple query components.
@@ -125,33 +121,34 @@ public class SQLQuery {
     if (args.getOrderBy() == null || !args.getOrderBy().isJsonArray()) {
       return "";
     }
-//    ///////////////
-//    LinkedHashMap<String, String> qualifiedNameToOrder = args.getQualifiedNameToOrderMap();
-//    if (qualifiedNameToOrder.isEmpty()) {
-//      return "";
-//    }
-//    List<String> orderBys =
-//        qualifiedNameToOrder.keySet().stream()
-//            .map(
-//                (qualifiedName) -> {
-//                  QualifiedName qualifiedNameObject = new QualifiedName(qualifiedName);
-//                  String table = qualifiedNameObject.getTableName();
-//                  String key = qualifiedNameObject.getKeyName();
-//                  if (tableFieldToAlias.containsKey(table)
-//                      && aliasToKeys.containsKey(tableFieldToAlias.get(table))
-//                      && aliasToKeys.get(tableFieldToAlias.get(table)).contains(key)) {
-//                    String alias = tableFieldToAlias.get(table);
-//                    String keyAlias = getKeyAlias(alias, key);
-//                    return String.format(
-//                        "%s %s", keyAlias, qualifiedNameToOrder.get(qualifiedName));
-//                  }
-//                  return null;
-//                })
-//            .filter(Objects::nonNull)
-//            .collect(Collectors.toList());
-//    ///////////////////
-    System.out.println(createOrderByQuery(args.getOrderBy().getAsJsonArray(), alias, tableFieldToAlias));
-    return "";
+    //    ///////////////
+    //    LinkedHashMap<String, String> qualifiedNameToOrder = args.getQualifiedNameToOrderMap();
+    //    if (qualifiedNameToOrder.isEmpty()) {
+    //      return "";
+    //    }
+    //    List<String> orderBys =
+    //        qualifiedNameToOrder.keySet().stream()
+    //            .map(
+    //                (qualifiedName) -> {
+    //                  QualifiedName qualifiedNameObject = new QualifiedName(qualifiedName);
+    //                  String table = qualifiedNameObject.getTableName();
+    //                  String key = qualifiedNameObject.getKeyName();
+    //                  if (tableFieldToAlias.containsKey(table)
+    //                      && aliasToKeys.containsKey(tableFieldToAlias.get(table))
+    //                      && aliasToKeys.get(tableFieldToAlias.get(table)).contains(key)) {
+    //                    String alias = tableFieldToAlias.get(table);
+    //                    String keyAlias = getKeyAlias(alias, key);
+    //                    return String.format(
+    //                        "%s %s", keyAlias, qualifiedNameToOrder.get(qualifiedName));
+    //                  }
+    //                  return null;
+    //                })
+    //            .filter(Objects::nonNull)
+    //            .collect(Collectors.toList());
+    //    ///////////////////
+    return String.format(
+        "ORDER BY %s",
+        createOrderByQuery(args.getOrderBy().getAsJsonArray(), alias, tableFieldToAlias));
   }
 
   private String buildLimitQuery() {

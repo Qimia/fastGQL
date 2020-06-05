@@ -52,29 +52,29 @@ public class SQLArguments {
     return orderBy;
   }
 
-  public LinkedHashMap<String, String> getQualifiedNameToOrderMap() {
-    LinkedHashMap<String, String> qualifiedNameToOrder = new LinkedHashMap<>();
-    if (!orderBy.isJsonArray()) {
-      return qualifiedNameToOrder;
-    }
-    JsonArray orderByArray = orderBy.getAsJsonArray();
-    for (int i = 0; i < orderByArray.size(); i++) {
-      JsonObject object = orderByArray.get(i).getAsJsonObject();
-      addQualifiedNameToOrder(tableName, object, qualifiedNameToOrder);
-    }
-    return qualifiedNameToOrder;
-  }
+//  public LinkedHashMap<String, String> getQualifiedNameToOrderMap() {
+//    LinkedHashMap<String, String> qualifiedNameToOrder = new LinkedHashMap<>();
+//    if (!orderBy.isJsonArray()) {
+//      return qualifiedNameToOrder;
+//    }
+//    JsonArray orderByArray = orderBy.getAsJsonArray();
+//    for (int i = 0; i < orderByArray.size(); i++) {
+//      JsonObject object = orderByArray.get(i).getAsJsonObject();
+//      addQualifiedNameToOrder(tableName, object, qualifiedNameToOrder);
+//    }
+//    return qualifiedNameToOrder;
+//  }
 
-  private void addQualifiedNameToOrder(
-      String table, JsonObject object, Map<String, String> qualifiedNameToOrder) {
-    for (String key : object.keySet()) {
-      JsonElement value = object.get(key);
-      if (value.isJsonObject()) {
-        addQualifiedNameToOrder(key, value.getAsJsonObject(), qualifiedNameToOrder);
-      } else {
-        QualifiedName qualifiedName = new QualifiedName(table, key);
-        qualifiedNameToOrder.put(qualifiedName.getQualifiedName(), value.getAsString());
-      }
-    }
-  }
+//  private void addQualifiedNameToOrder(
+//      String table, JsonObject object, Map<String, String> qualifiedNameToOrder) {
+//    for (String key : object.keySet()) {
+//      JsonElement value = object.get(key);
+//      if (value.isJsonObject()) {
+//        addQualifiedNameToOrder(key, value.getAsJsonObject(), qualifiedNameToOrder);
+//      } else {
+//        QualifiedName qualifiedName = new QualifiedName(table, key);
+//        qualifiedNameToOrder.put(qualifiedName.getQualifiedName(), value.getAsString());
+//      }
+//    }
+//  }
 }
