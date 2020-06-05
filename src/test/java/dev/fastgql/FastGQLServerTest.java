@@ -14,8 +14,6 @@ import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -115,22 +113,24 @@ public class FastGQLServerTest {
     GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
   }
 
-  @Test
-  void shouldReceiveEventsForSimpleSubscription(Vertx vertx, VertxTestContext context) {
-    String inputResource = "test-simple/test-subscription-input.graphql";
-    List<String> outputResources =
-        List.of(
-            "test-simple/test-subscription-output-1.json",
-            "test-simple/test-subscription-output-1.json",
-            "test-simple/test-subscription-output-2.json");
-    GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
-    DBTestUtils.executeSQLQueryWithDelay(
-        "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-        5,
-        TimeUnit.SECONDS,
-        postgresContainer,
-        context);
-  }
+  /*
+    @Test
+    void shouldReceiveEventsForSimpleSubscription(Vertx vertx, VertxTestContext context) {
+      String inputResource = "test-simple/test-subscription-input.graphql";
+      List<String> outputResources =
+          List.of(
+              "test-simple/test-subscription-output-1.json",
+              "test-simple/test-subscription-output-1.json",
+              "test-simple/test-subscription-output-2.json");
+      GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
+      DBTestUtils.executeSQLQueryWithDelay(
+          "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
+          5,
+          TimeUnit.SECONDS,
+          postgresContainer,
+          context);
+    }
+  */
 
   /*
     @Test

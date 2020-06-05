@@ -30,4 +30,4 @@ jobs:
     - name: Build debezium container
       run: cd debezium && chmod +x docker-build.sh && ./docker-build.sh && cd ..
     - name: Build with Gradle
-      run: ./gradlew build
+      run: ./gradlew build --info
