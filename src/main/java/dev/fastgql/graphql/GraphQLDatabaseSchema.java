@@ -17,6 +17,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Data structure defining GraphQL schema, including standard fields as well as
+ * one-to-one and one-to-many relationships between tables which are inferred
+ * from foreign keys. This class is constructed from {@link DatabaseSchema}
+ * and is used it two ways:
+ * - as a helper in building {@link graphql.GraphQL}
+ * - as a helper in parsing {@link graphql.schema.DataFetchingEnvironment}
+ *
+ * @author Kamil Bobrowski
+ */
 public class GraphQLDatabaseSchema {
   private Map<String, Map<String, GraphQLNodeDefinition>> graph;
 
@@ -34,6 +44,11 @@ public class GraphQLDatabaseSchema {
     return graph.get(table).get(field);
   }
 
+  /**
+   * Constructs object from {@link DatabaseSchema}.
+   *
+   * @param databaseSchema input schema
+   */
   public GraphQLDatabaseSchema(DatabaseSchema databaseSchema) {
     Objects.requireNonNull(databaseSchema);
     graph = new HashMap<>();
@@ -68,6 +83,14 @@ public class GraphQLDatabaseSchema {
             });
   }
 
+  /**
+   * Applies this schema to given {@link GraphQLObjectType} builders (e.g. Query
+   * or Subscription object builders). Has to be done this way since internally
+   * it constructs other {@link GraphQLObjectType}, which should be constructed
+   * only once with the same name.
+   *
+   * @param builders builders to which this schema will be applied
+   */
   public void applyToGraphQLObjectTypes(List<GraphQLObjectType.Builder> builders) {
     Objects.requireNonNull(builders);
     graph.forEach(

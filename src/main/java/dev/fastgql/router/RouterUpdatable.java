@@ -12,6 +12,12 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
 
+/**
+ * Class which contains {@link Router} instance, and allows for updating this
+ * instance with new {@link GraphQL} at runtime.
+ *
+ * @author Kamil Bobrowski
+ */
 public class RouterUpdatable {
   private final Router router;
   private final boolean withSubscription;
@@ -49,6 +55,11 @@ public class RouterUpdatable {
         .handler(GraphiQLHandler.create(new GraphiQLHandlerOptions().setEnabled(true)));
   }
 
+  /**
+   * Set a new {@link GraphQL}.
+   *
+   * @param graphQL new GraphQL
+   */
   public void update(GraphQL graphQL) {
     if (withQuery) {
       graphQLHandlerUpdatable.updateGraphQL(graphQL);

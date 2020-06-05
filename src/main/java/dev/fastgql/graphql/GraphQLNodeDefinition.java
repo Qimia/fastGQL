@@ -19,6 +19,11 @@ import graphql.schema.GraphQLScalarType;
 import graphql.schema.GraphQLTypeReference;
 import java.util.Map;
 
+/**
+ * Definition of single field in GraphQL.
+ *
+ * @author Kamil Bobrowski
+ */
 public class GraphQLNodeDefinition {
   private final QualifiedName qualifiedName;
   private final GraphQLOutputType graphQLType;
@@ -30,11 +35,27 @@ public class GraphQLNodeDefinition {
           FieldType.STRING, GraphQLString,
           FieldType.FLOAT, GraphQLFloat);
 
+  /**
+   * Create a field which extracts value for given field in a table. This type of field
+   * in GraphQL query will just return a single value.
+   *
+   * @param qualifiedName qualified name of the field
+   * @param type type of the field
+   * @return new field definition
+   */
   public static GraphQLNodeDefinition createLeaf(QualifiedName qualifiedName, FieldType type) {
     return new GraphQLNodeDefinition(
         qualifiedName, nodeToGraphQLType.get(type), null, ReferenceType.NONE);
   }
 
+  /**
+   * Create a field which is referencing other field. This type of field in GraphQL query
+   * will return a matching table being referenced.
+   *
+   * @param qualifiedName qualified name of the field which is referencing other field
+   * @param foreignName qualified name of the field being referenced
+   * @return new field definition
+   */
   public static GraphQLNodeDefinition createReferencing(
       QualifiedName qualifiedName, QualifiedName foreignName) {
     return new GraphQLNodeDefinition(
@@ -44,6 +65,14 @@ public class GraphQLNodeDefinition {
         ReferenceType.REFERENCING);
   }
 
+  /**
+   * Create a field which is referenced by other field. This type of field in GraphQL query
+   * will return a list of tables which are referencing this field.
+   *
+   * @param qualifiedName qualified name of the field which is being referenced
+   * @param foreignName qualified
+   * @return new field definition
+   */
   public static GraphQLNodeDefinition createReferencedBy(
       QualifiedName qualifiedName, QualifiedName foreignName) {
     return new GraphQLNodeDefinition(

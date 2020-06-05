@@ -15,7 +15,7 @@ import dev.fastgql.sql.ComponentReferenced;
 import dev.fastgql.sql.ComponentReferencing;
 import dev.fastgql.sql.ComponentRow;
 import dev.fastgql.sql.ExecutionRoot;
-import dev.fastgql.sql.SqlExecutor;
+import dev.fastgql.sql.SQLExecutor;
 import graphql.GraphQL;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -37,6 +37,12 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Class to build {@link GraphQL} from {@link DatabaseSchema} (used for defining GraphQL schema)
+ * and SQL connection pool ({@link Pool} - used in data fetchers).
+ *
+ * @author Kamil Bobrowski
+ */
 public class GraphQLDefinition {
 
   private static final Logger log = LoggerFactory.getLogger(GraphQLDefinition.class);
@@ -54,6 +60,12 @@ public class GraphQLDefinition {
     private boolean queryEnabled = false;
     private boolean subscriptionEnabled = false;
 
+    /**
+     * Class builder, has to be initialized with database schema and SQL connection pool.
+     *
+     * @param databaseSchema input database schema
+     * @param client SQL connection pool
+     */
     public Builder(DatabaseSchema databaseSchema, Pool client) {
       this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
@@ -136,7 +148,7 @@ public class GraphQLDefinition {
     }
 
     private ComponentExecutable getExecutionRoot(
-        DataFetchingEnvironment env, SqlExecutor sqlExecutor) {
+        DataFetchingEnvironment env, SQLExecutor sqlExecutor) {
       AliasGenerator aliasGenerator = new AliasGenerator();
       ComponentExecutable executionRoot =
           new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias());
@@ -148,12 +160,18 @@ public class GraphQLDefinition {
 
     private Single<List<Map<String, Object>>> getResponse(
         DataFetchingEnvironment env, SqlConnection connection) {
-      SqlExecutor sqlExecutor = new SqlExecutor();
+      SQLExecutor sqlExecutor = new SQLExecutor();
       ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
       sqlExecutor.setSqlExecutorFunction(queryString -> executeQuery(queryString, connection));
       return executionRoot.execute();
     }
 
+    /**
+     * Enables query by defining query data fetcher using {@link VertxDataFetcher} and adding it
+     * to {@link GraphQLCodeRegistry}.
+     *
+     * @return this
+     */
     public Builder enableQuery() {
       if (queryEnabled) {
         return this;
@@ -182,6 +200,13 @@ public class GraphQLDefinition {
       return this;
     }
 
+    /**
+     * Enables subscription by defining subscription data fetcher and adding it
+     * to {@link GraphQLCodeRegistry}.
+     *
+     * @param modifiedTablesStream flowable which emits names of altered tables
+     * @return this
+     */
     public Builder enableSubscription(Flowable<String> modifiedTablesStream) {
       if (subscriptionEnabled) {
         return this;
@@ -190,7 +215,7 @@ public class GraphQLDefinition {
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
           env -> {
             log.info("new subscription");
-            SqlExecutor sqlExecutor = new SqlExecutor();
+            SQLExecutor sqlExecutor = new SQLExecutor();
             ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
             Set<String> queriedTables = executionRoot.getQueriedTables();
             return modifiedTablesStream
@@ -213,6 +238,12 @@ public class GraphQLDefinition {
       return this;
     }
 
+    /**
+     * Build {@link GraphQL} by applying internally constructed {@link GraphQLDatabaseSchema} to
+     * query / subscription builders.
+     *
+     * @return constructed GraphQL object
+     */
     public GraphQL build() {
       if (!(queryEnabled || subscriptionEnabled)) {
         throw new RuntimeException("query or subscription has to be enabled");

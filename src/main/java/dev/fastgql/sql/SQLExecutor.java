@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-public class SqlExecutor {
+public class SQLExecutor {
   private Function<String, Single<List<Map<String, Object>>>> sqlExecutorFunction;
 
-  public SqlExecutor() {
+  public SQLExecutor() {
     this.sqlExecutorFunction = query -> Single.just(List.of());
   }
 
-  public SqlExecutor(Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
+  public SQLExecutor(Function<String, Single<List<Map<String, Object>>>> sqlExecutor) {
     this.sqlExecutorFunction = sqlExecutor;
   }
 
