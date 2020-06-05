@@ -50,6 +50,10 @@ public class DatasourceConfig {
     this.password = password;
   }
 
+  public String getJdbcUrl() {
+    return String.format("jdbc:postgresql://%s:%d/%s", host, port, db);
+  }
+
   public String getHost() {
     return host;
   }
@@ -70,5 +74,3 @@ public class DatasourceConfig {
     return password;
   }
 }
-
-
