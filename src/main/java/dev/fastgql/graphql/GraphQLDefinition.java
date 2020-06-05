@@ -17,7 +17,7 @@ import dev.fastgql.sql.ComponentReferencing;
 import dev.fastgql.sql.ComponentRow;
 import dev.fastgql.sql.ExecutionRoot;
 import dev.fastgql.sql.SQLArguments;
-import dev.fastgql.sql.SqlExecutor;
+import dev.fastgql.sql.SQLExecutor;
 import graphql.GraphQL;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -39,6 +39,12 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Class to build {@link GraphQL} from {@link DatabaseSchema} (used for defining GraphQL schema) and
+ * SQL connection pool ({@link Pool} - used in data fetchers).
+ *
+ * @author Kamil Bobrowski
+ */
 public class GraphQLDefinition {
 
   private static final Logger log = LoggerFactory.getLogger(GraphQLDefinition.class);
@@ -50,16 +56,22 @@ public class GraphQLDefinition {
   public static class Builder {
     private final DatabaseSchema databaseSchema;
     private final GraphQLDatabaseSchema graphQLDatabaseSchema;
-    private final Pool client;
+    private final Pool sqlConnectionPool;
     private final GraphQLSchema.Builder graphQLSchemaBuilder;
     private final GraphQLCodeRegistry.Builder graphQLCodeRegistryBuilder;
     private boolean queryEnabled = false;
     private boolean subscriptionEnabled = false;
 
-    public Builder(DatabaseSchema databaseSchema, Pool client) {
+    /**
+     * Class builder, has to be initialized with database schema and SQL connection pool.
+     *
+     * @param databaseSchema input database schema
+     * @param sqlConnectionPool SQL connection pool
+     */
+    public Builder(DatabaseSchema databaseSchema, Pool sqlConnectionPool) {
       this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
-      this.client = client;
+      this.sqlConnectionPool = sqlConnectionPool;
       this.graphQLSchemaBuilder = GraphQLSchema.newSchema();
       this.graphQLCodeRegistryBuilder = GraphQLCodeRegistry.newCodeRegistry();
     }
@@ -91,45 +103,48 @@ public class GraphQLDefinition {
       selectionSet
           .getFields()
           .forEach(
-              field -> {
-                if (field.getQualifiedName().contains("/")) {
+              selectedField -> {
+                if (selectedField.getQualifiedName().contains("/")) {
                   return;
                 }
-                GraphQLNodeDefinition node =
-                    graphQLDatabaseSchema.nodeAt(parent.trueTableNameWhenParent(), field.getName());
-                switch (node.getReferenceType()) {
+                GraphQLFieldDefinition graphQLFieldDefinition =
+                    graphQLDatabaseSchema.fieldAt(
+                        parent.tableNameWhenParent(), selectedField.getName());
+                switch (graphQLFieldDefinition.getReferenceType()) {
                   case NONE:
-                    parent.addComponent(new ComponentRow(node.getQualifiedName().getName()));
+                    parent.addComponent(
+                        new ComponentRow(graphQLFieldDefinition.getQualifiedName().getKeyName()));
                     break;
                   case REFERENCING:
                     Component componentReferencing =
                         new ComponentReferencing(
-                            field.getName(),
-                            node.getQualifiedName().getName(),
-                            node.getForeignName().getParent(),
+                            selectedField.getName(),
+                            graphQLFieldDefinition.getQualifiedName().getKeyName(),
+                            graphQLFieldDefinition.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
-                            node.getForeignName().getName());
+                            graphQLFieldDefinition.getForeignName().getKeyName());
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
                         componentReferencing,
                         aliasGenerator,
-                        field.getSelectionSet());
+                        selectedField.getSelectionSet());
                     parent.addComponent(componentReferencing);
                     break;
                   case REFERENCED:
                     Component componentReferenced =
                         new ComponentReferenced(
-                            field.getName(),
-                            new SQLArguments(field.getName(), field.getArguments()),
-                            node.getQualifiedName().getName(),
-                            node.getForeignName().getParent(),
+                            selectedField.getName(),
+                            graphQLFieldDefinition.getQualifiedName().getKeyName(),
+                            graphQLFieldDefinition.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
-                            node.getForeignName().getName());
+                            graphQLFieldDefinition.getForeignName().getKeyName(),
+                            new SQLArguments(
+                                selectedField.getName(), selectedField.getArguments()));
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
                         componentReferenced,
                         aliasGenerator,
-                        field.getSelectionSet());
+                        selectedField.getSelectionSet());
                     parent.addComponent(componentReferenced);
                     break;
                   default:
@@ -139,7 +154,7 @@ public class GraphQLDefinition {
     }
 
     private ComponentExecutable getExecutionRoot(
-        DataFetchingEnvironment env, SqlExecutor sqlExecutor) {
+        DataFetchingEnvironment env, SQLExecutor sqlExecutor) {
       AliasGenerator aliasGenerator = new AliasGenerator();
       String tableName = env.getField().getName();
       SQLArguments args = new SQLArguments(tableName, env.getArguments());
@@ -153,12 +168,18 @@ public class GraphQLDefinition {
 
     private Single<List<Map<String, Object>>> getResponse(
         DataFetchingEnvironment env, SqlConnection connection) {
-      SqlExecutor sqlExecutor = new SqlExecutor();
+      SQLExecutor sqlExecutor = new SQLExecutor();
       ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
       sqlExecutor.setSqlExecutorFunction(queryString -> executeQuery(queryString, connection));
       return executionRoot.execute();
     }
 
+    /**
+     * Enables query by defining query data fetcher using {@link VertxDataFetcher} and adding it to
+     * {@link GraphQLCodeRegistry}.
+     *
+     * @return this
+     */
     public Builder enableQuery() {
       if (queryEnabled) {
         return this;
@@ -166,7 +187,7 @@ public class GraphQLDefinition {
       VertxDataFetcher<List<Map<String, Object>>> queryDataFetcher =
           new VertxDataFetcher<>(
               (env, listPromise) ->
-                  client
+                  sqlConnectionPool
                       .rxGetConnection()
                       .doOnSuccess(
                           connection ->
@@ -187,6 +208,13 @@ public class GraphQLDefinition {
       return this;
     }
 
+    /**
+     * Enables subscription by defining subscription data fetcher and adding it to {@link
+     * GraphQLCodeRegistry}.
+     *
+     * @param modifiedTablesStream flowable which emits names of altered tables
+     * @return this
+     */
     public Builder enableSubscription(Flowable<String> modifiedTablesStream) {
       if (subscriptionEnabled) {
         return this;
@@ -195,12 +223,12 @@ public class GraphQLDefinition {
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
           env -> {
             log.info("new subscription");
-            SqlExecutor sqlExecutor = new SqlExecutor();
+            SQLExecutor sqlExecutor = new SQLExecutor();
             ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
             Set<String> queriedTables = executionRoot.getQueriedTables();
             return modifiedTablesStream
                 .filter(queriedTables::contains)
-                .flatMap(table -> client.rxGetConnection().toFlowable())
+                .flatMap(table -> sqlConnectionPool.rxGetConnection().toFlowable())
                 .flatMap(
                     connection -> {
                       sqlExecutor.setSqlExecutorFunction(query -> executeQuery(query, connection));
@@ -218,6 +246,12 @@ public class GraphQLDefinition {
       return this;
     }
 
+    /**
+     * Build {@link GraphQL} by applying internally constructed {@link GraphQLDatabaseSchema} to
+     * query / subscription builders.
+     *
+     * @return constructed GraphQL object
+     */
     public GraphQL build() {
       if (!(queryEnabled || subscriptionEnabled)) {
         throw new RuntimeException("query or subscription has to be enabled");

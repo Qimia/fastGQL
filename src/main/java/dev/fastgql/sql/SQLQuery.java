@@ -19,6 +19,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Class to construct SQL query from simple query components.
+ *
+ * @author Kamil Bobrowski
+ */
 public class SQLQuery {
   private final String table;
   private final String alias;
@@ -29,6 +34,13 @@ public class SQLQuery {
   private Map<String, String> tableFieldToAlias;
   private Map<String, Set<String>> aliasToKeys;
 
+  /**
+   * Construct SQLQuery with table and its alias.
+   *
+   * @param table name of the table
+   * @param alias alias of the table
+   * @param args arguments parsed from GraphQL query
+   */
   public SQLQuery(String table, String alias, SQLArguments args) {
     this.table = table;
     this.alias = alias;
@@ -49,6 +61,15 @@ public class SQLQuery {
     keys.add(String.format("%s.%s AS %s", table, key, getKeyAlias(table, key)));
   }
 
+  /**
+   * Add LEFT JOIN statement to SQL query.
+   *
+   * @param thisTable name of base table
+   * @param thisKey name of a key in base table on which the join will be made
+   * @param foreignTable name of a table to join
+   * @param foreignTableAlias alias of a table to join
+   * @param foreignKey name of a key in a table being joined on which join will be made
+   */
   public void addJoin(
       String thisTable,
       String thisKey,
@@ -69,14 +90,19 @@ public class SQLQuery {
     suffixes.add(suffix);
   }
 
+  /** Reset query to initial state. */
   public void reset() {
     keys = new HashSet<>();
     joins = new ArrayList<>();
     suffixes = new ArrayList<>();
   }
 
+  /**
+   * Build query from internal components.
+   *
+   * @return valid SQL query to be executed
+   */
   public String build() {
-    System.out.println(buildWhereQuery());
     return String.format(
             "SELECT %s FROM %s %s %s %s %s",
             String.join(", ", keys),
@@ -104,8 +130,8 @@ public class SQLQuery {
             .map(
                 (qualifiedName) -> {
                   QualifiedName qualifiedNameObject = new QualifiedName(qualifiedName);
-                  String table = qualifiedNameObject.getParent();
-                  String key = qualifiedNameObject.getName();
+                  String table = qualifiedNameObject.getTableName();
+                  String key = qualifiedNameObject.getKeyName();
                   if (tableFieldToAlias.containsKey(table)
                       && aliasToKeys.containsKey(tableFieldToAlias.get(table))
                       && aliasToKeys.get(tableFieldToAlias.get(table)).contains(key)) {

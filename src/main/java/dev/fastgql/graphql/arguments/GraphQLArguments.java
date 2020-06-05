@@ -8,7 +8,7 @@ package dev.fastgql.graphql.arguments;
 
 import static dev.fastgql.graphql.GraphQLNaming.getNameBoolType;
 import static dev.fastgql.graphql.GraphQLNaming.getNameForReferencingField;
-import static dev.fastgql.graphql.arguments.ArgumentsUtils.fieldTypeGraphQLScalarTypeMap;
+import static dev.fastgql.graphql.arguments.GraphQLArgumentsUtils.fieldTypeGraphQLScalarTypeMap;
 import static graphql.Scalars.GraphQLInt;
 
 import dev.fastgql.db.DatabaseSchema;
@@ -72,7 +72,7 @@ public class GraphQLArguments {
                     if (node.getReferencing() != null) {
                       String referencingName = getNameForReferencingField(node.getQualifiedName());
                       String referencingTypeName =
-                          GraphQLNaming.getNameOrderByType(node.getReferencing().getParent());
+                          GraphQLNaming.getNameOrderByType(node.getReferencing().getTableName());
                       builder.field(
                           GraphQLInputObjectField.newInputObjectField()
                               .name(referencingName)
@@ -122,7 +122,7 @@ public class GraphQLArguments {
                   (name, node) -> {
                     GraphQLInputType nodeType =
                         ConditionalOperatorTypes.scalarTypeToComparisonExpMap.get(
-                            fieldTypeGraphQLScalarTypeMap.get(node.getFieldType()));
+                            fieldTypeGraphQLScalarTypeMap.get(node.getKeyType()));
                     builder.field(
                         GraphQLInputObjectField.newInputObjectField()
                             .name(name)
@@ -131,7 +131,7 @@ public class GraphQLArguments {
                     if (node.getReferencing() != null) {
                       String referencingName = getNameForReferencingField(node.getQualifiedName());
                       String referencingTypeName =
-                          getNameBoolType(node.getReferencing().getParent());
+                          getNameBoolType(node.getReferencing().getTableName());
                       builder.field(
                           GraphQLInputObjectField.newInputObjectField()
                               .name(referencingName)

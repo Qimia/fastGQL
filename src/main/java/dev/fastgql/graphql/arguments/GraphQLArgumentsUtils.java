@@ -6,22 +6,22 @@
 
 package dev.fastgql.graphql.arguments;
 
-import static dev.fastgql.common.FieldType.BOOL;
-import static dev.fastgql.common.FieldType.FLOAT;
-import static dev.fastgql.common.FieldType.INT;
-import static dev.fastgql.common.FieldType.STRING;
+import static dev.fastgql.common.KeyType.BOOL;
+import static dev.fastgql.common.KeyType.FLOAT;
+import static dev.fastgql.common.KeyType.INT;
+import static dev.fastgql.common.KeyType.STRING;
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLFloat;
 import static graphql.Scalars.GraphQLInt;
 import static graphql.Scalars.GraphQLString;
 
-import dev.fastgql.common.FieldType;
+import dev.fastgql.common.KeyType;
 import graphql.schema.GraphQLScalarType;
 import java.util.Map;
 
-public class ArgumentsUtils {
+public class GraphQLArgumentsUtils {
 
-  public static Map<FieldType, GraphQLScalarType> fieldTypeGraphQLScalarTypeMap =
+  public static Map<KeyType, GraphQLScalarType> fieldTypeGraphQLScalarTypeMap =
       Map.of(
           INT, GraphQLInt,
           FLOAT, GraphQLFloat,

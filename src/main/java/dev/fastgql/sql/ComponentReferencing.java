@@ -14,67 +14,87 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Class to handle part of SQL query related to querying another table which is referenced by key in
+ * a current table. It is using LEFT JOIN to get this information.
+ *
+ * @author Kamil Bobrowski
+ */
 public class ComponentReferencing implements Component {
-  private final String field;
-  private String table;
-  private final String key;
-  private final String foreignTable;
+  private final String fieldName;
+  private String parentTableAlias;
+  private final String keyName;
+  private final String foreignTableName;
   private final String foreignTableAlias;
-  private final String foreignKey;
+  private final String foreignKeyName;
   private List<Component> components;
   private Set<String> queriedTables = new HashSet<>();
-  private SqlExecutor sqlExecutor;
+  private SQLExecutor sqlExecutor;
 
+  /**
+   * Construct component by providing information about key which is referencing foreign key and
+   * foreign key which is referenced.
+   *
+   * @param fieldName name of GraphQL field (e.g. address_ref)
+   * @param keyName name of key which is referencing foreign key
+   * @param foreignTableName name of referenced foreign table
+   * @param foreignTableAlias alias of referenced foreign table
+   * @param foreignKeyName name of referenced foreign key
+   */
   public ComponentReferencing(
-      String field, String key, String foreignTable, String foreignTableAlias, String foreignKey) {
-    this.field = field;
-    this.key = key;
-    this.foreignTable = foreignTable;
+      String fieldName,
+      String keyName,
+      String foreignTableName,
+      String foreignTableAlias,
+      String foreignKeyName) {
+    this.fieldName = fieldName;
+    this.keyName = keyName;
+    this.foreignTableName = foreignTableName;
     this.foreignTableAlias = foreignTableAlias;
-    this.foreignKey = foreignKey;
+    this.foreignKeyName = foreignKeyName;
     this.components = new ArrayList<>();
-    this.queriedTables.add(foreignTable);
+    this.queriedTables.add(foreignTableName);
   }
 
   @Override
   public void addComponent(Component component) {
-    component.setTable(foreignTableAlias);
+    component.setParentTableAlias(foreignTableAlias);
     component.setSqlExecutor(sqlExecutor);
     components.add(component);
     queriedTables.addAll(component.getQueriedTables());
   }
 
   @Override
-  public String trueTableNameWhenParent() {
-    return foreignTable;
+  public String tableNameWhenParent() {
+    return foreignTableName;
   }
 
   @Override
   public void updateQuery(SQLQuery query) {
     Objects.requireNonNull(query);
-    query.addKey(table, key);
-    query.addJoin(table, key, foreignTable, foreignTableAlias, foreignKey);
-    query.addTableFieldToAlias(field, foreignTableAlias);
+    query.addKey(parentTableAlias, keyName);
+    query.addJoin(parentTableAlias, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
+    query.addTableFieldToAlias(fieldName, foreignTableAlias);
     components.forEach(component -> component.updateQuery(query));
   }
 
   @Override
-  public void setTable(String table) {
-    this.table = table;
+  public void setParentTableAlias(String parentTableAlias) {
+    this.parentTableAlias = parentTableAlias;
   }
 
   @Override
-  public void setSqlExecutor(SqlExecutor sqlExecutor) {
+  public void setSqlExecutor(SQLExecutor sqlExecutor) {
     this.sqlExecutor = sqlExecutor;
   }
 
   @Override
   public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
-    if (SQLResponseUtils.getValue(row, table, key) == null) {
+    if (SQLResponseUtils.getValue(row, parentTableAlias, keyName) == null) {
       return Single.just(Map.of());
     }
     return SQLResponseUtils.constructResponse(row, components)
-        .map(response -> Map.of(field, response));
+        .map(response -> Map.of(fieldName, response));
   }
 
   @Override

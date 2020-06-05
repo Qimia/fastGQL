@@ -20,11 +20,11 @@ public class GraphQLNaming {
 
   public static String getNameForReferencingField(QualifiedName qualifiedName) {
     Objects.requireNonNull(qualifiedName);
-    return String.format("%s_ref", qualifiedName.getName());
+    return String.format("%s_ref", qualifiedName.getKeyName());
   }
 
   public static String getNameForReferencedByField(QualifiedName qualifiedName) {
     Objects.requireNonNull(qualifiedName);
-    return String.format("%s_on_%s", qualifiedName.getParent(), qualifiedName.getName());
+    return String.format("%s_on_%s", qualifiedName.getTableName(), qualifiedName.getKeyName());
   }
 }

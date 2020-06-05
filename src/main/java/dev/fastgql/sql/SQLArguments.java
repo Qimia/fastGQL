@@ -14,22 +14,26 @@ import dev.fastgql.common.QualifiedName;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Class to construct and store GraphQL arguments from simple query components.
+ *
+ * @author Mingyi Zhang
+ */
 public class SQLArguments {
 
-  private final String table;
+  private final String tableName;
   private final Integer limit;
   private final Integer offset;
   private final JsonElement orderBy;
   private final JsonElement where;
 
-  public SQLArguments(String table, Map<String, Object> args) {
-    this.table = table;
+  public SQLArguments(String tableName, Map<String, Object> args) {
+    this.tableName = tableName;
     this.limit = (Integer) args.get("limit");
     this.offset = (Integer) args.get("offset");
     Gson gson = new Gson();
     this.orderBy = gson.toJsonTree(args.get("order_by"));
     this.where = gson.toJsonTree(args.get("where"));
-    System.out.println(where);
   }
 
   public Integer getLimit() {
@@ -44,6 +48,10 @@ public class SQLArguments {
     return where;
   }
 
+  public JsonElement getOrderBy() {
+    return orderBy;
+  }
+
   public LinkedHashMap<String, String> getQualifiedNameToOrderMap() {
     LinkedHashMap<String, String> qualifiedNameToOrder = new LinkedHashMap<>();
     if (!orderBy.isJsonArray()) {
@@ -52,7 +60,7 @@ public class SQLArguments {
     JsonArray orderByArray = orderBy.getAsJsonArray();
     for (int i = 0; i < orderByArray.size(); i++) {
       JsonObject object = orderByArray.get(i).getAsJsonObject();
-      addQualifiedNameToOrder(table, object, qualifiedNameToOrder);
+      addQualifiedNameToOrder(tableName, object, qualifiedNameToOrder);
     }
     return qualifiedNameToOrder;
   }
@@ -62,7 +70,6 @@ public class SQLArguments {
     for (String key : object.keySet()) {
       JsonElement value = object.get(key);
       if (value.isJsonObject()) {
-
         addQualifiedNameToOrder(key, value.getAsJsonObject(), qualifiedNameToOrder);
       } else {
         QualifiedName qualifiedName = new QualifiedName(table, key);

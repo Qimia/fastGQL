@@ -16,6 +16,12 @@ import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
 import java.util.function.Function;
 import org.dataloader.DataLoaderRegistry;
 
+/**
+ * Defines a version of {@link GraphQLHandler} which can be altered at runtime by updating it with
+ * new {@link GraphQL}.
+ *
+ * @author Kamil Bobrowski
+ */
 public class GraphQLHandlerUpdatable implements Handler<RoutingContext> {
   private final Subject<GraphQLHandler> graphQLHandlerSubject =
       BehaviorSubject.<GraphQLHandler>create().toSerialized();
@@ -39,6 +45,11 @@ public class GraphQLHandlerUpdatable implements Handler<RoutingContext> {
     return new GraphQLHandlerUpdatable(options);
   }
 
+  /**
+   * Set new GraphQL by pushing new {@link GraphQLHandler} on internal {@link BehaviorSubject}.
+   *
+   * @param graphQL new GraphQL
+   */
   public synchronized void updateGraphQL(GraphQL graphQL) {
     graphQLHandlerSubject.onNext(
         GraphQLHandler.create(graphQL, options)

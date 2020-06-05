@@ -6,7 +6,7 @@
 
 package dev.fastgql.common;
 
-public enum FieldType {
+public enum KeyType {
   INT,
   FLOAT,
   STRING,
