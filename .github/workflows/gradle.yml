@@ -24,10 +24,7 @@ jobs:
         java-version: 11
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Build debezium
-      run: cd debezium && mvn clean package -B -pl debezium-core,debezium-connector-postgres -am -Passembly -Dformat.formatter.goal=validate
-        -Dformat.imports.goal=check -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn && cd ..
-    - name: Build debezium container
-      run: cd debezium && chmod +x docker-build.sh && ./docker-build.sh && cd ..
+    - name: Get Debezium container
+      run: docker pull kbobrowski/connect:1.0 && docker tag kbobrowski/connect:1.0 debezium-local/connect:1.0
     - name: Build with Gradle
       run: ./gradlew build --info
