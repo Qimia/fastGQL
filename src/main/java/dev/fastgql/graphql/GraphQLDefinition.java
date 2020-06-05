@@ -138,8 +138,7 @@ public class GraphQLDefinition {
                             graphQLFieldDefinition.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
                             graphQLFieldDefinition.getForeignName().getKeyName(),
-                            new SQLArguments(
-                                selectedField.getName(), selectedField.getArguments()));
+                            new SQLArguments(selectedField.getArguments()));
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
                         componentReferenced,
@@ -156,10 +155,9 @@ public class GraphQLDefinition {
     private ComponentExecutable getExecutionRoot(
         DataFetchingEnvironment env, SQLExecutor sqlExecutor) {
       AliasGenerator aliasGenerator = new AliasGenerator();
-      String tableName = env.getField().getName();
-      SQLArguments args = new SQLArguments(tableName, env.getArguments());
+      SQLArguments args = new SQLArguments(env.getArguments());
       ComponentExecutable executionRoot =
-          new ExecutionRoot(tableName, aliasGenerator.getAlias(), args);
+          new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), args);
       executionRoot.setSqlExecutor(sqlExecutor);
       traverseSelectionSet(
           graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());

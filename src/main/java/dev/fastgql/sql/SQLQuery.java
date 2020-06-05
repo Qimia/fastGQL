@@ -121,31 +121,6 @@ public class SQLQuery {
     if (args.getOrderBy() == null || !args.getOrderBy().isJsonArray()) {
       return "";
     }
-    //    ///////////////
-    //    LinkedHashMap<String, String> qualifiedNameToOrder = args.getQualifiedNameToOrderMap();
-    //    if (qualifiedNameToOrder.isEmpty()) {
-    //      return "";
-    //    }
-    //    List<String> orderBys =
-    //        qualifiedNameToOrder.keySet().stream()
-    //            .map(
-    //                (qualifiedName) -> {
-    //                  QualifiedName qualifiedNameObject = new QualifiedName(qualifiedName);
-    //                  String table = qualifiedNameObject.getTableName();
-    //                  String key = qualifiedNameObject.getKeyName();
-    //                  if (tableFieldToAlias.containsKey(table)
-    //                      && aliasToKeys.containsKey(tableFieldToAlias.get(table))
-    //                      && aliasToKeys.get(tableFieldToAlias.get(table)).contains(key)) {
-    //                    String alias = tableFieldToAlias.get(table);
-    //                    String keyAlias = getKeyAlias(alias, key);
-    //                    return String.format(
-    //                        "%s %s", keyAlias, qualifiedNameToOrder.get(qualifiedName));
-    //                  }
-    //                  return null;
-    //                })
-    //            .filter(Objects::nonNull)
-    //            .collect(Collectors.toList());
-    //    ///////////////////
     return String.format(
         "ORDER BY %s",
         createOrderByQuery(args.getOrderBy().getAsJsonArray(), alias, tableFieldToAlias));
