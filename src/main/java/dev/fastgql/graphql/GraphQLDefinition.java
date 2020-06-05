@@ -54,7 +54,7 @@ public class GraphQLDefinition {
   public static class Builder {
     private final DatabaseSchema databaseSchema;
     private final GraphQLDatabaseSchema graphQLDatabaseSchema;
-    private final Pool client;
+    private final Pool sqlConnectionPool;
     private final GraphQLSchema.Builder graphQLSchemaBuilder;
     private final GraphQLCodeRegistry.Builder graphQLCodeRegistryBuilder;
     private boolean queryEnabled = false;
@@ -64,12 +64,12 @@ public class GraphQLDefinition {
      * Class builder, has to be initialized with database schema and SQL connection pool.
      *
      * @param databaseSchema input database schema
-     * @param client SQL connection pool
+     * @param sqlConnectionPool SQL connection pool
      */
-    public Builder(DatabaseSchema databaseSchema, Pool client) {
+    public Builder(DatabaseSchema databaseSchema, Pool sqlConnectionPool) {
       this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
-      this.client = client;
+      this.sqlConnectionPool = sqlConnectionPool;
       this.graphQLSchemaBuilder = GraphQLSchema.newSchema();
       this.graphQLCodeRegistryBuilder = GraphQLCodeRegistry.newCodeRegistry();
     }
@@ -101,44 +101,44 @@ public class GraphQLDefinition {
       selectionSet
           .getFields()
           .forEach(
-              field -> {
-                if (field.getQualifiedName().contains("/")) {
+              selectedField -> {
+                if (selectedField.getQualifiedName().contains("/")) {
                   return;
                 }
-                GraphQLNodeDefinition node =
-                    graphQLDatabaseSchema.nodeAt(parent.trueTableNameWhenParent(), field.getName());
-                switch (node.getReferenceType()) {
+                GraphQLFieldDefinition graphQLFieldDefinition =
+                    graphQLDatabaseSchema.fieldAt(parent.tableNameWhenParent(), selectedField.getName());
+                switch (graphQLFieldDefinition.getReferenceType()) {
                   case NONE:
-                    parent.addComponent(new ComponentRow(node.getQualifiedName().getName()));
+                    parent.addComponent(new ComponentRow(graphQLFieldDefinition.getQualifiedName().getKeyName()));
                     break;
                   case REFERENCING:
                     Component componentReferencing =
                         new ComponentReferencing(
-                            field.getName(),
-                            node.getQualifiedName().getName(),
-                            node.getForeignName().getParent(),
+                            selectedField.getName(),
+                            graphQLFieldDefinition.getQualifiedName().getKeyName(),
+                            graphQLFieldDefinition.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
-                            node.getForeignName().getName());
+                            graphQLFieldDefinition.getForeignName().getKeyName());
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
                         componentReferencing,
                         aliasGenerator,
-                        field.getSelectionSet());
+                        selectedField.getSelectionSet());
                     parent.addComponent(componentReferencing);
                     break;
                   case REFERENCED:
                     Component componentReferenced =
                         new ComponentReferenced(
-                            field.getName(),
-                            node.getQualifiedName().getName(),
-                            node.getForeignName().getParent(),
+                            selectedField.getName(),
+                            graphQLFieldDefinition.getQualifiedName().getKeyName(),
+                            graphQLFieldDefinition.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
-                            node.getForeignName().getName());
+                            graphQLFieldDefinition.getForeignName().getKeyName());
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
                         componentReferenced,
                         aliasGenerator,
-                        field.getSelectionSet());
+                        selectedField.getSelectionSet());
                     parent.addComponent(componentReferenced);
                     break;
                   default:
@@ -179,7 +179,7 @@ public class GraphQLDefinition {
       VertxDataFetcher<List<Map<String, Object>>> queryDataFetcher =
           new VertxDataFetcher<>(
               (env, listPromise) ->
-                  client
+                  sqlConnectionPool
                       .rxGetConnection()
                       .doOnSuccess(
                           connection ->
@@ -220,7 +220,7 @@ public class GraphQLDefinition {
             Set<String> queriedTables = executionRoot.getQueriedTables();
             return modifiedTablesStream
                 .filter(queriedTables::contains)
-                .flatMap(table -> client.rxGetConnection().toFlowable())
+                .flatMap(table -> sqlConnectionPool.rxGetConnection().toFlowable())
                 .flatMap(
                     connection -> {
                       sqlExecutor.setSqlExecutorFunction(query -> executeQuery(query, connection));

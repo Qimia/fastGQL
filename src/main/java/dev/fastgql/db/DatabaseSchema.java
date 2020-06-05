@@ -6,7 +6,7 @@
 
 package dev.fastgql.db;
 
-import dev.fastgql.common.FieldType;
+import dev.fastgql.common.KeyType;
 import dev.fastgql.common.QualifiedName;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,19 +14,19 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Data structure defining database schema, including tables, fields, field types and foreign keys
+ * Data structure defining database schema, including tables, keys, key types and foreign key
  * relationships.
  *
  * @author Kamil Bobrowski
  */
 public class DatabaseSchema {
-  private final Map<String, Map<String, NodeDefinition>> graph;
+  private final Map<String, Map<String, KeyDefinition>> graph;
 
   public static DatabaseSchema.Builder newSchema() {
     return new DatabaseSchema.Builder();
   }
 
-  public Map<String, Map<String, NodeDefinition>> getGraph() {
+  public Map<String, Map<String, KeyDefinition>> getGraph() {
     return graph;
   }
 
@@ -40,7 +40,7 @@ public class DatabaseSchema {
   }
 
   public static class Builder {
-    private Map<String, Map<String, NodeDefinition>> graph = new HashMap<>();
+    private Map<String, Map<String, KeyDefinition>> graph = new HashMap<>();
 
     public Builder() {}
 
@@ -49,19 +49,19 @@ public class DatabaseSchema {
     }
 
     /**
-     * Add field to the table which is referencing another field.
+     * Add key to the table which is referencing another key.
      *
-     * @param qualifiedName qualified name of the field in a form of "table/field"
-     * @param type type of the field
-     * @param qualifiedReferencingName qualified name of a field which is referenced by this field
+     * @param qualifiedName qualified name of the key in a form of "table/key"
+     * @param type type of the key
+     * @param qualifiedReferencingName qualified name of a key which is referenced by this key
      * @return builder of DatabaseSchema
      */
-    public Builder row(String qualifiedName, FieldType type, String qualifiedReferencingName) {
+    public Builder addKey(String qualifiedName, KeyType type, String qualifiedReferencingName) {
       Objects.requireNonNull(qualifiedName);
       Objects.requireNonNull(type);
       Objects.requireNonNull(qualifiedReferencingName);
-      addNode(
-          new NodeDefinition(
+      addKeyDefinition(
+          new KeyDefinition(
               new QualifiedName(qualifiedName),
               type,
               new QualifiedName(qualifiedReferencingName),
@@ -70,22 +70,22 @@ public class DatabaseSchema {
     }
 
     /**
-     * Add field to the table.
+     * Add key to the table.
      *
-     * @param qualifiedName - qualified name of the field in a form of "table/field"
-     * @param type - type of the field
+     * @param qualifiedName - qualified name of the key in a form of "table/key"
+     * @param type - type of the key
      * @return builder of DatabaseSchema
      */
-    public Builder row(String qualifiedName, FieldType type) {
+    public Builder addKey(String qualifiedName, KeyType type) {
       Objects.requireNonNull(qualifiedName);
       Objects.requireNonNull(type);
-      addNode(new NodeDefinition(new QualifiedName(qualifiedName), type, null, null));
+      addKeyDefinition(new KeyDefinition(new QualifiedName(qualifiedName), type, null, null));
       return this;
     }
 
-    private NodeDefinition nodeAt(QualifiedName qualifiedName) {
-      String parent = qualifiedName.getParent();
-      String name = qualifiedName.getName();
+    private KeyDefinition keyAt(QualifiedName qualifiedName) {
+      String parent = qualifiedName.getTableName();
+      String name = qualifiedName.getKeyName();
       if (graph.containsKey(parent) && graph.get(parent).containsKey(name)) {
         return graph.get(parent).get(name);
       } else {
@@ -93,35 +93,35 @@ public class DatabaseSchema {
       }
     }
 
-    private void mergeNodeAt(QualifiedName qualifiedName, NodeDefinition node) {
-      Objects.requireNonNull(nodeAt(qualifiedName)).merge(node);
+    private void mergeKeyAt(QualifiedName qualifiedName, KeyDefinition node) {
+      Objects.requireNonNull(keyAt(qualifiedName)).merge(node);
     }
 
-    private void addNodeAt(QualifiedName qualifiedName, NodeDefinition node) {
-      String parent = qualifiedName.getParent();
-      String name = qualifiedName.getName();
+    private void addKeyAt(QualifiedName qualifiedName, KeyDefinition node) {
+      String parent = qualifiedName.getTableName();
+      String name = qualifiedName.getKeyName();
       if (!graph.containsKey(parent)) {
         graph.put(parent, new HashMap<>());
       }
       graph.get(parent).put(name, node);
     }
 
-    private void addNode(NodeDefinition newNode) {
-      QualifiedName qualifiedName = newNode.getQualifiedName();
-      if (nodeAt(qualifiedName) != null) {
-        mergeNodeAt(qualifiedName, newNode);
+    private void addKeyDefinition(KeyDefinition keyDefinition) {
+      QualifiedName qualifiedName = keyDefinition.getQualifiedName();
+      if (keyAt(qualifiedName) != null) {
+        mergeKeyAt(qualifiedName, keyDefinition);
       } else {
-        addNodeAt(qualifiedName, newNode);
+        addKeyAt(qualifiedName, keyDefinition);
       }
-      QualifiedName referencing = newNode.getReferencing();
+      QualifiedName referencing = keyDefinition.getReferencing();
       if (referencing != null) {
-        addNode(
-            new NodeDefinition(referencing, newNode.getFieldType(), null, Set.of(qualifiedName)));
+        addKeyDefinition(
+            new KeyDefinition(referencing, keyDefinition.getKeyType(), null, Set.of(qualifiedName)));
       }
     }
   }
 
-  private DatabaseSchema(Map<String, Map<String, NodeDefinition>> graph) {
+  private DatabaseSchema(Map<String, Map<String, KeyDefinition>> graph) {
     this.graph = graph;
   }
 }

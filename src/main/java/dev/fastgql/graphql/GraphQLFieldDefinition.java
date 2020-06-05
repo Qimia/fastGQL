@@ -10,7 +10,7 @@ import static graphql.Scalars.GraphQLFloat;
 import static graphql.Scalars.GraphQLInt;
 import static graphql.Scalars.GraphQLString;
 
-import dev.fastgql.common.FieldType;
+import dev.fastgql.common.KeyType;
 import dev.fastgql.common.QualifiedName;
 import dev.fastgql.common.ReferenceType;
 import graphql.schema.GraphQLList;
@@ -24,60 +24,60 @@ import java.util.Map;
  *
  * @author Kamil Bobrowski
  */
-public class GraphQLNodeDefinition {
+public class GraphQLFieldDefinition {
   private final QualifiedName qualifiedName;
   private final GraphQLOutputType graphQLType;
   private final QualifiedName foreignName;
   private final ReferenceType referenceType;
-  private static final Map<FieldType, GraphQLScalarType> nodeToGraphQLType =
+  private static final Map<KeyType, GraphQLScalarType> keyTypeToGraphQLType =
       Map.of(
-          FieldType.INT, GraphQLInt,
-          FieldType.STRING, GraphQLString,
-          FieldType.FLOAT, GraphQLFloat);
+          KeyType.INT, GraphQLInt,
+          KeyType.STRING, GraphQLString,
+          KeyType.FLOAT, GraphQLFloat);
 
   /**
-   * Create a field which extracts value for given field in a table. This type of field in GraphQL
+   * Create a field which extracts value for given key in a table. This type of field in GraphQL
    * query will just return a single value.
    *
-   * @param qualifiedName qualified name of the field
-   * @param type type of the field
+   * @param qualifiedName qualified name of the key
+   * @param type type of the key
    * @return new field definition
    */
-  public static GraphQLNodeDefinition createLeaf(QualifiedName qualifiedName, FieldType type) {
-    return new GraphQLNodeDefinition(
-        qualifiedName, nodeToGraphQLType.get(type), null, ReferenceType.NONE);
+  public static GraphQLFieldDefinition createLeaf(QualifiedName qualifiedName, KeyType type) {
+    return new GraphQLFieldDefinition(
+        qualifiedName, keyTypeToGraphQLType.get(type), null, ReferenceType.NONE);
   }
 
   /**
-   * Create a field which is referencing other field. This type of field in GraphQL query will
+   * Create a field which is referencing other table. This type of field in GraphQL query will
    * return a matching table being referenced.
    *
-   * @param qualifiedName qualified name of the field which is referencing other field
-   * @param foreignName qualified name of the field being referenced
+   * @param qualifiedName qualified name of the key which is referencing other key
+   * @param foreignName qualified name of the key being referenced
    * @return new field definition
    */
-  public static GraphQLNodeDefinition createReferencing(
+  public static GraphQLFieldDefinition createReferencing(
       QualifiedName qualifiedName, QualifiedName foreignName) {
-    return new GraphQLNodeDefinition(
+    return new GraphQLFieldDefinition(
         qualifiedName,
-        GraphQLTypeReference.typeRef(foreignName.getParent()),
+        GraphQLTypeReference.typeRef(foreignName.getTableName()),
         foreignName,
         ReferenceType.REFERENCING);
   }
 
   /**
-   * Create a field which is referenced by other field. This type of field in GraphQL query will
+   * Create a field which is referenced by other tables. This type of field in GraphQL query will
    * return a list of tables which are referencing this field.
    *
-   * @param qualifiedName qualified name of the field which is being referenced
-   * @param foreignName qualified
+   * @param qualifiedName qualified name of the key which is being referenced
+   * @param foreignName qualified name of foreign key which references this key
    * @return new field definition
    */
-  public static GraphQLNodeDefinition createReferencedBy(
+  public static GraphQLFieldDefinition createReferencedBy(
       QualifiedName qualifiedName, QualifiedName foreignName) {
-    return new GraphQLNodeDefinition(
+    return new GraphQLFieldDefinition(
         qualifiedName,
-        GraphQLList.list(GraphQLTypeReference.typeRef(foreignName.getParent())),
+        GraphQLList.list(GraphQLTypeReference.typeRef(foreignName.getTableName())),
         foreignName,
         ReferenceType.REFERENCED);
   }
@@ -98,7 +98,7 @@ public class GraphQLNodeDefinition {
     return referenceType;
   }
 
-  private GraphQLNodeDefinition(
+  private GraphQLFieldDefinition(
       QualifiedName qualifiedName,
       GraphQLOutputType graphQLType,
       QualifiedName foreignName,

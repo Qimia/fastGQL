@@ -6,7 +6,7 @@
 
 package dev.fastgql.db;
 
-import dev.fastgql.common.FieldType;
+import dev.fastgql.common.KeyType;
 import dev.fastgql.common.QualifiedName;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -23,10 +23,10 @@ import java.util.Map;
  */
 public class MetadataUtils {
 
-  private static final Map<Integer, FieldType> sqlDataTypeToFieldType =
+  private static final Map<Integer, KeyType> sqlDataTypeToKeyType =
       Map.of(
-          4, FieldType.INT,
-          12, FieldType.STRING);
+          4, KeyType.INT,
+          12, KeyType.STRING);
 
   /**
    * Creates {@link DatabaseSchema} given {@link Connection} to the database.
@@ -62,19 +62,19 @@ public class MetadataUtils {
       ResultSet columnsResultSet = databaseMetaData.getColumns(null, null, tableName, null);
       while (columnsResultSet.next()) {
         Integer dataType = columnsResultSet.getInt("DATA_TYPE");
-        if (!sqlDataTypeToFieldType.containsKey(dataType)) {
+        if (!sqlDataTypeToKeyType.containsKey(dataType)) {
           throw new RuntimeException(
               "Only integer or string class for columns currently supported");
         }
         String columnName = columnsResultSet.getString("COLUMN_NAME");
         String qualifiedName = QualifiedName.generate(tableName, columnName);
         if (foreignKeyToRef.containsKey(qualifiedName)) {
-          databaseSchemaBuilder.row(
+          databaseSchemaBuilder.addKey(
               qualifiedName,
-              sqlDataTypeToFieldType.get(dataType),
+              sqlDataTypeToKeyType.get(dataType),
               foreignKeyToRef.get(qualifiedName));
         } else {
-          databaseSchemaBuilder.row(qualifiedName, sqlDataTypeToFieldType.get(dataType));
+          databaseSchemaBuilder.addKey(qualifiedName, sqlDataTypeToKeyType.get(dataType));
         }
       }
       columnsResultSet.close();
