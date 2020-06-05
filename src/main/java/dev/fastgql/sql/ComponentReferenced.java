@@ -33,7 +33,11 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
    * @param foreignKeyName foreign key which is referencing this key
    */
   public ComponentReferenced(
-    String fieldName, String keyName, String foreignTable, String foreignTableAlias, String foreignKeyName) {
+      String fieldName,
+      String keyName,
+      String foreignTable,
+      String foreignTableAlias,
+      String foreignKeyName) {
     super(foreignTable, foreignTableAlias);
     this.keyName = keyName;
     this.fieldName = fieldName;

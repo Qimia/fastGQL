@@ -42,7 +42,11 @@ public class ComponentReferencing implements Component {
    * @param foreignKeyName name of referenced foreign key
    */
   public ComponentReferencing(
-    String fieldName, String keyName, String foreignTableName, String foreignTableAlias, String foreignKeyName) {
+      String fieldName,
+      String keyName,
+      String foreignTableName,
+      String foreignTableAlias,
+      String foreignKeyName) {
     this.fieldName = fieldName;
     this.keyName = keyName;
     this.foreignTableName = foreignTableName;

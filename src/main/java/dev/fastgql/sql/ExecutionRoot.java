@@ -154,7 +154,8 @@ public class ExecutionRoot implements ComponentExecutable {
                             .map(
                                 componentResponseObject -> {
                                   @SuppressWarnings("unchecked")
-                                  Map<String, Object> componentResponse = (Map<String, Object>) componentResponseObject;
+                                  Map<String, Object> componentResponse =
+                                      (Map<String, Object>) componentResponseObject;
                                   return componentResponse;
                                 })
                             .collect(Collectors.toList()));

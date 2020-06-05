@@ -80,9 +80,9 @@ public class KeyDefinition {
   }
 
   /**
-   * Merge information from other key to this key. If two keys are compatible (the same
-   * qualified name, key type and another key being referenced) it will add all keys which are
-   * referencing another key to this key.
+   * Merge information from other key to this key. If two keys are compatible (the same qualified
+   * name, key type and another key being referenced) it will add all keys which are referencing
+   * another key to this key.
    *
    * @param otherKeyDefinition - other key to be merged with this key
    */

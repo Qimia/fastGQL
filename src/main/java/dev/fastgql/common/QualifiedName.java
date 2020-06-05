@@ -10,8 +10,8 @@ import java.util.Objects;
 import org.antlr.v4.runtime.misc.Pair;
 
 /**
- * Class to handle qualified name of a key in a table. It is defined by two elements: table and
- * key, and has string representation of "table/key".
+ * Class to handle qualified name of a key in a table. It is defined by two elements: table and key,
+ * and has string representation of "table/key".
  *
  * @author Kamil Bobrowski
  */
@@ -79,8 +79,7 @@ public class QualifiedName {
     if (splitted.length == 2) {
       ret = new Pair<>(splitted[0], splitted[1]);
     } else {
-      throw new IllegalArgumentException(
-          "qualified name has to be in the format of \"table/key\"");
+      throw new IllegalArgumentException("qualified name has to be in the format of \"table/key\"");
     }
     return ret;
   }

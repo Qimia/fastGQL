@@ -106,10 +106,12 @@ public class GraphQLDefinition {
                   return;
                 }
                 GraphQLFieldDefinition graphQLFieldDefinition =
-                    graphQLDatabaseSchema.fieldAt(parent.tableNameWhenParent(), selectedField.getName());
+                    graphQLDatabaseSchema.fieldAt(
+                        parent.tableNameWhenParent(), selectedField.getName());
                 switch (graphQLFieldDefinition.getReferenceType()) {
                   case NONE:
-                    parent.addComponent(new ComponentRow(graphQLFieldDefinition.getQualifiedName().getKeyName()));
+                    parent.addComponent(
+                        new ComponentRow(graphQLFieldDefinition.getQualifiedName().getKeyName()));
                     break;
                   case REFERENCING:
                     Component componentReferencing =

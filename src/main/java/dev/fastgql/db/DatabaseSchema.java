@@ -116,7 +116,8 @@ public class DatabaseSchema {
       QualifiedName referencing = keyDefinition.getReferencing();
       if (referencing != null) {
         addKeyDefinition(
-            new KeyDefinition(referencing, keyDefinition.getKeyType(), null, Set.of(qualifiedName)));
+            new KeyDefinition(
+                referencing, keyDefinition.getKeyType(), null, Set.of(qualifiedName)));
       }
     }
   }

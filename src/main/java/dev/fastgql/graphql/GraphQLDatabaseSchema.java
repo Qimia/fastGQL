@@ -54,14 +54,17 @@ public class GraphQLDatabaseSchema {
         .forEach(
             (tableName, keyNameToKeyDefinition) -> {
               graph.put(tableName, new HashMap<>());
-              Map<String, GraphQLFieldDefinition> fieldNameToGraphQLFieldDefinition = graph.get(tableName);
+              Map<String, GraphQLFieldDefinition> fieldNameToGraphQLFieldDefinition =
+                  graph.get(tableName);
               keyNameToKeyDefinition.forEach(
                   (keyName, keyDefinition) -> {
                     QualifiedName qualifiedName = keyDefinition.getQualifiedName();
                     QualifiedName referencing = keyDefinition.getReferencing();
                     Set<QualifiedName> referencedBySet = keyDefinition.getReferencedBy();
                     fieldNameToGraphQLFieldDefinition.put(
-                        keyName, GraphQLFieldDefinition.createLeaf(qualifiedName, keyDefinition.getKeyType()));
+                        keyName,
+                        GraphQLFieldDefinition.createLeaf(
+                            qualifiedName, keyDefinition.getKeyType()));
                     if (referencing != null) {
                       String referencingName = getNameForReferencingField(qualifiedName);
                       fieldNameToGraphQLFieldDefinition.put(
