@@ -48,10 +48,6 @@ public class SQLArguments {
     return where;
   }
 
-  public JsonElement getOrderBy() {
-    return orderBy;
-  }
-
   public LinkedHashMap<String, String> getQualifiedNameToOrderMap() {
     LinkedHashMap<String, String> qualifiedNameToOrder = new LinkedHashMap<>();
     if (!orderBy.isJsonArray()) {
