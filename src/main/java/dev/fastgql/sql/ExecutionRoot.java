@@ -192,6 +192,7 @@ public class ExecutionRoot implements ComponentExecutable {
   @Override
   public void setSqlExecutor(SQLExecutor sqlExecutor) {
     this.sqlExecutor = sqlExecutor;
+    this.components.forEach(component -> component.setSqlExecutor(sqlExecutor));
   }
 
   @Override
