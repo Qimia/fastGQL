@@ -37,9 +37,9 @@ public class SQLResponseUtils {
   }
 
   /**
-   * Build formatted GraphQL response from given SQL response row and list of {@link Component}.
-   * It collects all {@link Single} returned from extractValues method of each component
-   * and then combines them in a single Map.
+   * Build formatted GraphQL response from given SQL response row and list of {@link Component}. It
+   * collects all {@link Single} returned from extractValues method of each component and then
+   * combines them in a single Map.
    *
    * @param row SQL response row
    * @param components list of components which can extract values from this row

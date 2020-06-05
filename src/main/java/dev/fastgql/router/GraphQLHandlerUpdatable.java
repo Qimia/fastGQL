@@ -17,8 +17,8 @@ import java.util.function.Function;
 import org.dataloader.DataLoaderRegistry;
 
 /**
- * Defines a version of {@link GraphQLHandler} which can be altered at runtime
- * by updating it with new {@link GraphQL}.
+ * Defines a version of {@link GraphQLHandler} which can be altered at runtime by updating it with
+ * new {@link GraphQL}.
  *
  * @author Kamil Bobrowski
  */

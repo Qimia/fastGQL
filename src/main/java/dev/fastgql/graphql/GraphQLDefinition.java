@@ -38,8 +38,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Class to build {@link GraphQL} from {@link DatabaseSchema} (used for defining GraphQL schema)
- * and SQL connection pool ({@link Pool} - used in data fetchers).
+ * Class to build {@link GraphQL} from {@link DatabaseSchema} (used for defining GraphQL schema) and
+ * SQL connection pool ({@link Pool} - used in data fetchers).
  *
  * @author Kamil Bobrowski
  */
@@ -167,8 +167,8 @@ public class GraphQLDefinition {
     }
 
     /**
-     * Enables query by defining query data fetcher using {@link VertxDataFetcher} and adding it
-     * to {@link GraphQLCodeRegistry}.
+     * Enables query by defining query data fetcher using {@link VertxDataFetcher} and adding it to
+     * {@link GraphQLCodeRegistry}.
      *
      * @return this
      */
@@ -201,8 +201,8 @@ public class GraphQLDefinition {
     }
 
     /**
-     * Enables subscription by defining subscription data fetcher and adding it
-     * to {@link GraphQLCodeRegistry}.
+     * Enables subscription by defining subscription data fetcher and adding it to {@link
+     * GraphQLCodeRegistry}.
      *
      * @param modifiedTablesStream flowable which emits names of altered tables
      * @return this

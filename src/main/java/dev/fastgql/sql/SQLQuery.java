@@ -66,9 +66,7 @@ public class SQLQuery {
     suffixes.add(suffix);
   }
 
-  /**
-   * Reset query to initial state.
-   */
+  /** Reset query to initial state. */
   public void reset() {
     keys = new HashSet<>();
     joins = new ArrayList<>();

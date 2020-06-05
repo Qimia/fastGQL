@@ -36,8 +36,8 @@ public class GraphQLNodeDefinition {
           FieldType.FLOAT, GraphQLFloat);
 
   /**
-   * Create a field which extracts value for given field in a table. This type of field
-   * in GraphQL query will just return a single value.
+   * Create a field which extracts value for given field in a table. This type of field in GraphQL
+   * query will just return a single value.
    *
    * @param qualifiedName qualified name of the field
    * @param type type of the field
@@ -49,8 +49,8 @@ public class GraphQLNodeDefinition {
   }
 
   /**
-   * Create a field which is referencing other field. This type of field in GraphQL query
-   * will return a matching table being referenced.
+   * Create a field which is referencing other field. This type of field in GraphQL query will
+   * return a matching table being referenced.
    *
    * @param qualifiedName qualified name of the field which is referencing other field
    * @param foreignName qualified name of the field being referenced
@@ -66,8 +66,8 @@ public class GraphQLNodeDefinition {
   }
 
   /**
-   * Create a field which is referenced by other field. This type of field in GraphQL query
-   * will return a list of tables which are referencing this field.
+   * Create a field which is referenced by other field. This type of field in GraphQL query will
+   * return a list of tables which are referencing this field.
    *
    * @param qualifiedName qualified name of the field which is being referenced
    * @param foreignName qualified

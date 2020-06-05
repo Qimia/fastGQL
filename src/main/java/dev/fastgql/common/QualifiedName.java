@@ -10,8 +10,8 @@ import java.util.Objects;
 import org.antlr.v4.runtime.misc.Pair;
 
 /**
- * Class to handle qualified name of a field in a table. It is defined by two elements:
- * parent and child, and has string representation of "parent/child".
+ * Class to handle qualified name of a field in a table. It is defined by two elements: parent and
+ * child, and has string representation of "parent/child".
  *
  * @author Kamil Bobrowski
  */

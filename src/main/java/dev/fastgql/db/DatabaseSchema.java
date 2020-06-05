@@ -14,8 +14,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Data structure defining database schema, including tables, fields, field types
- * and foreign keys relationships.
+ * Data structure defining database schema, including tables, fields, field types and foreign keys
+ * relationships.
  *
  * @author Kamil Bobrowski
  */

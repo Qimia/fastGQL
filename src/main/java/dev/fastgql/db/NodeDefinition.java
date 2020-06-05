@@ -13,8 +13,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Definition of a single field in a table, intended to be use as
- * part of {@link DatabaseSchema}.
+ * Definition of a single field in a table, intended to be use as part of {@link DatabaseSchema}.
  *
  * @author Kamil Bobrowski
  */
@@ -27,8 +26,7 @@ public class NodeDefinition {
   /**
    * Define table field.
    *
-   * @param qualifiedName qualified name which specifies which field of which table
-   *                      is being defined
+   * @param qualifiedName qualified name which specifies which field of which table is being defined
    * @param fieldType type of field
    * @param referencing which field is being referenced by this field
    * @param referencedBySet set of fields which are referencing this field
@@ -82,9 +80,9 @@ public class NodeDefinition {
   }
 
   /**
-   * Merge information from other field to this field. If two nodes are compatible
-   * (the same qualified name, field type and another field being referenced)
-   * it will add all fields which are referencing another field to this field.
+   * Merge information from other field to this field. If two nodes are compatible (the same
+   * qualified name, field type and another field being referenced) it will add all fields which are
+   * referencing another field to this field.
    *
    * @param otherNode - other field to be merged with this field
    */

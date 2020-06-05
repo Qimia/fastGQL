@@ -13,8 +13,8 @@ import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
 
 /**
- * Class which contains {@link Router} instance, and allows for updating this
- * instance with new {@link GraphQL} at runtime.
+ * Class which contains {@link Router} instance, and allows for updating this instance with new
+ * {@link GraphQL} at runtime.
  *
  * @author Kamil Bobrowski
  */

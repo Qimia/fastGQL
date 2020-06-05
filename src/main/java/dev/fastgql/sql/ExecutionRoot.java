@@ -19,10 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Class to handle execution of SQL query. It contains {@link SQLQuery} which
- * can be altered by each of child {@link Component} and {@link SQLExecutor}
- * which is used to execute this query. It also tracks which tables need to be
- * queried (this information is used by subscription data fetcher).
+ * Class to handle execution of SQL query. It contains {@link SQLQuery} which can be altered by each
+ * of child {@link Component} and {@link SQLExecutor} which is used to execute this query. It also
+ * tracks which tables need to be queried (this information is used by subscription data fetcher).
  *
  * @author Kamil Bobrowski
  */
