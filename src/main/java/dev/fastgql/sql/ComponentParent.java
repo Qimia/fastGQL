@@ -28,7 +28,7 @@ public interface ComponentParent {
    *
    * @return table name
    */
-  String trueTableNameWhenParent();
+  String tableNameWhenParent();
 
   /**
    * Set SQL executor. If exact function to execute SQL query is not known at the time of

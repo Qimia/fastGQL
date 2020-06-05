@@ -10,58 +10,58 @@ import java.util.Objects;
 import org.antlr.v4.runtime.misc.Pair;
 
 /**
- * Class to handle qualified name of a field in a table. It is defined by two elements: parent and
- * child, and has string representation of "parent/child".
+ * Class to handle qualified name of a key in a table. It is defined by two elements: table and key,
+ * and has string representation of "table/key".
  *
  * @author Kamil Bobrowski
  */
 public class QualifiedName {
-  private final String parent;
-  private final String name;
+  private final String tableName;
+  private final String keyName;
   private final String qualifiedName;
 
-  public static String generate(String parent, String name) {
-    QualifiedName tmp = new QualifiedName(parent, name);
+  public static String generate(String tableName, String keyName) {
+    QualifiedName tmp = new QualifiedName(tableName, keyName);
     return tmp.getQualifiedName();
   }
 
   /**
    * Construct qualified name from single string.
    *
-   * @param qualifiedName qualified name in a format "parent/name"
+   * @param qualifiedName qualified name in a format "table/key"
    */
   public QualifiedName(String qualifiedName) {
     Objects.requireNonNull(qualifiedName);
     Pair<String, String> splitted = splitName(qualifiedName);
-    this.parent = splitted.a;
-    this.name = splitted.b;
+    this.tableName = splitted.a;
+    this.keyName = splitted.b;
     this.qualifiedName = qualifiedName;
   }
 
   /**
-   * Construct qualified name from two separate strings for parent and name.
+   * Construct qualified name from two separate strings for table and key.
    *
-   * @param parent name of a parent
-   * @param name name of a child
+   * @param tableName name of a parent
+   * @param keyName name of a child
    */
-  public QualifiedName(String parent, String name) {
-    Objects.requireNonNull(parent);
-    Objects.requireNonNull(name);
-    this.parent = parent;
-    this.name = name;
-    if (parent.isEmpty() || name.isEmpty()) {
-      throw new IllegalArgumentException("qualified name: parent or name cannot be empty");
+  public QualifiedName(String tableName, String keyName) {
+    Objects.requireNonNull(tableName);
+    Objects.requireNonNull(keyName);
+    this.tableName = tableName;
+    this.keyName = keyName;
+    if (tableName.isEmpty() || keyName.isEmpty()) {
+      throw new IllegalArgumentException("qualified name: table or key cannot be empty");
     } else {
-      this.qualifiedName = String.format("%s/%s", parent, name);
+      this.qualifiedName = String.format("%s/%s", tableName, keyName);
     }
   }
 
-  public String getName() {
-    return name;
+  public String getKeyName() {
+    return keyName;
   }
 
-  public String getParent() {
-    return parent;
+  public String getTableName() {
+    return tableName;
   }
 
   public String getQualifiedName() {
@@ -79,8 +79,7 @@ public class QualifiedName {
     if (splitted.length == 2) {
       ret = new Pair<>(splitted[0], splitted[1]);
     } else {
-      throw new IllegalArgumentException(
-          "qualified name has to be in the format of \"parent/child\"");
+      throw new IllegalArgumentException("qualified name has to be in the format of \"table/key\"");
     }
     return ret;
   }
@@ -94,8 +93,8 @@ public class QualifiedName {
       return false;
     }
     QualifiedName other = (QualifiedName) o;
-    return parent.equals(other.parent)
-        && name.equals(other.name)
+    return tableName.equals(other.tableName)
+        && keyName.equals(other.keyName)
         && qualifiedName.equals(other.qualifiedName);
   }
 }

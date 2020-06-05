@@ -26,9 +26,9 @@ public interface Component extends ComponentParent {
   /**
    * Sets parent table alias.
    *
-   * @param table alias of parent table
+   * @param parentTableAlias alias of parent table
    */
-  void setTable(String table);
+  void setParentTableAlias(String parentTableAlias);
 
   /**
    * Extract values which are handled by this component from given SQL response row.

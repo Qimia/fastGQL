@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ExecutionRoot implements ComponentExecutable {
   private final Logger log = LoggerFactory.getLogger(ExecutionRoot.class);
-  private final String table;
-  private final String alias;
+  private final String tableName;
+  private final String tableAlias;
   private SQLExecutor sqlExecutor;
   private SQLQuery query;
   private List<Component> components;
@@ -119,15 +119,15 @@ public class ExecutionRoot implements ComponentExecutable {
   /**
    * Construct execution root by providing table name and its alias.
    *
-   * @param table name of the table
-   * @param alias alias of the table
+   * @param tableName name of the table
+   * @param tableAlias alias of the table
    */
-  public ExecutionRoot(String table, String alias) {
-    this.table = table;
-    this.alias = alias;
-    this.query = new SQLQuery(table, alias);
+  public ExecutionRoot(String tableName, String tableAlias) {
+    this.tableName = tableName;
+    this.tableAlias = tableAlias;
+    this.query = new SQLQuery(tableName, tableAlias);
     this.components = new ArrayList<>();
-    this.queriedTables.add(table);
+    this.queriedTables.add(tableName);
     this.sqlExecutor = new SQLExecutor();
   }
 
@@ -141,21 +141,22 @@ public class ExecutionRoot implements ComponentExecutable {
         .getSqlExecutorFunction()
         .apply(queryString)
         .flatMap(
-            input -> {
-              if (input.size() > 0) {
-                List<Single<Map<String, Object>>> observables =
-                    input.stream()
+            rowList -> {
+              if (rowList.size() > 0) {
+                List<Single<Map<String, Object>>> componentResponsesSingles =
+                    rowList.stream()
                         .map(row -> SQLResponseUtils.constructResponse(row, components))
                         .collect(Collectors.toList());
                 return Single.zip(
-                    observables,
-                    values ->
-                        Arrays.stream(values)
+                    componentResponsesSingles,
+                    componentResponsesObjects ->
+                        Arrays.stream(componentResponsesObjects)
                             .map(
-                                value -> {
+                                componentResponseObject -> {
                                   @SuppressWarnings("unchecked")
-                                  Map<String, Object> retValue = (Map<String, Object>) value;
-                                  return retValue;
+                                  Map<String, Object> componentResponse =
+                                      (Map<String, Object>) componentResponseObject;
+                                  return componentResponse;
                                 })
                             .collect(Collectors.toList()));
               }
@@ -165,15 +166,15 @@ public class ExecutionRoot implements ComponentExecutable {
 
   @Override
   public void addComponent(Component component) {
-    component.setTable(alias);
+    component.setParentTableAlias(tableAlias);
     component.setSqlExecutor(sqlExecutor);
     components.add(component);
     queriedTables.addAll(component.getQueriedTables());
   }
 
   @Override
-  public String trueTableNameWhenParent() {
-    return table;
+  public String tableNameWhenParent() {
+    return tableName;
   }
 
   @Override

@@ -17,27 +17,27 @@ import java.util.Set;
  * @author Kamil Bobrowski
  */
 public class ComponentRow implements Component {
-  private String table;
-  private final String key;
+  private String parentTableAlias;
+  private final String keyName;
 
   /**
    * Construct new component by providing key name to be queried.
    *
-   * @param key key name
+   * @param keyName key name
    */
-  public ComponentRow(String key) {
-    this.key = key;
+  public ComponentRow(String keyName) {
+    this.keyName = keyName;
   }
 
   @Override
   public void updateQuery(SQLQuery query) {
     Objects.requireNonNull(query);
-    query.addKey(table, key);
+    query.addKey(parentTableAlias, keyName);
   }
 
   @Override
-  public void setTable(String table) {
-    this.table = table;
+  public void setParentTableAlias(String parentTableAlias) {
+    this.parentTableAlias = parentTableAlias;
   }
 
   @Override
@@ -45,11 +45,11 @@ public class ComponentRow implements Component {
 
   @Override
   public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
-    Object value = SQLResponseUtils.getValue(row, table, key);
+    Object value = SQLResponseUtils.getValue(row, parentTableAlias, keyName);
     if (value == null) {
       return Single.just(Map.of());
     }
-    return Single.just(Map.of(key, value));
+    return Single.just(Map.of(keyName, value));
   }
 
   @Override
@@ -63,7 +63,7 @@ public class ComponentRow implements Component {
   }
 
   @Override
-  public String trueTableNameWhenParent() {
+  public String tableNameWhenParent() {
     throw new RuntimeException("ComponentRow cannot have any child components");
   }
 }
