@@ -22,7 +22,11 @@ jobs:
         java-version: 11
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: update submodules
+    - name: Initialize submodules
       run: git submodule init && git submodule update
+    - name: Build debezium
+      run: cd debezium && mvn clean package -pl debezium-core,debezium-connector-postgres && cd ..
+    - name: Build debezium container
+      run: cd debezium && chmod +x docker-build.sh && ./docker-build.sh && cd ..
     - name: Build with Gradle
       run: ./gradlew build
