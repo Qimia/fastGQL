@@ -85,6 +85,7 @@ public class ComponentReferencing implements Component {
   @Override
   public void setSqlExecutor(SQLExecutor sqlExecutor) {
     this.sqlExecutor = sqlExecutor;
+    this.components.forEach(component -> component.setSqlExecutor(sqlExecutor));
   }
 
   @Override
