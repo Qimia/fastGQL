@@ -22,8 +22,36 @@ public class SQLUtils {
     return name.endsWith("_ref");
   }
 
-  public static String buildBoolQuery(
-      JsonObject obj, String fieldName, Map<String, String> tableFieldToAlias) {
+  public static String createOrderByQuery(
+      JsonArray array, String aliasName, Map<String, String> tableFieldToAlias) {
+    List<String> orderByQueryList = new ArrayList<>();
+    for (int i = 0; i < array.size(); i++) {
+      JsonObject object = array.get(i).getAsJsonObject();
+      addOrderByQueryList(orderByQueryList, object, aliasName, tableFieldToAlias);
+    }
+    return String.join(", ", orderByQueryList);
+  }
+
+  private static void addOrderByQueryList(
+      List<String> queryList,
+      JsonObject object,
+      String aliasName,
+      Map<String, String> tableFieldToAlias) {
+    for (String key : object.keySet()) {
+      JsonElement value = object.get(key);
+      if (value.isJsonObject()) {
+        if (tableFieldToAlias.containsKey(key)) {
+          addOrderByQueryList(
+              queryList, value.getAsJsonObject(), tableFieldToAlias.get(key), tableFieldToAlias);
+        }
+      } else if (value.isJsonPrimitive()){
+        queryList.add(String.format("%s.%s %s", aliasName, key, value.getAsString()));
+      }
+    }
+  }
+
+  public static String createBoolQuery(
+      JsonObject obj, String aliasName, Map<String, String> tableFieldToAlias) {
     if (obj.size() == 0) {
       return "TRUE";
     }
@@ -35,18 +63,18 @@ public class SQLUtils {
                   if (key.equals("_and")) {
                     query =
                         getArrayQuery(
-                            obj.get(key).getAsJsonArray(), " AND ", fieldName, tableFieldToAlias);
+                            obj.get(key).getAsJsonArray(), " AND ", aliasName, tableFieldToAlias);
                   } else if (key.equals("_or")) {
                     query =
                         getArrayQuery(
-                            obj.get(key).getAsJsonArray(), " OR ", fieldName, tableFieldToAlias);
+                            obj.get(key).getAsJsonArray(), " OR ", aliasName, tableFieldToAlias);
                   } else if (key.equals("_not")) {
                     query =
-                        getNotQuery(obj.get(key).getAsJsonObject(), fieldName, tableFieldToAlias);
+                        getNotQuery(obj.get(key).getAsJsonObject(), aliasName, tableFieldToAlias);
                   } else if (isReferencingName(key)) {
                     if (tableFieldToAlias.containsKey(key)) {
                       query =
-                          buildBoolQuery(
+                          createBoolQuery(
                               obj.get(key).getAsJsonObject(),
                               tableFieldToAlias.get(key),
                               tableFieldToAlias);
@@ -54,7 +82,7 @@ public class SQLUtils {
                       query = "";
                     }
                   } else {
-                    query = getComparisonQuery(obj.get(key).getAsJsonObject(), fieldName, key);
+                    query = getComparisonQuery(obj.get(key).getAsJsonObject(), aliasName, key);
                   }
                   return String.format("(%s)", query);
                 })
@@ -63,23 +91,23 @@ public class SQLUtils {
   }
 
   private static String getArrayQuery(
-      JsonArray array, String delimiter, String fieldName, Map<String, String> tableFieldToAlias) {
+      JsonArray array, String delimiter, String aliasName, Map<String, String> tableFieldToAlias) {
     List<String> queryList = new ArrayList<>();
     for (int i = 0; i < array.size(); i++) {
       queryList.add(
           String.format(
               "(%s)",
-              buildBoolQuery(array.get(i).getAsJsonObject(), fieldName, tableFieldToAlias)));
+              createBoolQuery(array.get(i).getAsJsonObject(), aliasName, tableFieldToAlias)));
     }
     return String.join(delimiter, queryList);
   }
 
   private static String getNotQuery(
-      JsonObject object, String fieldName, Map<String, String> tableFieldToAlias) {
-    return String.format("NOT (%s)", buildBoolQuery(object, fieldName, tableFieldToAlias));
+      JsonObject object, String aliasName, Map<String, String> tableFieldToAlias) {
+    return String.format("NOT (%s)", createBoolQuery(object, aliasName, tableFieldToAlias));
   }
 
-  private static String getComparisonQuery(JsonObject object, String fieldName, String key) {
+  private static String getComparisonQuery(JsonObject object, String aliasName, String key) {
     if (object.size() == 0) {
       return "TRUE";
     }
@@ -90,7 +118,7 @@ public class SQLUtils {
                   String operator =
                       ConditionalOperatorTypes.getOperatorNameToValueMap().get(opName);
                   String compareValue = getCompareValue(object.get(opName));
-                  return String.format("(%s.%s %s %s)", fieldName, key, operator, compareValue);
+                  return String.format("(%s.%s %s %s)", aliasName, key, operator, compareValue);
                 })
             .collect(Collectors.toList());
     return String.join(" AND ", queryList);

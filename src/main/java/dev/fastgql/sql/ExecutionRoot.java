@@ -107,8 +107,11 @@ public class ExecutionRoot implements ComponentExecutable {
     Component vehiclesOnCustomer =
         new ComponentReferenced(
             "vehicles_on_customer",
-            "id", "vehicles", aliasGenerator.getAlias(), "customer", myArgs
-        );
+            "id",
+            "vehicles",
+            aliasGenerator.getAlias(),
+            "customer",
+            myArgs);
     vehiclesOnCustomer.addComponent(new ComponentRow("model"));
     vehiclesOnCustomer.addComponent(new ComponentRow("year"));
 
