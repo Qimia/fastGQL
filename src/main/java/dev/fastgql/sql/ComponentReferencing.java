@@ -74,7 +74,7 @@ public class ComponentReferencing implements Component {
     Objects.requireNonNull(query);
     query.addKey(parentTableAlias, keyName);
     query.addJoin(parentTableAlias, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
-    query.addTableFieldToAlias(fieldName, foreignTableAlias);
+    query.addFieldToAlias(fieldName, foreignTableAlias);
     components.forEach(component -> component.updateQuery(query));
   }
 

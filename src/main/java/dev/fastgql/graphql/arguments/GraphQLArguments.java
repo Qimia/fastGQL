@@ -22,6 +22,11 @@ import graphql.schema.GraphQLTypeReference;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Class to construct GraphQL arguments for GraphQL database schemas.
+ *
+ * @author Mingyi Zhang
+ */
 public class GraphQLArguments {
   private final GraphQLArgument limit;
   private final GraphQLArgument offset;

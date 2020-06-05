@@ -28,8 +28,7 @@ public class SQLQuery {
   private Set<String> keys;
   private List<String> joins;
   private List<String> suffixes;
-  private Map<String, String> tableFieldToAlias;
-  private Map<String, Set<String>> aliasToKeys;
+  private Map<String, String> fieldToAlias;
 
   /**
    * Construct SQLQuery with table and its alias.
@@ -45,16 +44,10 @@ public class SQLQuery {
     this.keys = new HashSet<>();
     this.joins = new ArrayList<>();
     this.suffixes = new ArrayList<>();
-    this.aliasToKeys = new HashMap<>();
-    this.tableFieldToAlias = new HashMap<>();
-    this.tableFieldToAlias.put(table, alias);
+    this.fieldToAlias = new HashMap<>();
   }
 
   public void addKey(String table, String key) {
-    if (!aliasToKeys.containsKey(table)) {
-      aliasToKeys.put(table, new HashSet<>());
-    }
-    aliasToKeys.get(table).add(key);
     keys.add(String.format("%s.%s AS %s", table, key, getKeyAlias(table, key)));
   }
 
@@ -79,8 +72,8 @@ public class SQLQuery {
             foreignTable, foreignTableAlias, thisTable, thisKey, foreignTableAlias, foreignKey));
   }
 
-  public void addTableFieldToAlias(String field, String foreignTableAlias) {
-    tableFieldToAlias.put(field, foreignTableAlias);
+  public void addFieldToAlias(String field, String foreignTableAlias) {
+    fieldToAlias.put(field, foreignTableAlias);
   }
 
   public void addSuffix(String suffix) {
@@ -101,13 +94,8 @@ public class SQLQuery {
    */
   public String build() {
     return String.format(
-            "SELECT %s FROM %s %s %s %s %s",
-            String.join(", ", keys),
-            table,
-            alias,
-            String.join(" ", joins),
-            String.join(" ", suffixes),
-            buildConstraints())
+            "SELECT %s FROM %s %s %s %s",
+            String.join(", ", keys), table, alias, String.join(" ", joins), buildConstraints())
         .replaceAll("\\s+", " ");
   }
 
@@ -122,8 +110,7 @@ public class SQLQuery {
       return "";
     }
     return String.format(
-        "ORDER BY %s",
-        createOrderByQuery(args.getOrderBy().getAsJsonArray(), alias, tableFieldToAlias));
+        "ORDER BY %s", createOrderByQuery(args.getOrderBy().getAsJsonArray(), alias, fieldToAlias));
   }
 
   private String buildLimitQuery() {
@@ -141,11 +128,14 @@ public class SQLQuery {
   }
 
   private String buildWhereQuery() {
-    if (args.getWhere() == null || !args.getWhere().isJsonObject()) {
+    if (args.getWhere() != null && args.getWhere().isJsonObject()) {
+      String whereQuery = createBoolQuery(args.getWhere().getAsJsonObject(), alias, fieldToAlias);
+      addSuffix(String.format("(%s)", whereQuery));
+    }
+    if (suffixes.isEmpty()) {
       return "";
     }
-    return String.format(
-        "WHERE %s", createBoolQuery(args.getWhere().getAsJsonObject(), alias, tableFieldToAlias));
+    return String.format("WHERE %s", String.join(" AND ", suffixes));
   }
 
   private String getKeyAlias(String table, String key) {

@@ -16,6 +16,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Class of utility functions for constructing constraint queries.
+ *
+ * @author Mingyi Zhang
+ */
 public class SQLUtils {
 
   public static boolean isReferencingName(String name) {

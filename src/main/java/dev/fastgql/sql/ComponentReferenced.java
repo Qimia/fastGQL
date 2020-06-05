@@ -67,7 +67,7 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
         query ->
             query.addSuffix(
                 String.format(
-                    "WHERE %s.%s = %s", foreignTableAlias, foreignKeyName, keyValue.toString())));
+                    "(%s.%s = %s)", foreignTableAlias, foreignKeyName, keyValue.toString())));
     return execute().map(response -> Map.of(fieldName, response));
   }
 }
