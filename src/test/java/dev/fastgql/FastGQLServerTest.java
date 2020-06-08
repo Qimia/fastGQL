@@ -79,8 +79,11 @@ public class FastGQLServerTest {
     JsonObject config =
         new JsonObject()
             .put("http.port", port)
-            .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
+//            .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
+            .put("kafka", JsonObject.mapFrom(DBTestUtils.kafkaConfig(kafkaContainer)))
             .put("datasource", JsonObject.mapFrom(DBTestUtils.datasourceConfig(postgresContainer)));
+
+    System.out.println("***" + config);
 
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
     vertx

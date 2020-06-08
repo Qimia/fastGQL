@@ -51,6 +51,18 @@ public class KafkaConfig {
     this.autoOffsetReset = autoOffsetReset;
   }
 
+  /**
+   * Standard constructor.
+   *
+   * @param bootstrapServers host (e.g. "http://localhost:9092")
+   */
+  public KafkaConfig(String bootstrapServers) {
+    this.bootstrapServers = bootstrapServers;
+    this.keyDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
+    this.valueDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
+    this.autoOffsetReset = "earliest";
+  }
+
   public Map<String, String> createConfigMap() {
     Map<String, String> configMap = new HashMap<>();
 
