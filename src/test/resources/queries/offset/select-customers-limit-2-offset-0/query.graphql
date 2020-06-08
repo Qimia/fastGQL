@@ -1,0 +1,6 @@
+{
+  customers(limit: 2, offset: 0) {
+    id
+    first_name
+  }
+}

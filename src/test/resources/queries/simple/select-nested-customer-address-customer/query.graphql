@@ -1,0 +1,14 @@
+{
+  customers {
+    id
+    first_name
+    address_ref {
+      id
+      street
+      customers_on_address {
+        id
+        last_name
+      }
+    }
+  }
+}

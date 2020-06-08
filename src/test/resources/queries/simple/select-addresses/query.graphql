@@ -1,0 +1,7 @@
+{
+  addresses {
+    id
+    street
+    house_number
+  }
+}

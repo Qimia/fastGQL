@@ -1,0 +1,14 @@
+{
+  "data": {
+    "addresses": [
+      {
+        "id": 101,
+        "street": "Astreet"
+      },
+      {
+        "id": 102,
+        "street": "Bstreet"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  addresses (order_by: {street: desc}) {
+    id
+    street
+  }
+}

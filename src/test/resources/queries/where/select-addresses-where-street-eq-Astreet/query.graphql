@@ -1,0 +1,6 @@
+{
+  addresses (where: {street: {_eq: "Astreet"}}) {
+    id
+    street
+  }
+}

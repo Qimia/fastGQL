@@ -1,0 +1,8 @@
+{
+  customers(where: {address_ref: {street: {_eq: "Astreet"}}}) {
+    id
+    address_ref {
+      street
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+ 	addresses {
+    street
+    customers_on_address (where: {id: {_gt: 103}}) {
+      id
+      first_name
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  addresses(limit: 1) {
+    id
+    street
+  }
+}

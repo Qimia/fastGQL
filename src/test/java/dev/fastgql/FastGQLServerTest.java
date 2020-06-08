@@ -6,6 +6,8 @@
 
 package dev.fastgql;
 
+import static dev.fastgql.GraphQLTestUtils.verifyQuerySimple;
+
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
 import io.vertx.core.DeploymentOptions;
@@ -18,9 +20,15 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,31 +42,23 @@ import org.testcontainers.lifecycle.Startables;
 public class FastGQLServerTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FastGQLServerTest.class);
-  private String deploymentID;
-
-  private final int customersStartOffset = 5;
-
   private static final int port = 8081;
-
   private static Network network = Network.newNetwork();
-
   private static KafkaContainer kafkaContainer = new KafkaContainer().withNetwork(network);
-
   private static PostgreSQLContainer<?> postgresContainer =
       new PostgreSQLContainer<>("debezium/postgres:11")
           .withNetwork(network)
           .withNetworkAliases("postgres");
-
   private static DebeziumContainer debeziumContainer =
       new DebeziumContainer("1.0")
           .withNetwork(network)
           .withKafka(kafkaContainer)
           .withLogConsumer(new Slf4jLogConsumer(LOGGER))
           .dependsOn(kafkaContainer);
+  private final int customersStartOffset = 5;
+  private String deploymentID;
 
-  @BeforeEach
-  public void setUp(Vertx vertx, VertxTestContext context) {
-
+  private void setUpContainers(Vertx vertx, VertxTestContext context) {
     Startables.deepStart(Stream.of(kafkaContainer, postgresContainer, debeziumContainer)).join();
 
     try {
@@ -89,15 +89,14 @@ public class FastGQLServerTest {
     vertx
         .rxDeployVerticle(new FastGQL(), options)
         .doOnSuccess(
-            deploymentID -> {
-              this.deploymentID = deploymentID;
+            deploymentID1 -> {
+              deploymentID = deploymentID1;
               context.completeNow();
             })
         .subscribe();
   }
 
-  @AfterEach
-  public void tearDown(Vertx vertx, VertxTestContext context) {
+  private void tearDownContainers(Vertx vertx, VertxTestContext context) {
     vertx
         .rxUndeploy(deploymentID)
         .doOnComplete(
@@ -111,124 +110,174 @@ public class FastGQLServerTest {
         .subscribe();
   }
 
-  @Test
-  public void shouldReceiveResponseForSimpleQuery(Vertx vertx, VertxTestContext context) {
-    String inputResource = "test-simple/test-query-input.graphql";
-    String outputResource = "test-simple/test-query-output.json";
-    GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
+  @Nested
+  @DisplayName("Query Tests")
+  @TestInstance(Lifecycle.PER_CLASS)
+  class QueryTests {
+    @BeforeAll
+    public void setUp(Vertx vertx, VertxTestContext context) {
+      setUpContainers(vertx, context);
+    }
+
+    @AfterAll
+    public void tearDown(Vertx vertx, VertxTestContext context) {
+      tearDownContainers(vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForSimpleQuery(Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple("queries/simple/select-addresses", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForSimpleNestedCustomerAddressQuery(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple("queries/simple/select-nested-customer-address", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForSimpleNestedAddressCustomerQuery(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple("queries/simple/select-nested-address-customer", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForSimpleNestedAddressCustomerAddressQuery(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple(
+          "queries/simple/select-nested-address-customer-address", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForSimpleNestedCustomerAddressCustomerQuery(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple(
+          "queries/simple/select-nested-customer-address-customer", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForLimitAddressesLimit1Query(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple("queries/limit/select-addresses-limit-1", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForLimitAddressesLimit2Query(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple("queries/limit/select-addresses-limit-2", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForOffsetCustomersLimit2Offset0(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple("queries/offset/select-customers-limit-2-offset-0", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForOffsetCustomersLimit2Offset1(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple("queries/offset/select-customers-limit-2-offset-1", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForOffsetNestedAddressCustomerLimit2Offset1(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple(
+          "queries/offset/select-nested-address-customer-limit-2-offset-1", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForOrderByAddressesOrderByStreetDesc(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple(
+          "queries/order-by/select-addresses-order-by-street-desc", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForOrderByCustomersOrderByFirstNameAsc(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple(
+          "queries/order-by/select-customers-order-by-first-name-asc", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForOrderByNestedAddressCustomerOrderByFirstNameDesc(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple(
+          "queries/order-by/select-nested-address-customer-order-by-first-name-desc",
+          port,
+          vertx,
+          context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForWhereAddressesWhereIdEq101(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple("queries/where/select-addresses-where-id-eq-101", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForWhereAddressesWhereIdGt101(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple("queries/where/select-addresses-where-id-gt-101", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForWhereAddressesWhereStreetEqAstreet(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple(
+          "queries/where/select-addresses-where-street-eq-Astreet", port, vertx, context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForWhereNestedCustomerAddressWhereStreetEqAstreet(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple(
+          "queries/where/select-nested-customer-address-where-street-eq-Astreet",
+          port,
+          vertx,
+          context);
+    }
+
+    @Test
+    public void shouldReceiveResponseForWhereNestedAddressCustomerWhereIdGt103(
+        Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple(
+          "queries/where/select-nested-address-customer-where-id-gt-103",
+          port,
+          vertx,
+          context);
+    }
   }
 
-  @Test
-  void shouldReceiveEventsForSimpleSubscription(Vertx vertx, VertxTestContext context) {
-    String inputResource = "test-simple/test-subscription-input.graphql";
-    List<String> outputResources =
-        List.of(
-            "test-simple/test-subscription-output-1.json",
-            "test-simple/test-subscription-output-2.json");
-    GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, customersStartOffset, vertx, context);
-    DBTestUtils.executeSQLQueryWithDelay(
-        "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com', 101)",
-        1000,
-        TimeUnit.MILLISECONDS,
-        postgresContainer,
-        context);
+  @Nested
+  @DisplayName("Subscription Tests")
+  class SubscriptionTests {
+    @BeforeEach
+    public void setUp(Vertx vertx, VertxTestContext context) {
+      setUpContainers(vertx, context);
+    }
+
+    @AfterEach
+    public void tearDown(Vertx vertx, VertxTestContext context) {
+      tearDownContainers(vertx, context);
+    }
+
+    @Test
+    void shouldReceiveEventsForSimpleSubscription(Vertx vertx, VertxTestContext context) {
+      String query = "subscription/simple/select-addresses/query.graphql";
+      List<String> expected =
+          List.of(
+              "subscription/simple/select-addresses/expected-1.json",
+              "subscription/simple/select-addresses/expected-2.json");
+      GraphQLTestUtils.verifySubscription(
+          port, query, expected, customersStartOffset, vertx, context);
+      DBTestUtils.executeSQLQueryWithDelay(
+          "INSERT INTO customers VALUES (107, 'John', 'Qwe', 'john@qwe.com', 101)",
+          1000,
+          TimeUnit.MILLISECONDS,
+          postgresContainer,
+          context);
+    }
   }
-
-  /*
-    @Test
-    public void shouldReceiveResponseForQueryWithLimitOffset(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-limit-offset/test-query-input.graphql";
-      String outputResource = "test-limit-offset/test-query-output.json";
-      GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
-    }
-
-    @Test
-    void shouldReceiveEventsForSubscriptionWithLimitOffset(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-limit-offset/test-subscription-input.graphql";
-      List<String> outputResources =
-          List.of(
-              "test-limit-offset/test-subscription-output-1.json",
-              "test-limit-offset/test-subscription-output-1.json",
-              "test-limit-offset/test-subscription-output-2.json");
-      GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
-      DBTestUtils.executeSQLQueryWithDelay(
-          "DELETE FROM customers WHERE id = 101", 5, TimeUnit.SECONDS, postgresContainer, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForQueryWithOrderBy(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-order-by/test-query-input.graphql";
-      String outputResource = "test-order-by/test-query-output.json";
-      GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
-    }
-
-    @Test
-    void shouldReceiveEventsForSubscriptionWithOrderBy(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-order-by/test-subscription-input.graphql";
-      List<String> outputResources =
-          List.of(
-              "test-order-by/test-subscription-output-1.json",
-              "test-order-by/test-subscription-output-1.json",
-              "test-order-by/test-subscription-output-2.json");
-      GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
-      DBTestUtils.executeSQLQueryWithDelay(
-          "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-          5,
-          TimeUnit.SECONDS,
-          postgresContainer,
-          context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForQueryWithWhere(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-where/test-query-input.graphql";
-      String outputResource = "test-where/test-query-output.json";
-      GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
-    }
-
-    @Test
-    void shouldReceiveEventsForSubscriptionWithWhere(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-where/test-subscription-input.graphql";
-      List<String> outputResources =
-          List.of(
-              "test-where/test-subscription-output-1.json",
-              "test-where/test-subscription-output-1.json",
-              "test-where/test-subscription-output-2.json");
-      GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
-      DBTestUtils.executeSQLQueryWithDelay(
-          "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-          5,
-          TimeUnit.SECONDS,
-          postgresContainer,
-          context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForQueryWithDistinctOn(Vertx vertx, VertxTestContext context) {
-      DBTestUtils.executeSQLQuery(
-          "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-          postgresContainer,
-          context);
-      String inputResource = "test-distinct-on/test-query-input.graphql";
-      String outputResource = "test-distinct-on/test-query-output.json";
-      GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
-    }
-
-    @Test
-    void shouldReceiveEventsForSubscriptionWithDistinctOn(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-distinct-on/test-subscription-input.graphql";
-      List<String> outputResources =
-          List.of(
-              "test-distinct-on/test-subscription-output-1.json",
-              "test-distinct-on/test-subscription-output-1.json",
-              "test-distinct-on/test-subscription-output-2.json");
-      GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
-      DBTestUtils.executeSQLQueryWithDelay(
-          "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-          5,
-          TimeUnit.SECONDS,
-          postgresContainer,
-          context);
-    }
-  */
 }
