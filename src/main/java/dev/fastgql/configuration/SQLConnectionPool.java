@@ -6,29 +6,25 @@
 
 package dev.fastgql.configuration;
 
+import dev.fastgql.db.DatasourceConfig;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.core.json.JsonObject;
 import io.vertx.sqlclient.PoolOptions;
 
 public class SQLConnectionPool {
 
-    public Pool createWithConfiguration(JsonObject config, Vertx vertx) {
+  public static Pool createWithConfiguration(DatasourceConfig datasourceConfig, Vertx vertx) {
 
-        JsonObject datasourceConfig = config.getJsonObject("datasource");
-
-        Pool client = PgPool.pool(
-                vertx,
-                new PgConnectOptions()
-                        .setHost(datasourceConfig.getString("host"))
-                        .setPort(datasourceConfig.getInteger("port"))
-                        .setDatabase(datasourceConfig.getString("db"))
-                        .setUser(datasourceConfig.getString("username"))
-                        .setPassword(datasourceConfig.getString("password")),
-                new PoolOptions().setMaxSize(5));
-
-        return client;
-    }
+      return PgPool.pool(
+            vertx,
+            new PgConnectOptions()
+                .setHost(datasourceConfig.getHost())
+                .setPort(datasourceConfig.getPort())
+                .setDatabase(datasourceConfig.getDb())
+                .setUser(datasourceConfig.getUsername())
+                .setPassword(datasourceConfig.getPassword()),
+            new PoolOptions().setMaxSize(5));
+  }
 }

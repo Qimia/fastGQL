@@ -6,7 +6,6 @@
 
 package dev.fastgql;
 
-import dev.fastgql.configuration.SQLConnectionPool;
 import com.google.common.collect.Iterables;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
@@ -30,12 +29,15 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
+import static dev.fastgql.configuration.SQLConnectionPool.createWithConfiguration;
+
 public class FastGQL extends AbstractVerticle {
 
   private static final String alteredTablesTopic = "altered-tables";
 
   public static void main(String[] args) {
-    Launcher.executeCommand("run", FastGQL.class.getName(), "--conf", "src/main/resources/config/vertx/conf.json");
+    Launcher.executeCommand(
+        "run", FastGQL.class.getName(), "--conf", "src/main/resources/config/vertx/conf.json");
   }
 
   private static String kafkaMessageToTableName(String message) {
@@ -56,8 +58,7 @@ public class FastGQL extends AbstractVerticle {
     DatabaseSchema database = MetadataUtils.createDatabaseSchema(connection);
     connection.close();
 
-    SQLConnectionPool sqlConnectionPool = new SQLConnectionPool();
-    Pool client = sqlConnectionPool.createWithConfiguration(config(), vertx);
+    Pool client = createWithConfiguration(datasourceConfig, vertx);
 
     Map<String, String> kafkaConfig = new HashMap<>();
     kafkaConfig.put(
