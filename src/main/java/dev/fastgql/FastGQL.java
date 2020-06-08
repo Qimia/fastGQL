@@ -6,6 +6,8 @@
 
 package dev.fastgql;
 
+import dev.fastgql.configuration.DatasourceConfig;
+import dev.fastgql.configuration.SQLConnectionPool;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.MetadataUtils;
 import dev.fastgql.graphql.GraphQLDefinition;
@@ -15,11 +17,8 @@ import io.reactivex.Flowable;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.sqlclient.PoolOptions;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -33,22 +32,16 @@ public class FastGQL extends AbstractVerticle {
   @Override
   public void start(Promise<Void> future) throws SQLException {
 
+    DatasourceConfig datasourceConfig = new DatasourceConfig(config());
+
     Connection connection =
         DriverManager.getConnection(
-            "jdbc:postgresql://localhost:5432/quarkus_test", "quarkus_test", "quarkus_test");
+            datasourceConfig.getConnectionUrl(), datasourceConfig.getUsername(), datasourceConfig.getPassword());
     DatabaseSchema database = MetadataUtils.createDatabaseSchema(connection);
     connection.close();
 
-    Pool client =
-        PgPool.pool(
-            vertx,
-            new PgConnectOptions()
-                .setHost("localhost")
-                .setPort(5432)
-                .setDatabase("quarkus_test")
-                .setUser("quarkus_test")
-                .setPassword("quarkus_test"),
-            new PoolOptions().setMaxSize(5));
+    SQLConnectionPool sqlConnectionPool = new SQLConnectionPool();
+    Pool client = sqlConnectionPool.createWithConfiguration(config(), vertx);
 
     Flowable<String> fake = Flowable.interval(1, TimeUnit.SECONDS).map(i -> "customers");
     GraphQL graphQL =
