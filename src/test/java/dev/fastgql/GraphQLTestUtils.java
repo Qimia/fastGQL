@@ -59,6 +59,7 @@ public class GraphQLTestUtils {
       int port,
       String inputResource,
       List<String> outputResources,
+      int offset,
       Vertx vertx,
       VertxTestContext context) {
     Checkpoint checkpoints = context.checkpoint(outputResources.size());
@@ -82,7 +83,7 @@ public class GraphQLTestUtils {
                 message -> {
                   System.out.println(message);
                   int currentResponse = currentResponseAtomic.getAndIncrement();
-                  if (currentResponse < expectedResponses.size()) {
+                  if (currentResponse >= offset && currentResponse < expectedResponses.size()) {
                     context.verify(
                         () ->
                             assertEquals(

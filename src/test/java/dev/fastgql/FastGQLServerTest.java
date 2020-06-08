@@ -36,6 +36,8 @@ public class FastGQLServerTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(FastGQLServerTest.class);
   private String deploymentID;
 
+  private final int customersStartOffset = 5;
+
   private static final int port = 8081;
 
   private static Network network = Network.newNetwork();
@@ -122,13 +124,12 @@ public class FastGQLServerTest {
     List<String> outputResources =
         List.of(
             "test-simple/test-subscription-output-1.json",
-            "test-simple/test-subscription-output-1.json",
             "test-simple/test-subscription-output-2.json");
-    GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
+    GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, customersStartOffset, vertx, context);
     DBTestUtils.executeSQLQueryWithDelay(
-        "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-        5,
-        TimeUnit.SECONDS,
+        "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com', 101)",
+        1000,
+        TimeUnit.MILLISECONDS,
         postgresContainer,
         context);
   }
