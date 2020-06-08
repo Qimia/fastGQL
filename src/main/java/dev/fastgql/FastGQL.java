@@ -7,6 +7,7 @@
 package dev.fastgql;
 
 import com.google.common.collect.Iterables;
+import dev.fastgql.kafka.KafkaConfig;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.MetadataUtils;
@@ -24,12 +25,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 
-import static dev.fastgql.configuration.SQLConnectionPool.createWithConfiguration;
+import static dev.fastgql.sql.SQLConnectionPool.createWithConfiguration;
 
 public class FastGQL extends AbstractVerticle {
 
@@ -60,19 +58,9 @@ public class FastGQL extends AbstractVerticle {
 
     Pool client = createWithConfiguration(datasourceConfig, vertx);
 
-    Map<String, String> kafkaConfig = new HashMap<>();
-    kafkaConfig.put(
-        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-        config().getString("bootstrap.servers", "http://localhost:9092"));
-    kafkaConfig.put(
-        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-        "org.apache.kafka.common.serialization.StringDeserializer");
-    kafkaConfig.put(
-        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-        "org.apache.kafka.common.serialization.StringDeserializer");
-    kafkaConfig.put(ConsumerConfig.GROUP_ID_CONFIG, "tc-" + UUID.randomUUID());
-    kafkaConfig.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-    KafkaConsumer<String, String> kafkaConsumer = KafkaConsumer.create(vertx, kafkaConfig);
+    KafkaConfig kafkaConfig = new KafkaConfig(config().getJsonObject("kafka"));
+    Map<String, String> kafkaConfigMap = kafkaConfig.createConfigMap();
+    KafkaConsumer<String, String> kafkaConsumer = KafkaConsumer.create(vertx, kafkaConfigMap);
     kafkaConsumer.subscribe(alteredTablesTopic);
 
     Flowable<String> alteredTablesFlowable =
