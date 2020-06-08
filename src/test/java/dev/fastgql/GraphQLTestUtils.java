@@ -55,8 +55,8 @@ public class GraphQLTestUtils {
             context::failNow);
   }
 
-  public static void verifyQuerySimple(String directory, int port, Vertx vertx,
-      VertxTestContext context) {
+  public static void verifyQuerySimple(
+      String directory, int port, Vertx vertx, VertxTestContext context) {
     String query = String.format("%s/query.graphql", directory);
     String expected = String.format("%s/expected.json", directory);
     verifyQuery(port, query, expected, vertx, context);

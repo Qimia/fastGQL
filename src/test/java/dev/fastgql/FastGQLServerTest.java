@@ -243,10 +243,7 @@ public class FastGQLServerTest {
     public void shouldReceiveResponseForWhereNestedAddressCustomerWhereIdGt103(
         Vertx vertx, VertxTestContext context) {
       verifyQuerySimple(
-          "queries/where/select-nested-address-customer-where-id-gt-103",
-          port,
-          vertx,
-          context);
+          "queries/where/select-nested-address-customer-where-id-gt-103", port, vertx, context);
     }
   }
 
