@@ -18,15 +18,27 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Class to handle execution of SQL query. It contains {@link SQLQuery} which can be altered by each
+ * of child {@link Component} and {@link SQLExecutor} which is used to execute this query. It also
+ * tracks which tables need to be queried (this information is used by subscription data fetcher).
+ *
+ * @author Kamil Bobrowski
+ */
 public class ExecutionRoot implements ComponentExecutable {
   private final Logger log = LoggerFactory.getLogger(ExecutionRoot.class);
-  private final String table;
-  private final String alias;
-  private SqlExecutor sqlExecutor;
+  private final String tableName;
+  private final String tableAlias;
+  private SQLExecutor sqlExecutor;
   private SQLQuery query;
   private List<Component> components;
   private Set<String> queriedTables = new HashSet<>();
 
+  /**
+   * just for quick testing, will be moved to tests.
+   *
+   * @param args args
+   */
   public static void main(String[] args) {
 
     final List<Map<String, Object>> forged =
@@ -66,7 +78,7 @@ public class ExecutionRoot implements ComponentExecutable {
     AliasGenerator aliasGenerator = new AliasGenerator();
 
     ComponentExecutable executionRoot = new ExecutionRoot("customers", aliasGenerator.getAlias());
-    executionRoot.setSqlExecutor(new SqlExecutor(query -> Single.just(forged)));
+    executionRoot.setSqlExecutor(new SQLExecutor(query -> Single.just(forged)));
     executionRoot.addComponent(new ComponentRow("id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
 
@@ -99,18 +111,24 @@ public class ExecutionRoot implements ComponentExecutable {
     vehiclesOnCustomer.addComponent(customerRef);
 
     executionRoot.addComponent(vehiclesOnCustomer);
-    vehiclesOnCustomer.setSqlExecutor(new SqlExecutor(query -> Single.just(forged2)));
+    vehiclesOnCustomer.setSqlExecutor(new SQLExecutor(query -> Single.just(forged2)));
     System.out.println(executionRoot.getQueriedTables());
     System.out.println(executionRoot.execute().blockingGet());
   }
 
-  public ExecutionRoot(String table, String alias) {
-    this.table = table;
-    this.alias = alias;
-    this.query = new SQLQuery(table, alias);
+  /**
+   * Construct execution root by providing table name and its alias.
+   *
+   * @param tableName name of the table
+   * @param tableAlias alias of the table
+   */
+  public ExecutionRoot(String tableName, String tableAlias) {
+    this.tableName = tableName;
+    this.tableAlias = tableAlias;
+    this.query = new SQLQuery(tableName, tableAlias);
     this.components = new ArrayList<>();
-    this.queriedTables.add(table);
-    this.sqlExecutor = new SqlExecutor();
+    this.queriedTables.add(tableName);
+    this.sqlExecutor = new SQLExecutor();
   }
 
   @Override
@@ -123,21 +141,22 @@ public class ExecutionRoot implements ComponentExecutable {
         .getSqlExecutorFunction()
         .apply(queryString)
         .flatMap(
-            input -> {
-              if (input.size() > 0) {
-                List<Single<Map<String, Object>>> observables =
-                    input.stream()
+            rowList -> {
+              if (rowList.size() > 0) {
+                List<Single<Map<String, Object>>> componentResponsesSingles =
+                    rowList.stream()
                         .map(row -> SQLResponseUtils.constructResponse(row, components))
                         .collect(Collectors.toList());
                 return Single.zip(
-                    observables,
-                    values ->
-                        Arrays.stream(values)
+                    componentResponsesSingles,
+                    componentResponsesObjects ->
+                        Arrays.stream(componentResponsesObjects)
                             .map(
-                                value -> {
+                                componentResponseObject -> {
                                   @SuppressWarnings("unchecked")
-                                  Map<String, Object> retValue = (Map<String, Object>) value;
-                                  return retValue;
+                                  Map<String, Object> componentResponse =
+                                      (Map<String, Object>) componentResponseObject;
+                                  return componentResponse;
                                 })
                             .collect(Collectors.toList()));
               }
@@ -147,20 +166,21 @@ public class ExecutionRoot implements ComponentExecutable {
 
   @Override
   public void addComponent(Component component) {
-    component.setTable(alias);
+    component.setParentTableAlias(tableAlias);
     component.setSqlExecutor(sqlExecutor);
     components.add(component);
     queriedTables.addAll(component.getQueriedTables());
   }
 
   @Override
-  public String trueTableNameWhenParent() {
-    return table;
+  public String tableNameWhenParent() {
+    return tableName;
   }
 
   @Override
-  public void setSqlExecutor(SqlExecutor sqlExecutor) {
+  public void setSqlExecutor(SQLExecutor sqlExecutor) {
     this.sqlExecutor = sqlExecutor;
+    this.components.forEach(component -> component.setSqlExecutor(sqlExecutor));
   }
 
   @Override

@@ -80,6 +80,7 @@ public class GraphQLTestUtils {
 
             webSocket.handler(
                 message -> {
+                  System.out.println(message);
                   int currentResponse = currentResponseAtomic.getAndIncrement();
                   if (currentResponse < expectedResponses.size()) {
                     context.verify(

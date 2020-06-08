@@ -17,6 +17,12 @@ import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSMessage;
 import java.util.function.Function;
 import org.dataloader.DataLoaderRegistry;
 
+/**
+ * Defines a version of {@link ApolloWSHandler} which can be altered at runtime by updating it with
+ * new {@link GraphQL}.
+ *
+ * @author Kamil Bobrowski
+ */
 public class ApolloWSHandlerUpdatable implements Handler<RoutingContext> {
   private final Subject<ApolloWSHandler> apolloWSHandlerSubject =
       BehaviorSubject.<ApolloWSHandler>create().toSerialized();
@@ -40,6 +46,11 @@ public class ApolloWSHandlerUpdatable implements Handler<RoutingContext> {
     return new ApolloWSHandlerUpdatable(options);
   }
 
+  /**
+   * Set new GraphQL by pushing new {@link ApolloWSHandler} on internal {@link BehaviorSubject}.
+   *
+   * @param graphQL new GraphQL
+   */
   public synchronized void updateGraphQL(GraphQL graphQL) {
     apolloWSHandlerSubject.onNext(
         ApolloWSHandler.create(graphQL, options)

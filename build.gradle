@@ -34,7 +34,7 @@ spotless {
 vertx {
     mainVerticle = 'dev.fastgql.FastGQL'
     vertxVersion = '3.8.3'
-    config = 'src/main/conf.json'
+    config = 'src/main/resources/config/vertx/conf.json'
 }
 
 dependencies {
