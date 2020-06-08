@@ -17,14 +17,14 @@ public class SQLConnectionPool {
 
   public static Pool createWithConfiguration(DatasourceConfig datasourceConfig, Vertx vertx) {
 
-      return PgPool.pool(
-            vertx,
-            new PgConnectOptions()
-                .setHost(datasourceConfig.getHost())
-                .setPort(datasourceConfig.getPort())
-                .setDatabase(datasourceConfig.getDb())
-                .setUser(datasourceConfig.getUsername())
-                .setPassword(datasourceConfig.getPassword()),
-            new PoolOptions().setMaxSize(5));
+    return PgPool.pool(
+        vertx,
+        new PgConnectOptions()
+            .setHost(datasourceConfig.getHost())
+            .setPort(datasourceConfig.getPort())
+            .setDatabase(datasourceConfig.getDb())
+            .setUser(datasourceConfig.getUsername())
+            .setPassword(datasourceConfig.getPassword()),
+        new PoolOptions().setMaxSize(5));
   }
 }

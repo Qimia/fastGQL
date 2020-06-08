@@ -6,12 +6,14 @@
 
 package dev.fastgql;
 
+import static dev.fastgql.sql.SQLConnectionPool.createWithConfiguration;
+
 import com.google.common.collect.Iterables;
-import dev.fastgql.kafka.KafkaConfig;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.MetadataUtils;
 import dev.fastgql.graphql.GraphQLDefinition;
+import dev.fastgql.kafka.KafkaConfig;
 import dev.fastgql.router.RouterUpdatable;
 import graphql.GraphQL;
 import io.reactivex.Flowable;
@@ -26,8 +28,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Map;
-
-import static dev.fastgql.sql.SQLConnectionPool.createWithConfiguration;
 
 public class FastGQL extends AbstractVerticle {
 
