@@ -6,7 +6,6 @@
 package dev.fastgql;
 
 import dev.fastgql.db.DatasourceConfig;
-import dev.fastgql.kafka.KafkaConfig;
 import io.reactivex.Observable;
 import io.vertx.junit5.VertxTestContext;
 import java.io.IOException;
@@ -15,8 +14,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
-
-import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.shaded.org.apache.commons.lang.StringUtils;
 

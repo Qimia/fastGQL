@@ -23,15 +23,11 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
 import io.vertx.reactivex.sqlclient.Pool;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class FastGQL extends AbstractVerticle {
 
