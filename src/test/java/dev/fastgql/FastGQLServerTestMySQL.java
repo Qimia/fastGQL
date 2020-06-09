@@ -41,10 +41,7 @@ public class FastGQLServerTestMySQL {
   private static KafkaContainer kafkaContainer = new KafkaContainer().withNetwork(network);
 
   private static MySQLContainer<?> mysqlContainer =
-      new MySQLContainer<>("debezium/example-mysql:1.1")
-          .withUsername("mysqluser")
-          .withPassword("mysqlpw")
-          .withDatabaseName("inventory")
+      new MySQLContainer<>("fastgql/mysql-testcontainers:latest")
           .withNetwork(network)
           .withNetworkAliases("mysql");
 

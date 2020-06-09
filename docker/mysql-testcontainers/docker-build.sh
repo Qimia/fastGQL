@@ -1,1 +1,1 @@
-docker build -t fastgql/mysql-testcontainers .
+docker build --no-cache -t fastgql/mysql-testcontainers .
