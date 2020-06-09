@@ -46,7 +46,9 @@ public class FastGQLServerMySQLTest {
   private static MySQLContainer<?> mysqlContainer =
       new MySQLContainer<>("fastgql/mysql-testcontainers:latest")
           .withNetwork(network)
-          .withNetworkAliases("mysql");
+          .withNetworkAliases("mysql")
+          .withUsername("debezium")
+          .withPassword("dbz");
 
   private static DebeziumContainer debeziumContainer =
       new DebeziumContainer("1.0")

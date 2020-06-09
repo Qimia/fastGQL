@@ -76,8 +76,7 @@ public class ConnectorConfiguration {
     }
 
     public ConnectorConfiguration withKafkaForDatabaseHistory(KafkaContainer kafkaContainer) {
-        with(DBHISTORYSERVERS, String.format("%s:9092", kafkaContainer.getNetworkAliases().get(0)));
-        return this;
+        return with(DBHISTORYSERVERS, String.format("%s:9092", kafkaContainer.getNetworkAliases().get(0)));
     }
 
     public ConnectorConfiguration with(String key, String value) {
