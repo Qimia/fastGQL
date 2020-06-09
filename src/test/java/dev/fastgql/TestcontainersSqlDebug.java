@@ -22,7 +22,9 @@ public class TestcontainersSqlDebug {
   public static void main(String[] args) throws SQLException, IOException {
     Network network = Network.newNetwork();
     KafkaContainer kafkaContainer = new KafkaContainer().withNetwork(network);
-    MySQLContainer<?> mysqlContainer = new MySQLContainer<>("fastgql/mysql-testcontainers:latest");
+    MySQLContainer<?> mysqlContainer = new MySQLContainer<>("fastgql/mysql-testcontainers:latest")
+      .withUsername("debezium")
+      .withPassword("dbz");
 
     DebeziumContainer debeziumContainer =
       new DebeziumContainer("1.0")
@@ -42,6 +44,7 @@ public class TestcontainersSqlDebug {
       "my-connector",
       ConnectorConfiguration.forJdbcContainer(mysqlContainer)
         .with("database.server.name", "dbserver")
-        .with("slot.name", "debezium"));
+        .with("slot.name", "debezium")
+    );
   }
 }
