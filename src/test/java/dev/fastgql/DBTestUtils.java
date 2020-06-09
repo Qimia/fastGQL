@@ -14,6 +14,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
+
+import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.shaded.org.apache.commons.lang.StringUtils;
 
@@ -21,6 +24,7 @@ public class DBTestUtils {
 
   public static void executeSQLQuery(
       String sqlQuery, String jdbcUrl, String username, String password) throws SQLException {
+    System.out.println(jdbcUrl + " " + username + " " + password);
     try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
         Statement statement = connection.createStatement()) {
       statement.execute(sqlQuery);
@@ -79,6 +83,16 @@ public class DBTestUtils {
         postgresContainer.getPassword());
   }
 
+  public static void executeSQLQueryFromResource(
+    String sqlResource, MySQLContainer<?> mySQLContainer)
+    throws IOException, SQLException {
+    executeSQLQueryFromResource(
+      sqlResource,
+      String.format("%s?allowMultiQueries=true", mySQLContainer.getJdbcUrl()),
+      mySQLContainer.getUsername(),
+      mySQLContainer.getPassword());
+  }
+
   public static DatasourceConfig datasourceConfig(
       String jdbcUrl, String database, String username, String password) {
     int postgresPort = Integer.parseInt(StringUtils.substringBetween(jdbcUrl, "localhost:", "/"));
@@ -86,7 +100,7 @@ public class DBTestUtils {
     return new DatasourceConfig("localhost", postgresPort, database, username, password);
   }
 
-  public static DatasourceConfig datasourceConfig(PostgreSQLContainer<?> postgresContainer) {
+  public static DatasourceConfig datasourceConfig(JdbcDatabaseContainer<?> postgresContainer) {
     return datasourceConfig(
         postgresContainer.getJdbcUrl(),
         postgresContainer.getDatabaseName(),
