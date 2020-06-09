@@ -11,6 +11,6 @@
     "port": 5432,
     "db": "quarkus_test",
     "username": "quarkus_test",
-    "passwordd": "quarkus_test"
+    "password": "quarkus_test"
   }
 }
