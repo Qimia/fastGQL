@@ -5,6 +5,7 @@
  */
 package dev.fastgql;
 
+import dev.fastgql.db.DatasourceConfig;
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
 import io.vertx.core.DeploymentOptions;
@@ -15,6 +16,7 @@ import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -30,9 +32,9 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.lifecycle.Startables;
 
 @ExtendWith(VertxExtension.class)
-public class FastGQLServerTest {
+public class FastGQLServerPostgresTest {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FastGQLServerTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FastGQLServerPostgresTest.class);
   private String deploymentID;
 
   private static final int port = 8081;
@@ -76,11 +78,17 @@ public class FastGQLServerTest {
       return;
     }
 
+    DatasourceConfig datasourceConfig = DBTestUtils.datasourceConfig(postgresContainer);
+
     JsonObject config =
         new JsonObject()
             .put("http.port", port)
             .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
-            .put("datasource", JsonObject.mapFrom(DBTestUtils.datasourceConfig(postgresContainer)));
+            .put("datasource", Map.of(
+              "jdbcUrl", datasourceConfig.getJdbcUrl(),
+              "username", datasourceConfig.getUsername(),
+              "password", datasourceConfig.getPassword()
+            ));
 
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
     vertx

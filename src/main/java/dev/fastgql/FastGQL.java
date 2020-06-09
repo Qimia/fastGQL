@@ -24,7 +24,6 @@ import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.sqlclient.PoolOptions;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,27 +46,14 @@ public class FastGQL extends AbstractVerticle {
 
   @Override
   public void start(Promise<Void> future) throws SQLException {
+    DatasourceConfig datasourceConfig =
+        DatasourceConfig.createWithJsonConfig(config().getJsonObject("datasource"));
 
-    DatasourceConfig datasourceConfig = new DatasourceConfig(config().getJsonObject("datasource"));
-
-    Connection connection =
-        DriverManager.getConnection(
-            datasourceConfig.getJdbcUrl(),
-            datasourceConfig.getUsername(),
-            datasourceConfig.getPassword());
+    Connection connection = datasourceConfig.getConnection();
     DatabaseSchema database = MetadataUtils.createDatabaseSchema(connection);
     connection.close();
 
-    Pool client =
-        PgPool.pool(
-            vertx,
-            new PgConnectOptions()
-                .setHost(datasourceConfig.getHost())
-                .setPort(datasourceConfig.getPort())
-                .setDatabase(datasourceConfig.getDb())
-                .setUser(datasourceConfig.getUsername())
-                .setPassword(datasourceConfig.getPassword()),
-            new PoolOptions().setMaxSize(5));
+    Pool client = datasourceConfig.getPool(vertx);
 
     Map<String, String> kafkaConfig = new HashMap<>();
     kafkaConfig.put(

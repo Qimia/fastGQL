@@ -43,6 +43,7 @@ dependencies {
     implementation 'io.vertx:vertx-web-graphql'
     implementation 'io.vertx:vertx-rx-java2'
     implementation 'io.vertx:vertx-pg-client'
+    implementation 'io.vertx:vertx-mysql-client'
     implementation 'io.vertx:vertx-kafka-client'
     implementation 'mysql:mysql-connector-java:5.1.49'
     implementation 'org.postgresql:postgresql:42.2.12'

@@ -14,17 +14,14 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.TimeUnit;
-
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.shaded.org.apache.commons.lang.StringUtils;
 
 public class DBTestUtils {
 
   public static void executeSQLQuery(
       String sqlQuery, String jdbcUrl, String username, String password) throws SQLException {
-    System.out.println(jdbcUrl + " " + username + " " + password);
     try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
         Statement statement = connection.createStatement()) {
       statement.execute(sqlQuery);
@@ -37,15 +34,16 @@ public class DBTestUtils {
     executeSQLQuery(TestUtils.readResource(sqlResource), jdbcUrl, username, password);
   }
 
-  public static void executeSQLQuery(String sqlQuery, PostgreSQLContainer<?> postgresContainer)
+  public static void executeSQLQuery(String sqlQuery, JdbcDatabaseContainer<?> jdbcDatabaseContainer)
       throws SQLException {
     executeSQLQuery(
         sqlQuery,
-        postgresContainer.getJdbcUrl(),
-        postgresContainer.getUsername(),
-        postgresContainer.getPassword());
+        jdbcDatabaseContainer.getJdbcUrl(),
+        jdbcDatabaseContainer.getUsername(),
+        jdbcDatabaseContainer.getPassword());
   }
 
+/*
   public static void executeSQLQuery(
       String sqlQuery, PostgreSQLContainer<?> postgresContainer, VertxTestContext context) {
     try {
@@ -54,19 +52,20 @@ public class DBTestUtils {
       context.failNow(e);
     }
   }
+*/
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
   public static void executeSQLQueryWithDelay(
       String sqlQuery,
       long delay,
       TimeUnit unit,
-      PostgreSQLContainer<?> postgresContainer,
+      JdbcDatabaseContainer<?> jdbcDatabaseContainer,
       VertxTestContext context) {
     Observable.timer(delay, unit)
         .subscribe(
             result -> {
               try {
-                DBTestUtils.executeSQLQuery(sqlQuery, postgresContainer);
+                DBTestUtils.executeSQLQuery(sqlQuery, jdbcDatabaseContainer);
               } catch (SQLException e) {
                 context.failNow(e);
               }
@@ -84,26 +83,22 @@ public class DBTestUtils {
   }
 
   public static void executeSQLQueryFromResource(
-    String sqlResource, MySQLContainer<?> mySQLContainer)
-    throws IOException, SQLException {
+      String sqlResource, MySQLContainer<?> mySQLContainer) throws IOException, SQLException {
     executeSQLQueryFromResource(
-      sqlResource,
-      String.format("%s?allowMultiQueries=true", mySQLContainer.getJdbcUrl()),
-      mySQLContainer.getUsername(),
-      mySQLContainer.getPassword());
+        sqlResource,
+        String.format("%s?allowMultiQueries=true", mySQLContainer.getJdbcUrl()),
+        mySQLContainer.getUsername(),
+        mySQLContainer.getPassword());
   }
 
   public static DatasourceConfig datasourceConfig(
-      String jdbcUrl, String database, String username, String password) {
-    int postgresPort = Integer.parseInt(StringUtils.substringBetween(jdbcUrl, "localhost:", "/"));
-
-    return new DatasourceConfig("localhost", postgresPort, database, username, password);
+      String jdbcUrl, String username, String password) {
+    return DatasourceConfig.createDatasourceConfig(jdbcUrl, username, password);
   }
 
   public static DatasourceConfig datasourceConfig(JdbcDatabaseContainer<?> postgresContainer) {
     return datasourceConfig(
         postgresContainer.getJdbcUrl(),
-        postgresContainer.getDatabaseName(),
         postgresContainer.getUsername(),
         postgresContainer.getPassword());
   }
