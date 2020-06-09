@@ -10,6 +10,8 @@ import io.vertx.core.json.JsonObject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 /**
@@ -18,10 +20,13 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
  * @author Martin Biolik
  */
 public class KafkaConfig {
+  private static final Logger LOGGER = Logger.getLogger(KafkaConfig.class.getName());
+
   private String bootstrapServers;
   private String keyDeserializer;
   private String valueDeserializer;
   private String autoOffsetReset;
+  private final String msg = "Missing value for ";
 
   /**
    * Create kafka config from json config.
@@ -29,10 +34,33 @@ public class KafkaConfig {
    * @param config json config
    */
   public KafkaConfig(JsonObject config) {
-    this.bootstrapServers = config.getString("bootstrap.servers");
-    this.keyDeserializer = config.getJsonObject("kafka").getString("key.deserializer");
-    this.valueDeserializer = config.getJsonObject("kafka").getString("value.deserializer");
-    this.autoOffsetReset = config.getJsonObject("kafka").getString("auto.offset.reset");
+    try {
+      if(config.getString("bootstrap.servers") == null) {
+        throw new NullPointerException(String.format("%sbootstrap.servers!", msg));
+      } else {
+        this.bootstrapServers = config.getString("bootstrap.servers");
+      }
+
+      if (config.getJsonObject("kafka").getString("key.deserializer") == null) {
+        throw new NullPointerException(String.format("%skafka.key.deserializer!", msg));
+      } else {
+        this.keyDeserializer = config.getJsonObject("kafka").getString("key.deserializer");
+      }
+
+      if (config.getJsonObject("kafka").getString("value.deserializer") == null) {
+        throw new NullPointerException(String.format("%skafka.value.deserializer!", msg));
+      } else {
+        this.valueDeserializer = config.getJsonObject("kafka").getString("value.deserializer");
+      }
+
+      if (config.getJsonObject("kafka").getString("auto.offset.reset") == null) {
+        throw new NullPointerException(String.format("%skafka.auto.offset.reset!", msg));
+      } else {
+        this.autoOffsetReset = config.getJsonObject("kafka").getString("auto.offset.reset");
+      }
+    } catch (NullPointerException npe) {
+      LOGGER.log(Level.SEVERE, npe.toString());
+    }
   }
 
   /**
@@ -40,15 +68,34 @@ public class KafkaConfig {
    *
    * @param bootstrapServers host (e.g. "http://localhost:9092")
    */
-  public KafkaConfig(
-      String bootstrapServers,
-      String keyDeserializer,
-      String valueDeserializer,
-      String autoOffsetReset) {
-    this.bootstrapServers = bootstrapServers;
-    this.keyDeserializer = keyDeserializer;
-    this.valueDeserializer = valueDeserializer;
-    this.autoOffsetReset = autoOffsetReset;
+  public KafkaConfig(String bootstrapServers, String keyDeserializer, String valueDeserializer, String autoOffsetReset) {
+    try {
+      if(bootstrapServers == null) {
+        throw new NullPointerException(String.format("%sbootstrap.servers!", msg));
+      } else {
+        this.bootstrapServers = bootstrapServers;
+      }
+
+      if (keyDeserializer == null) {
+        throw new NullPointerException(String.format("%skafka.key.deserializer!", msg));
+      } else {
+        this.keyDeserializer = keyDeserializer;
+      }
+
+      if (valueDeserializer == null) {
+        throw new NullPointerException(String.format("%skafka.value.deserializer!", msg));
+      } else {
+        this.valueDeserializer = valueDeserializer;
+      }
+
+      if (autoOffsetReset == null) {
+        throw new NullPointerException(String.format("%skafka.auto.offset.reset!", msg));
+      } else {
+        this.autoOffsetReset = autoOffsetReset;
+      }
+    } catch (NullPointerException npe) {
+      LOGGER.log(Level.SEVERE, npe.toString());
+    }
   }
 
   public Map<String, String> createConfigMap() {
