@@ -46,22 +46,19 @@ public class FastGQL extends AbstractVerticle {
   @Override
   public void start(Promise<Void> future) throws SQLException {
 
-    DatasourceConfig datasourceConfig = new DatasourceConfig(config().getJsonObject("datasource"));
+    DatasourceConfig datasourceConfig = DatasourceConfig.createDatasourceConfig(config().getJsonObject("datasource"));
 
     Connection connection =
-        DriverManager.getConnection(
-            datasourceConfig.getJdbcUrl(),
-            datasourceConfig.getUsername(),
-            datasourceConfig.getPassword());
+            DriverManager.getConnection(
+                    datasourceConfig.getJdbcUrl(),
+                    datasourceConfig.getUsername(),
+                    datasourceConfig.getPassword());
     DatabaseSchema database = MetadataUtils.createDatabaseSchema(connection);
     connection.close();
 
     Pool client = createWithConfiguration(datasourceConfig, vertx);
 
-    KafkaConfig kafkaConfig = new KafkaConfig(config());
-    Map<String, String> kafkaConfigMap = kafkaConfig.createConfigMap();
-
-    KafkaConsumer<String, String> kafkaConsumer = KafkaConsumer.create(vertx, kafkaConfigMap);
+    KafkaConsumer<String, String> kafkaConsumer = KafkaConsumer.create(vertx, KafkaConfig.createConfigMap(config()));
     kafkaConsumer.subscribe(alteredTablesTopic);
 
     Flowable<String> alteredTablesFlowable =

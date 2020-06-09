@@ -7,6 +7,7 @@ package dev.fastgql;
 
 import dev.fastgql.db.DatasourceConfig;
 import io.reactivex.Observable;
+import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
 import java.io.IOException;
 import java.sql.Connection;
@@ -82,8 +83,14 @@ public class DBTestUtils {
   public static DatasourceConfig datasourceConfig(
       String jdbcUrl, String database, String username, String password) {
     int postgresPort = Integer.parseInt(StringUtils.substringBetween(jdbcUrl, "localhost:", "/"));
+    JsonObject datasource = new JsonObject()
+            .put("host", "localhost")
+            .put("port", postgresPort)
+            .put("db", database)
+            .put("username", username)
+            .put("password", password);
 
-    return new DatasourceConfig("localhost", postgresPort, database, username, password);
+    return DatasourceConfig.createDatasourceConfig(datasource);
   }
 
   public static DatasourceConfig datasourceConfig(PostgreSQLContainer<?> postgresContainer) {
