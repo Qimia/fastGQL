@@ -4,7 +4,7 @@
   "kafka": {
     "key.deserializer": "org.apache.kafka.common.serialization.StringDeserializer",
     "value.deserializer": "org.apache.kafka.common.serialization.StringDeserializer",
-    "auto.offset.resett": "earliest"
+    "auto.offset.reset": "earliest"
   },
   "datasource": {
     "host": "localhost",

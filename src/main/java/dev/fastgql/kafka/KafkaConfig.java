@@ -35,7 +35,7 @@ public class KafkaConfig {
    */
   public KafkaConfig(JsonObject config) {
     try {
-      if(config.getString("bootstrap.servers") == null) {
+      if (config.getString("bootstrap.servers") == null) {
         throw new NullPointerException(String.format("%sbootstrap.servers!", msg));
       } else {
         this.bootstrapServers = config.getString("bootstrap.servers");
@@ -68,9 +68,13 @@ public class KafkaConfig {
    *
    * @param bootstrapServers host (e.g. "http://localhost:9092")
    */
-  public KafkaConfig(String bootstrapServers, String keyDeserializer, String valueDeserializer, String autoOffsetReset) {
+  public KafkaConfig(
+      String bootstrapServers,
+      String keyDeserializer,
+      String valueDeserializer,
+      String autoOffsetReset) {
     try {
-      if(bootstrapServers == null) {
+      if (bootstrapServers == null) {
         throw new NullPointerException(String.format("%sbootstrap.servers!", msg));
       } else {
         this.bootstrapServers = bootstrapServers;

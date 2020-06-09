@@ -1,8 +1,6 @@
 package dev.fastgql.db;
 
-import dev.fastgql.kafka.KafkaConfig;
 import io.vertx.core.json.JsonObject;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,31 +27,31 @@ public class DatasourceConfig {
   public DatasourceConfig(JsonObject config) {
 
     try {
-      if(config.getString("host") == null) {
+      if (config.getString("host") == null) {
         throw new NullPointerException(String.format("%shost!", msg));
       } else {
         this.host = config.getString("host");
       }
 
-      if(config.getInteger("port") == null) {
+      if (config.getInteger("port") == null) {
         throw new NullPointerException(String.format("%sport!", msg));
       } else {
         this.port = config.getInteger("port");
       }
 
-      if(config.getString("db") == null) {
+      if (config.getString("db") == null) {
         throw new NullPointerException(String.format("%sdb!", msg));
       } else {
         this.db = config.getString("db");
       }
 
-      if(config.getString("username") == null) {
+      if (config.getString("username") == null) {
         throw new NullPointerException(String.format("%susername!", msg));
       } else {
         this.username = config.getString("username");
       }
 
-      if(config.getString("password") == null) {
+      if (config.getString("password") == null) {
         throw new NullPointerException(String.format("%spassword!", msg));
       } else {
         this.password = config.getString("password");
@@ -74,31 +72,31 @@ public class DatasourceConfig {
    */
   public DatasourceConfig(String host, int port, String db, String username, String password) {
     try {
-      if(host == null) {
+      if (host == null) {
         throw new NullPointerException(String.format("%shost!", msg));
       } else {
         this.host = host;
       }
 
-      if(port == 0) {
+      if (port == 0) {
         throw new NullPointerException(String.format("%sport!", msg));
       } else {
         this.port = port;
       }
 
-      if(db == null) {
+      if (db == null) {
         throw new NullPointerException(String.format("%sdb!", msg));
       } else {
         this.db = db;
       }
 
-      if(username == null) {
+      if (username == null) {
         throw new NullPointerException(String.format("%susername!", msg));
       } else {
         this.username = username;
       }
 
-      if(password == null) {
+      if (password == null) {
         throw new NullPointerException(String.format("%spassword!", msg));
       } else {
         this.password = password;

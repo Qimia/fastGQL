@@ -64,7 +64,6 @@ public class FastGQL extends AbstractVerticle {
     KafkaConsumer<String, String> kafkaConsumer = KafkaConsumer.create(vertx, kafkaConfigMap);
     kafkaConsumer.subscribe(alteredTablesTopic);
 
-
     Flowable<String> alteredTablesFlowable =
         kafkaConsumer.toFlowable().map(record -> kafkaMessageToTableName(record.value()));
 
