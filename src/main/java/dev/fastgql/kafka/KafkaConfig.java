@@ -44,10 +44,18 @@ public class KafkaConfig {
     KafkaConfig kafkaConfig = new KafkaConfig(config);
 
     try {
-      if (kafkaConfig.getBootstrapServers() == null) {throw new NullPointerException(String.format("%sbootstrap.servers!", msg));}
-      if (kafkaConfig.getKeyDeserializer() == null) {throw new NullPointerException(String.format("%skafka.key.deserializer!", msg));}
-      if (kafkaConfig.getValueDeserializer() == null) {throw new NullPointerException(String.format("%skafka.value.deserializer!", msg));}
-      if (kafkaConfig.getAutoOffsetReset() == null) {throw new NullPointerException(String.format("%skafka.auto.offset.reset", msg));}
+      if (kafkaConfig.getBootstrapServers() == null) {
+        throw new NullPointerException(String.format("%sbootstrap.servers!", msg));
+      }
+      if (kafkaConfig.getKeyDeserializer() == null) {
+        throw new NullPointerException(String.format("%skafka.key.deserializer!", msg));
+      }
+      if (kafkaConfig.getValueDeserializer() == null) {
+        throw new NullPointerException(String.format("%skafka.value.deserializer!", msg));
+      }
+      if (kafkaConfig.getAutoOffsetReset() == null) {
+        throw new NullPointerException(String.format("%skafka.auto.offset.reset", msg));
+      }
     } catch (NullPointerException npe) {
       LOGGER.log(Level.SEVERE, npe.toString());
     }
@@ -55,7 +63,8 @@ public class KafkaConfig {
     Map<String, String> configMap = new HashMap<>();
     configMap.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.getBootstrapServers());
     configMap.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, kafkaConfig.getKeyDeserializer());
-    configMap.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, kafkaConfig.getValueDeserializer());
+    configMap.put(
+        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, kafkaConfig.getValueDeserializer());
     configMap.put(ConsumerConfig.GROUP_ID_CONFIG, "tc-" + UUID.randomUUID());
     configMap.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, kafkaConfig.getAutoOffsetReset());
 

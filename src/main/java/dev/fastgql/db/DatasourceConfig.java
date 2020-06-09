@@ -36,11 +36,21 @@ public class DatasourceConfig {
     DatasourceConfig datasourceConfig = new DatasourceConfig(config);
 
     try {
-      if (datasourceConfig.getHost() == null) {throw new NullPointerException(String.format("%shost!", msg));}
-      if (datasourceConfig.getPort() == 0) {throw new NullPointerException(String.format("%sport!", msg));}
-      if (datasourceConfig.getDb() == null) {throw new NullPointerException(String.format("%sdb!", msg));}
-      if (datasourceConfig.getUsername() == null) {throw new NullPointerException(String.format("%susername!", msg));}
-      if (datasourceConfig.getPassword() == null) {throw new NullPointerException(String.format("%spassword!", msg));}
+      if (datasourceConfig.getHost() == null) {
+        throw new NullPointerException(String.format("%shost!", msg));
+      }
+      if (datasourceConfig.getPort() == 0) {
+        throw new NullPointerException(String.format("%sport!", msg));
+      }
+      if (datasourceConfig.getDb() == null) {
+        throw new NullPointerException(String.format("%sdb!", msg));
+      }
+      if (datasourceConfig.getUsername() == null) {
+        throw new NullPointerException(String.format("%susername!", msg));
+      }
+      if (datasourceConfig.getPassword() == null) {
+        throw new NullPointerException(String.format("%spassword!", msg));
+      }
     } catch (NullPointerException npe) {
       LOGGER.log(Level.SEVERE, npe.toString());
     }

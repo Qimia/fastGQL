@@ -83,7 +83,8 @@ public class DBTestUtils {
   public static DatasourceConfig datasourceConfig(
       String jdbcUrl, String database, String username, String password) {
     int postgresPort = Integer.parseInt(StringUtils.substringBetween(jdbcUrl, "localhost:", "/"));
-    JsonObject datasource = new JsonObject()
+    JsonObject datasource =
+        new JsonObject()
             .put("host", "localhost")
             .put("port", postgresPort)
             .put("db", database)
