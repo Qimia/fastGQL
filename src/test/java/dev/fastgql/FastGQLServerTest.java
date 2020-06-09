@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.KafkaContainer;
@@ -124,126 +126,10 @@ public class FastGQLServerTest {
       tearDownContainers(vertx, context);
     }
 
-    @Test
-    public void shouldReceiveResponseForSimpleQuery(Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple("queries/simple/select-addresses", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForSimpleNestedCustomerAddressQuery(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple("queries/simple/select-nested-customer-address", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForSimpleNestedAddressCustomerQuery(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple("queries/simple/select-nested-address-customer", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForSimpleNestedAddressCustomerAddressQuery(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple(
-          "queries/simple/select-nested-address-customer-address", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForSimpleNestedCustomerAddressCustomerQuery(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple(
-          "queries/simple/select-nested-customer-address-customer", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForLimitAddressesLimit1Query(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple("queries/limit/select-addresses-limit-1", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForLimitAddressesLimit2Query(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple("queries/limit/select-addresses-limit-2", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForOffsetCustomersLimit2Offset0(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple("queries/offset/select-customers-limit-2-offset-0", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForOffsetCustomersLimit2Offset1(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple("queries/offset/select-customers-limit-2-offset-1", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForOffsetNestedAddressCustomerLimit2Offset1(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple(
-          "queries/offset/select-nested-address-customer-limit-2-offset-1", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForOrderByAddressesOrderByStreetDesc(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple(
-          "queries/order-by/select-addresses-order-by-street-desc", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForOrderByCustomersOrderByFirstNameAsc(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple(
-          "queries/order-by/select-customers-order-by-first-name-asc", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForOrderByNestedAddressCustomerOrderByFirstNameDesc(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple(
-          "queries/order-by/select-nested-address-customer-order-by-first-name-desc",
-          port,
-          vertx,
-          context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForWhereAddressesWhereIdEq101(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple("queries/where/select-addresses-where-id-eq-101", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForWhereAddressesWhereIdGt101(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple("queries/where/select-addresses-where-id-gt-101", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForWhereAddressesWhereStreetEqAstreet(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple(
-          "queries/where/select-addresses-where-street-eq-Astreet", port, vertx, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForWhereNestedCustomerAddressWhereStreetEqAstreet(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple(
-          "queries/where/select-nested-customer-address-where-street-eq-Astreet",
-          port,
-          vertx,
-          context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForWhereNestedAddressCustomerWhereIdGt103(
-        Vertx vertx, VertxTestContext context) {
-      verifyQuerySimple(
-          "queries/where/select-nested-address-customer-where-id-gt-103", port, vertx, context);
+    @ParameterizedTest(name = "{index} => Test: [{arguments}]")
+    @MethodSource("dev.fastgql.TestUtils#queryDirectories")
+    void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context) {
+      verifyQuerySimple(directory, port, vertx, context);
     }
   }
 
