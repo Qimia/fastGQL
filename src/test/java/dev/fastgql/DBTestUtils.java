@@ -96,11 +96,4 @@ public class DBTestUtils {
         postgresContainer.getUsername(),
         postgresContainer.getPassword());
   }
-
-  public static KafkaConfig kafkaConfig(KafkaContainer kafkaContainer) {
-    return new KafkaConfig(kafkaContainer.getBootstrapServers(),
-            "org.apache.kafka.common.serialization.StringDeserializer",
-            "org.apache.kafka.common.serialization.StringDeserializer",
-            "earliest");
-  }
 }

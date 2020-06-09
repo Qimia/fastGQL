@@ -30,9 +30,9 @@ public class KafkaConfig {
    */
   public KafkaConfig(JsonObject config) {
     this.bootstrapServers = config.getString("bootstrap.servers");
-    this.keyDeserializer = config.getString("key.deserializer");
-    this.valueDeserializer = config.getString("value.deserializer");
-    this.autoOffsetReset = config.getString("auto.offset.reset");
+    this.keyDeserializer = config.getJsonObject("kafka").getString("key.deserializer");
+    this.valueDeserializer = config.getJsonObject("kafka").getString("value.deserializer");
+    this.autoOffsetReset = config.getJsonObject("kafka").getString("auto.offset.reset");
   }
 
   /**
@@ -49,18 +49,6 @@ public class KafkaConfig {
     this.keyDeserializer = keyDeserializer;
     this.valueDeserializer = valueDeserializer;
     this.autoOffsetReset = autoOffsetReset;
-  }
-
-  /**
-   * Standard constructor.
-   *
-   * @param bootstrapServers host (e.g. "http://localhost:9092")
-   */
-  public KafkaConfig(String bootstrapServers) {
-    this.bootstrapServers = bootstrapServers;
-    this.keyDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
-    this.valueDeserializer = "org.apache.kafka.common.serialization.StringDeserializer";
-    this.autoOffsetReset = "earliest";
   }
 
   public Map<String, String> createConfigMap() {

@@ -8,6 +8,7 @@ package dev.fastgql;
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -17,6 +18,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,14 +79,18 @@ public class FastGQLServerTest {
       return;
     }
 
+    JsonObject kafka = new JsonObject()
+            .put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
+            .put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
+            .put("group.id", "tc-4a6e3a09-c8f6-4bdb-90e7-856bab80c604")
+            .put("auto.offset.reset", "earliest");
+
     JsonObject config =
         new JsonObject()
             .put("http.port", port)
-//            .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
-            .put("kafka", JsonObject.mapFrom(DBTestUtils.kafkaConfig(kafkaContainer)))
+            .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
+            .put("kafka", kafka)
             .put("datasource", JsonObject.mapFrom(DBTestUtils.datasourceConfig(postgresContainer)));
-
-    System.out.println("***" + config);
 
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
     vertx
