@@ -8,6 +8,7 @@ package dev.fastgql;
 
 import static dev.fastgql.GraphQLTestUtils.verifyQuerySimple;
 
+import dev.fastgql.db.DatasourceConfig;
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
 import io.vertx.core.DeploymentOptions;
@@ -18,6 +19,7 @@ import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
@@ -41,9 +43,9 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.lifecycle.Startables;
 
 @ExtendWith(VertxExtension.class)
-public class FastGQLServerTest {
+public class FastGQLServerPostgresTest {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FastGQLServerTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FastGQLServerPostgresTest.class);
   private static final int port = 8081;
   private static Network network = Network.newNetwork();
   private static KafkaContainer kafkaContainer = new KafkaContainer().withNetwork(network);
@@ -81,11 +83,19 @@ public class FastGQLServerTest {
       return;
     }
 
+    DatasourceConfig datasourceConfig = DBTestUtils.datasourceConfig(postgresContainer);
+
     JsonObject config =
         new JsonObject()
             .put("http.port", port)
             .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
-            .put("datasource", JsonObject.mapFrom(DBTestUtils.datasourceConfig(postgresContainer)));
+            .put(
+                "datasource",
+                Map.of(
+                    "jdbcUrl", datasourceConfig.getJdbcUrl(),
+                    "username", datasourceConfig.getUsername(),
+                    "password", datasourceConfig.getPassword(),
+                    "schema", datasourceConfig.getSchema()));
 
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
     vertx
@@ -113,7 +123,7 @@ public class FastGQLServerTest {
   }
 
   @Nested
-  @DisplayName("Query Tests")
+  @DisplayName("PostgreSQL Query Tests")
   @TestInstance(Lifecycle.PER_CLASS)
   class QueryTests {
     @BeforeAll
@@ -134,7 +144,7 @@ public class FastGQLServerTest {
   }
 
   @Nested
-  @DisplayName("Subscription Tests")
+  @DisplayName("PostgreSQL Subscription Tests")
   class SubscriptionTests {
     @BeforeEach
     public void setUp(Vertx vertx, VertxTestContext context) {
