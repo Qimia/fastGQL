@@ -1,3 +1,0 @@
-[submodule "debezium"]
-	path = debezium
-	url = https://github.com/Qimia/debezium.git
