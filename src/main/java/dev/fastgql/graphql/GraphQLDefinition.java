@@ -227,7 +227,9 @@ public class GraphQLDefinition {
             ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
             Set<String> topics =
                 executionRoot.getQueriedTables().stream()
-                    .map(queriedTable -> String.format("%s.%s.%s", serverName, schemaName, queriedTable))
+                    .map(
+                        queriedTable ->
+                            String.format("%s.%s.%s", serverName, schemaName, queriedTable))
                     .collect(Collectors.toSet());
             KafkaConsumer<String, String> kafkaConsumer =
                 KafkaConsumerFactory.createForTopics(topics, bootstrapServers, vertx);

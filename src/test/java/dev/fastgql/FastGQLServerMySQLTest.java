@@ -75,9 +75,12 @@ public class FastGQLServerMySQLTest {
           ConnectorConfiguration.forJdbcContainer(mysqlContainer)
               .with("database.server.name", "dbserver")
               .with("slot.name", "debezium")
-              .with("database.history.kafka.bootstrap.servers", String.format("%s:9092", kafkaContainer.getNetworkAliases().get(0)))
-              .with("database.history.kafka.topic", String.format("schema-changes.%s", mysqlContainer.getDatabaseName()))
-      );
+              .with(
+                  "database.history.kafka.bootstrap.servers",
+                  String.format("%s:9092", kafkaContainer.getNetworkAliases().get(0)))
+              .with(
+                  "database.history.kafka.topic",
+                  String.format("schema-changes.%s", mysqlContainer.getDatabaseName())));
     } catch (IOException e) {
       context.failNow(e);
       return;
