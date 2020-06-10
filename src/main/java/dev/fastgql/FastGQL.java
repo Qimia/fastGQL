@@ -6,42 +6,24 @@
 
 package dev.fastgql;
 
-import com.google.common.collect.Iterables;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.MetadataUtils;
 import dev.fastgql.graphql.GraphQLDefinition;
 import dev.fastgql.router.RouterUpdatable;
 import graphql.GraphQL;
-import io.reactivex.Flowable;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
-import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.sqlclient.PoolOptions;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 public class FastGQL extends AbstractVerticle {
 
-  private static final String alteredTablesTopic = "altered-tables";
-
   public static void main(String[] args) {
     Launcher.executeCommand("run", FastGQL.class.getName(), "--conf", "src/main/conf.json");
-  }
-
-  private static String kafkaMessageToTableName(String message) {
-    return Iterables.getLast(
-        Arrays.asList(message.substring(1, message.length() - 1).split("\\.")));
   }
 
   @Override
@@ -55,28 +37,14 @@ public class FastGQL extends AbstractVerticle {
 
     Pool client = datasourceConfig.getPool(vertx);
 
-    Map<String, String> kafkaConfig = new HashMap<>();
-    kafkaConfig.put(
-        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-        config().getString("bootstrap.servers", "http://localhost:9092"));
-    kafkaConfig.put(
-        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-        "org.apache.kafka.common.serialization.StringDeserializer");
-    kafkaConfig.put(
-        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-        "org.apache.kafka.common.serialization.StringDeserializer");
-    kafkaConfig.put(ConsumerConfig.GROUP_ID_CONFIG, "tc-" + UUID.randomUUID());
-    kafkaConfig.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-    KafkaConsumer<String, String> kafkaConsumer = KafkaConsumer.create(vertx, kafkaConfig);
-    kafkaConsumer.subscribe(alteredTablesTopic);
-
-    Flowable<String> alteredTablesFlowable =
-        kafkaConsumer.toFlowable().map(record -> kafkaMessageToTableName(record.value()));
-
     GraphQL graphQL =
         GraphQLDefinition.newGraphQL(database, client)
             .enableQuery()
-            .enableSubscription(alteredTablesFlowable)
+            .enableSubscription(
+                vertx,
+                config().getString("bootstrap.servers"),
+                "dbserver",
+                datasourceConfig.getSchema())
             .build();
 
     RouterUpdatable routerUpdatable = RouterUpdatable.createWithQueryAndSubscription(vertx);

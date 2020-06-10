@@ -73,9 +73,11 @@ public class FastGQLServerMySQLTest {
       debeziumContainer.registerConnector(
           "my-connector",
           ConnectorConfiguration.forJdbcContainer(mysqlContainer)
-              .withKafkaForDatabaseHistory(kafkaContainer)
               .with("database.server.name", "dbserver")
-              .with("slot.name", "debezium"));
+              .with("slot.name", "debezium")
+              .with("database.history.kafka.bootstrap.servers", String.format("%s:9092", kafkaContainer.getNetworkAliases().get(0)))
+              .with("database.history.kafka.topic", String.format("schema-changes.%s", mysqlContainer.getDatabaseName()))
+      );
     } catch (IOException e) {
       context.failNow(e);
       return;
@@ -87,11 +89,13 @@ public class FastGQLServerMySQLTest {
         new JsonObject()
             .put("http.port", port)
             .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
-            .put("datasource", Map.of(
-              "jdbcUrl", datasourceConfig.getJdbcUrl(),
-              "username", datasourceConfig.getUsername(),
-              "password", datasourceConfig.getPassword()
-            ));
+            .put(
+                "datasource",
+                Map.of(
+                    "jdbcUrl", datasourceConfig.getJdbcUrl(),
+                    "username", datasourceConfig.getUsername(),
+                    "password", datasourceConfig.getPassword(),
+                    "schema", datasourceConfig.getSchema()));
 
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
     vertx

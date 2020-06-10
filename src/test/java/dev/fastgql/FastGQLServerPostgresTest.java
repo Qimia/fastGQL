@@ -84,11 +84,13 @@ public class FastGQLServerPostgresTest {
         new JsonObject()
             .put("http.port", port)
             .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
-            .put("datasource", Map.of(
-              "jdbcUrl", datasourceConfig.getJdbcUrl(),
-              "username", datasourceConfig.getUsername(),
-              "password", datasourceConfig.getPassword()
-            ));
+            .put(
+                "datasource",
+                Map.of(
+                    "jdbcUrl", datasourceConfig.getJdbcUrl(),
+                    "username", datasourceConfig.getUsername(),
+                    "password", datasourceConfig.getPassword(),
+                    "schema", datasourceConfig.getSchema()));
 
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
     vertx

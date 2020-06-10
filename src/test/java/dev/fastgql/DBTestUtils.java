@@ -34,8 +34,8 @@ public class DBTestUtils {
     executeSQLQuery(TestUtils.readResource(sqlResource), jdbcUrl, username, password);
   }
 
-  public static void executeSQLQuery(String sqlQuery, JdbcDatabaseContainer<?> jdbcDatabaseContainer)
-      throws SQLException {
+  public static void executeSQLQuery(
+      String sqlQuery, JdbcDatabaseContainer<?> jdbcDatabaseContainer) throws SQLException {
     executeSQLQuery(
         sqlQuery,
         jdbcDatabaseContainer.getJdbcUrl(),
@@ -43,16 +43,16 @@ public class DBTestUtils {
         jdbcDatabaseContainer.getPassword());
   }
 
-/*
-  public static void executeSQLQuery(
-      String sqlQuery, PostgreSQLContainer<?> postgresContainer, VertxTestContext context) {
-    try {
-      executeSQLQuery(sqlQuery, postgresContainer);
-    } catch (SQLException e) {
-      context.failNow(e);
+  /*
+    public static void executeSQLQuery(
+        String sqlQuery, PostgreSQLContainer<?> postgresContainer, VertxTestContext context) {
+      try {
+        executeSQLQuery(sqlQuery, postgresContainer);
+      } catch (SQLException e) {
+        context.failNow(e);
+      }
     }
-  }
-*/
+  */
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
   public static void executeSQLQueryWithDelay(
@@ -91,15 +91,19 @@ public class DBTestUtils {
         mySQLContainer.getPassword());
   }
 
-  public static DatasourceConfig datasourceConfig(
-      String jdbcUrl, String username, String password) {
-    return DatasourceConfig.createDatasourceConfig(jdbcUrl, username, password);
-  }
-
-  public static DatasourceConfig datasourceConfig(JdbcDatabaseContainer<?> postgresContainer) {
-    return datasourceConfig(
+  public static DatasourceConfig datasourceConfig(PostgreSQLContainer<?> postgresContainer) {
+    return DatasourceConfig.createDatasourceConfig(
         postgresContainer.getJdbcUrl(),
         postgresContainer.getUsername(),
-        postgresContainer.getPassword());
+        postgresContainer.getPassword(),
+        "public");
+  }
+
+  public static DatasourceConfig datasourceConfig(MySQLContainer<?> mySQLContainer) {
+    return DatasourceConfig.createDatasourceConfig(
+        mySQLContainer.getJdbcUrl(),
+        mySQLContainer.getUsername(),
+        mySQLContainer.getPassword(),
+        mySQLContainer.getDatabaseName());
   }
 }

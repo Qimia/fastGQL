@@ -33,6 +33,7 @@ public class DatasourceConfig {
   private final String db;
   private final String username;
   private final String password;
+  private final String schema;
 
   private DatasourceConfig(
       String jdbcUrl,
@@ -40,6 +41,7 @@ public class DatasourceConfig {
       String host,
       int port,
       String db,
+      String schema,
       String username,
       String password) {
     this.jdbcUrl = jdbcUrl;
@@ -47,8 +49,47 @@ public class DatasourceConfig {
     this.host = host;
     this.port = port;
     this.db = db;
+    this.schema = schema;
     this.username = username;
     this.password = password;
+  }
+
+  private static class JdbcParseResult {
+    private final DBType dbType;
+    private final String host;
+    private final int port;
+    private final String db;
+
+    private JdbcParseResult(DBType dbType, String host, int port, String db) {
+      this.dbType = dbType;
+      this.host = host;
+      this.port = port;
+      this.db = db;
+    }
+
+    private static JdbcParseResult parse(String jdbcUrl) {
+      Pattern pattern =
+          Pattern.compile("jdbc:(postgresql|mysql)://(\\w+):(\\d{4,5})/(\\w+)\\??\\S*");
+      Matcher matcher = pattern.matcher(jdbcUrl);
+      if (matcher.matches()) {
+        String dbTypeString = matcher.group(1);
+        DBType dbType = DBType.other;
+        if (dbTypeString.equals("postgresql")) {
+          dbType = DBType.postgresql;
+        } else if (dbTypeString.equals("mysql")) {
+          dbType = DBType.mysql;
+        }
+        if (dbType == DBType.other) {
+          throw new IllegalArgumentException("Unsupported DB type");
+        }
+        String host = matcher.group(2);
+        int port = Integer.parseInt(matcher.group(3));
+        String db = matcher.group(4);
+        return new JdbcParseResult(dbType, host, port, db);
+      } else {
+        throw new IllegalArgumentException("JDBC url not valid");
+      }
+    }
   }
 
   public Connection getConnection() throws SQLException {
@@ -98,26 +139,24 @@ public class DatasourceConfig {
    */
   public static DatasourceConfig createDatasourceConfig(
       String jdbcUrl, String username, String password) {
-    Pattern pattern = Pattern.compile("jdbc:(postgresql|mysql)://(\\w+):(\\d{4,5})/(\\w+)\\??\\S*");
-    Matcher matcher = pattern.matcher(jdbcUrl);
-    if (matcher.matches()) {
-      String dbTypeString = matcher.group(1);
-      DBType dbType = DBType.other;
-      if (dbTypeString.equals("postgresql")) {
-        dbType = DBType.postgresql;
-      } else if (dbTypeString.equals("mysql")) {
-        dbType = DBType.mysql;
-      }
-      if (dbType == DBType.other) {
-        throw new IllegalArgumentException("Unsupported DB type");
-      }
-      String host = matcher.group(2);
-      int port = Integer.parseInt(matcher.group(3));
-      String db = matcher.group(4);
-      return new DatasourceConfig(jdbcUrl, dbType, host, port, db, username, password);
-    } else {
-      throw new IllegalArgumentException("JDBC url not valid");
-    }
+    JdbcParseResult result = JdbcParseResult.parse(jdbcUrl);
+    return new DatasourceConfig(
+        jdbcUrl, result.dbType, result.host, result.port, result.db, result.db, username, password);
+  }
+
+  /**
+   * Create method with custom schema.
+   *
+   * @param jdbcUrl JDBC url
+   * @param username database user name
+   * @param password database password
+   * @param schema database schema
+   */
+  public static DatasourceConfig createDatasourceConfig(
+      String jdbcUrl, String username, String password, String schema) {
+    JdbcParseResult result = JdbcParseResult.parse(jdbcUrl);
+    return new DatasourceConfig(
+        jdbcUrl, result.dbType, result.host, result.port, result.db, schema, username, password);
   }
 
   /**
@@ -127,7 +166,10 @@ public class DatasourceConfig {
    */
   public static DatasourceConfig createWithJsonConfig(JsonObject config) {
     return createDatasourceConfig(
-        config.getString("jdbcUrl"), config.getString("username"), config.getString("password"));
+        config.getString("jdbcUrl"),
+        config.getString("username"),
+        config.getString("password"),
+        config.getString("schema"));
   }
 
   public String getJdbcUrl() {
@@ -144,6 +186,10 @@ public class DatasourceConfig {
 
   public String getDb() {
     return db;
+  }
+
+  public String getSchema() {
+    return schema;
   }
 
   public String getUsername() {

@@ -11,7 +11,7 @@ public class DatasourceConfigTest {
   void shouldParsePostgres() {
     DatasourceConfig datasourceConfig =
         DatasourceConfig.createDatasourceConfig(
-            "jdbc:postgresql://localhost:5432/db", "user", "pswd");
+            "jdbc:postgresql://localhost:5432/db", "user", "pswd", "public");
     assertEquals("localhost", datasourceConfig.getHost());
     assertEquals(5432, datasourceConfig.getPort());
     assertEquals("db", datasourceConfig.getDb());
@@ -20,8 +20,8 @@ public class DatasourceConfigTest {
   @Test
   void shouldParseWithOptionalArguments() {
     DatasourceConfig datasourceConfig =
-      DatasourceConfig.createDatasourceConfig(
-        "jdbc:postgresql://localhost:5432/db?optional=true", "user", "pswd");
+        DatasourceConfig.createDatasourceConfig(
+            "jdbc:postgresql://localhost:5432/db?optional=true", "user", "pswd", "public");
     assertEquals("localhost", datasourceConfig.getHost());
     assertEquals(5432, datasourceConfig.getPort());
     assertEquals("db", datasourceConfig.getDb());
@@ -34,6 +34,7 @@ public class DatasourceConfigTest {
     assertEquals("localhost", datasourceConfig.getHost());
     assertEquals(5432, datasourceConfig.getPort());
     assertEquals("db", datasourceConfig.getDb());
+    assertEquals("db", datasourceConfig.getSchema());
   }
 
   @Test
