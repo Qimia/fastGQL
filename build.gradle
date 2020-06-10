@@ -43,7 +43,9 @@ dependencies {
     implementation 'io.vertx:vertx-web-graphql'
     implementation 'io.vertx:vertx-rx-java2'
     implementation 'io.vertx:vertx-pg-client'
+    implementation 'io.vertx:vertx-mysql-client'
     implementation 'io.vertx:vertx-kafka-client'
+    implementation 'mysql:mysql-connector-java:5.1.49'
     implementation 'org.postgresql:postgresql:42.2.12'
     implementation 'org.apache.kafka:kafka-clients:2.4.0'
     implementation 'com.google.guava:guava:28.2-jre'
@@ -57,7 +59,9 @@ dependencies {
     testImplementation 'org.testcontainers:kafka:1.12.5'
     testImplementation 'org.testcontainers:testcontainers:1.12.5'
     testImplementation 'org.testcontainers:postgresql:1.12.5'
+    testImplementation 'org.testcontainers:mysql:1.12.5'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testImplementation 'io.debezium:debezium-testing-testcontainers:1.0.3.Final'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
 }
 
