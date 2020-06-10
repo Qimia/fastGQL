@@ -12,7 +12,8 @@ CREATE TABLE customers(
   first_name VARCHAR(255),
   last_name VARCHAR(255),
   email VARCHAR(255),
-  address INT REFERENCES addresses(id)
+  address INT,
+  FOREIGN KEY (address) REFERENCES addresses(id)
 );
 
 INSERT INTO addresses VALUES (101, 'Astreet', 7);

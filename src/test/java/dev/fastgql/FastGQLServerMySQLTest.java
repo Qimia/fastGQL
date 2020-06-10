@@ -146,6 +146,7 @@ public class FastGQLServerMySQLTest {
     @ParameterizedTest(name = "{index} => Test: [{arguments}]")
     @MethodSource("dev.fastgql.TestUtils#queryDirectories")
     void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context) {
+      System.out.println(String.format("Test: %s", directory));
       verifyQuerySimple(directory, port, vertx, context);
     }
   }
