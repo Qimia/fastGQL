@@ -6,9 +6,6 @@
 
 package dev.fastgql.sql;
 
-import static dev.fastgql.sql.SQLUtils.createBoolQuery;
-import static dev.fastgql.sql.SQLUtils.createOrderByQuery;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -110,7 +107,8 @@ public class SQLQuery {
       return "";
     }
     return String.format(
-        "ORDER BY %s", createOrderByQuery(args.getOrderBy().getAsJsonArray(), alias, fieldToAlias));
+        "ORDER BY %s",
+        SQLUtils.createOrderByQuery(args.getOrderBy().getAsJsonArray(), alias, fieldToAlias));
   }
 
   private String buildLimitQuery() {
@@ -129,7 +127,8 @@ public class SQLQuery {
 
   private String buildWhereQuery() {
     if (args.getWhere() != null && args.getWhere().isJsonObject()) {
-      String whereQuery = createBoolQuery(args.getWhere().getAsJsonObject(), alias, fieldToAlias);
+      String whereQuery =
+          SQLUtils.createBoolQuery(args.getWhere().getAsJsonObject(), alias, fieldToAlias);
       addSuffix(String.format("(%s)", whereQuery));
     }
     if (suffixes.isEmpty()) {

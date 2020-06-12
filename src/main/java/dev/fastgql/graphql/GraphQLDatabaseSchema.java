@@ -6,16 +6,19 @@
 
 package dev.fastgql.graphql;
 
-import static dev.fastgql.graphql.GraphQLNaming.getNameBoolType;
-import static dev.fastgql.graphql.GraphQLNaming.getNameForReferencedByField;
-import static dev.fastgql.graphql.GraphQLNaming.getNameForReferencingField;
-import static dev.fastgql.graphql.GraphQLArgumentsUtils.fieldTypeGraphQLScalarTypeMap;
 import static graphql.Scalars.GraphQLInt;
 
 import dev.fastgql.common.QualifiedName;
 import dev.fastgql.common.ReferenceType;
 import dev.fastgql.db.DatabaseSchema;
-import graphql.schema.*;
+import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLInputObjectField;
+import graphql.schema.GraphQLInputObjectType;
+import graphql.schema.GraphQLInputType;
+import graphql.schema.GraphQLList;
+import graphql.schema.GraphQLObjectType;
+import graphql.schema.GraphQLScalarType;
+import graphql.schema.GraphQLTypeReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,9 +59,8 @@ public class GraphQLDatabaseSchema {
 
   /**
    * Applies this schema to given {@link GraphQLObjectType} builders (e.g. Query or Subscription
-   * object builders). Has to be done this way since internally it
-   * constructs other {@link GraphQLObjectType}, which should be constructed only once with the same
-   * name.
+   * object builders). Has to be done this way since internally it constructs other {@link
+   * GraphQLObjectType}, which should be constructed only once with the same name.
    *
    * @param builders builders to which this schema will be applied
    */
@@ -124,14 +126,16 @@ public class GraphQLDatabaseSchema {
                         GraphQLFieldDefinition.createLeaf(
                             qualifiedName, keyDefinition.getKeyType()));
                     if (referencing != null) {
-                      String referencingName = getNameForReferencingField(qualifiedName);
+                      String referencingName =
+                          GraphQLNaming.getNameForReferencingField(qualifiedName);
                       fieldNameToGraphQLFieldDefinition.put(
                           referencingName,
                           GraphQLFieldDefinition.createReferencing(qualifiedName, referencing));
                     }
                     referencedBySet.forEach(
                         referencedBy -> {
-                          String referencedByName = getNameForReferencedByField(referencedBy);
+                          String referencedByName =
+                              GraphQLNaming.getNameForReferencedByField(referencedBy);
                           fieldNameToGraphQLFieldDefinition.put(
                               referencedByName,
                               GraphQLFieldDefinition.createReferencedBy(
@@ -161,7 +165,8 @@ public class GraphQLDatabaseSchema {
                     // if node is referencing, add schema field referencing to corresponding schema
                     // type
                     if (node.getReferencing() != null) {
-                      String referencingName = getNameForReferencingField(node.getQualifiedName());
+                      String referencingName =
+                          GraphQLNaming.getNameForReferencingField(node.getQualifiedName());
                       String referencingTypeName =
                           GraphQLNaming.getNameOrderByType(node.getReferencing().getTableName());
                       builder.field(
@@ -186,7 +191,7 @@ public class GraphQLDatabaseSchema {
         .getGraph()
         .forEach(
             (parent, subGraph) -> {
-              String whereName = getNameBoolType(parent);
+              String whereName = GraphQLNaming.getNameBoolType(parent);
               GraphQLInputObjectType.Builder builder = GraphQLInputObjectType.newInputObject();
               builder
                   .name(whereName)
@@ -213,16 +218,18 @@ public class GraphQLDatabaseSchema {
                   (name, node) -> {
                     GraphQLInputType nodeType =
                         ConditionalOperatorTypes.scalarTypeToComparisonExpMap.get(
-                            fieldTypeGraphQLScalarTypeMap.get(node.getKeyType()));
+                            GraphQLArgumentsUtils.fieldTypeGraphQLScalarTypeMap.get(
+                                node.getKeyType()));
                     builder.field(
                         GraphQLInputObjectField.newInputObjectField()
                             .name(name)
                             .type(nodeType)
                             .build());
                     if (node.getReferencing() != null) {
-                      String referencingName = getNameForReferencingField(node.getQualifiedName());
+                      String referencingName =
+                          GraphQLNaming.getNameForReferencingField(node.getQualifiedName());
                       String referencingTypeName =
-                          getNameBoolType(node.getReferencing().getTableName());
+                          GraphQLNaming.getNameBoolType(node.getReferencing().getTableName());
                       builder.field(
                           GraphQLInputObjectField.newInputObjectField()
                               .name(referencingName)
