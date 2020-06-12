@@ -5,8 +5,6 @@
  */
 package dev.fastgql;
 
-import static dev.fastgql.GraphQLTestUtils.verifyQuerySimple;
-
 import dev.fastgql.db.DatasourceConfig;
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
@@ -147,7 +145,7 @@ public class FastGQLServerMySQLTest {
     @MethodSource("dev.fastgql.TestUtils#queryDirectories")
     void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context) {
       System.out.println(String.format("Test: %s", directory));
-      verifyQuerySimple(directory, port, vertx, context);
+      GraphQLTestUtils.verifyQuerySimple(directory, port, vertx, context);
     }
   }
 

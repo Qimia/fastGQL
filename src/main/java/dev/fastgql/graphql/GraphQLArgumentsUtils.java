@@ -6,10 +6,6 @@
 
 package dev.fastgql.graphql;
 
-import static dev.fastgql.common.KeyType.BOOL;
-import static dev.fastgql.common.KeyType.FLOAT;
-import static dev.fastgql.common.KeyType.INT;
-import static dev.fastgql.common.KeyType.STRING;
 import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLFloat;
 import static graphql.Scalars.GraphQLInt;
@@ -23,8 +19,8 @@ public class GraphQLArgumentsUtils {
 
   public static Map<KeyType, GraphQLScalarType> fieldTypeGraphQLScalarTypeMap =
       Map.of(
-          INT, GraphQLInt,
-          FLOAT, GraphQLFloat,
-          STRING, GraphQLString,
-          BOOL, GraphQLBoolean);
+          KeyType.INT, GraphQLInt,
+          KeyType.FLOAT, GraphQLFloat,
+          KeyType.STRING, GraphQLString,
+          KeyType.BOOL, GraphQLBoolean);
 }
