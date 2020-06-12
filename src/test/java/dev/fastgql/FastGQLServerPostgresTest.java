@@ -162,8 +162,7 @@ public class FastGQLServerPostgresTest {
           List.of(
               String.format("%s/expected-1.json", directory),
               String.format("%s/expected-2.json", directory));
-      GraphQLTestUtils.verifySubscription(
-          port, query, expected, vertx, context);
+      GraphQLTestUtils.verifySubscription(port, query, expected, vertx, context);
       DBTestUtils.executeSQLQueryFromResourceWithDelay(
           String.format("%s/query.sql", directory),
           10,

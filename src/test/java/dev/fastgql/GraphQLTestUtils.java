@@ -27,6 +27,7 @@ public class GraphQLTestUtils {
 
   static class AtomicJsonObject {
     private JsonObject json = new JsonObject();
+
     private synchronized boolean checkIfSameAsLastObjectAndUpdate(JsonObject newJson) {
       if (json.equals(newJson)) {
         return true;
@@ -107,9 +108,9 @@ public class GraphQLTestUtils {
                   int currentResponse = currentResponseAtomic.getAndIncrement();
                   if (currentResponse < expectedResponses.size()) {
                     context.verify(
-                      () ->
-                        assertEquals(
-                          expectedResponses.get(currentResponse), message.toJsonObject()));
+                        () ->
+                            assertEquals(
+                                expectedResponses.get(currentResponse), message.toJsonObject()));
                   }
                   checkpoints.flag();
                 });
