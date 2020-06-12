@@ -127,7 +127,8 @@ public class SQLQuery {
 
   private String buildWhereQuery() {
     if (args.getWhere() != null && args.getWhere().isJsonObject()) {
-      String whereQuery = SQLUtils.createBoolQuery(args.getWhere().getAsJsonObject(), alias, fieldToAlias);
+      String whereQuery =
+          SQLUtils.createBoolQuery(args.getWhere().getAsJsonObject(), alias, fieldToAlias);
       addWhereConditions(String.format("(%s)", whereQuery));
     }
     if (whereConditions.isEmpty()) {

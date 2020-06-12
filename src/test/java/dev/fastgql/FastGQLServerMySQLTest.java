@@ -168,8 +168,7 @@ public class FastGQLServerMySQLTest {
           List.of(
               "subscriptions/simple/select-customers/expected-1.json",
               "subscriptions/simple/select-customers/expected-2.json");
-      GraphQLTestUtils.verifySubscription(
-          port, query, expected, vertx, context);
+      GraphQLTestUtils.verifySubscription(port, query, expected, vertx, context);
       DBTestUtils.executeSQLQueryWithDelay(
           "INSERT INTO customers VALUES (107, 'John', 'Qwe', 'john@qwe.com', 101)",
           10,
