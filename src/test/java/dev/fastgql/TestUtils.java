@@ -8,14 +8,49 @@ package dev.fastgql;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
+import dev.fastgql.db.DatasourceConfig;
+import io.debezium.testing.testcontainers.DebeziumContainer;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.stream.Stream;
+import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.containers.Network;
 
 public class TestUtils {
+
+  public static DeploymentOptions getDeploymentOptions(
+      DatasourceConfig datasourceConfig, KafkaContainer kafkaContainer, int port) {
+    JsonObject config =
+        new JsonObject()
+            .put("http.port", port)
+            .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
+            .put(
+                "datasource",
+                Map.of(
+                    "jdbcUrl", datasourceConfig.getJdbcUrl(),
+                    "username", datasourceConfig.getUsername(),
+                    "password", datasourceConfig.getPassword(),
+                    "schema", datasourceConfig.getSchema()));
+    return new DeploymentOptions().setConfig(config);
+  }
+
+  public static void closeContainers(
+      KafkaContainer kafkaContainer,
+      JdbcDatabaseContainer<?> jdbcDatabaseContainer,
+      DebeziumContainer debeziumContainer,
+      Network network) {
+    kafkaContainer.close();
+    jdbcDatabaseContainer.close();
+    debeziumContainer.close();
+    network.close();
+  }
 
   @SuppressWarnings("UnstableApiUsage")
   public static String readResource(String name) throws IOException {

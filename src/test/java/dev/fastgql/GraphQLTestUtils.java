@@ -20,22 +20,37 @@ import io.vertx.reactivex.ext.web.client.WebClient;
 import io.vertx.reactivex.ext.web.client.predicate.ResponsePredicate;
 import io.vertx.reactivex.ext.web.codec.BodyCodec;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.testcontainers.containers.JdbcDatabaseContainer;
 
 public class GraphQLTestUtils {
 
-  static class AtomicJsonObject {
-    private JsonObject json = new JsonObject();
+  public static void verifyQuerySimple(
+      String directory, int port, Vertx vertx, VertxTestContext context) {
+    String query = String.format("%s/query.graphql", directory);
+    String expected = String.format("%s/expected.json", directory);
+    verifyQuery(port, query, expected, vertx, context);
+  }
 
-    private synchronized boolean checkIfSameAsLastObjectAndUpdate(JsonObject newJson) {
-      if (json.equals(newJson)) {
-        return true;
-      } else {
-        this.json = newJson;
-        return false;
-      }
-    }
+  public static void verifySubscriptionSimple(
+      String directory,
+      int port,
+      int delay,
+      TimeUnit unit,
+      JdbcDatabaseContainer<?> jdbcDatabaseContainer,
+      Vertx vertx,
+      VertxTestContext context) {
+    System.out.println(String.format("Test: %s", directory));
+    String query = String.format("%s/query.graphql", directory);
+    List<String> expected =
+        List.of(
+            String.format("%s/expected-1.json", directory),
+            String.format("%s/expected-2.json", directory));
+    GraphQLTestUtils.verifySubscription(port, query, expected, vertx, context);
+    DBTestUtils.executeSQLQueryFromResourceWithDelay(
+        String.format("%s/query.sql", directory), delay, unit, jdbcDatabaseContainer, context);
   }
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -66,13 +81,6 @@ public class GraphQLTestUtils {
                       context.completeNow();
                     }),
             context::failNow);
-  }
-
-  public static void verifyQuerySimple(
-      String directory, int port, Vertx vertx, VertxTestContext context) {
-    String query = String.format("%s/query.graphql", directory);
-    String expected = String.format("%s/expected.json", directory);
-    verifyQuery(port, query, expected, vertx, context);
   }
 
   public static void verifySubscription(
@@ -125,5 +133,18 @@ public class GraphQLTestUtils {
             context.failNow(websocketRes.cause());
           }
         });
+  }
+
+  static class AtomicJsonObject {
+    private JsonObject json = new JsonObject();
+
+    private synchronized boolean checkIfSameAsLastObjectAndUpdate(JsonObject newJson) {
+      if (json.equals(newJson)) {
+        return true;
+      } else {
+        this.json = newJson;
+        return false;
+      }
+    }
   }
 }

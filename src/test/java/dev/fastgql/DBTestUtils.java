@@ -44,18 +44,16 @@ public class DBTestUtils {
         jdbcDatabaseContainer.getPassword());
   }
 
-  public static void executeSQLQuery(
+  /*public static void executeSQLQuery(
       String sqlQuery, JdbcDatabaseContainer<?> jdbcDatabaseContainer) throws SQLException {
     executeSQLQuery(
         sqlQuery,
         jdbcDatabaseContainer.getJdbcUrl(),
         jdbcDatabaseContainer.getUsername(),
         jdbcDatabaseContainer.getPassword());
-  }
+  }*/
 
   /*
-    public static void executeSQLQuery(
-        String sqlQuery, PostgreSQLContainer<?> postgresContainer, VertxTestContext context) {
       try {
         executeSQLQuery(sqlQuery, postgresContainer);
       } catch (SQLException e) {
@@ -64,7 +62,7 @@ public class DBTestUtils {
     }
   */
 
-  @SuppressWarnings("ResultOfMethodCallIgnored")
+  /*  @SuppressWarnings("ResultOfMethodCallIgnored")
   public static void executeSQLQueryWithDelay(
       String sqlQuery,
       long delay,
@@ -80,7 +78,7 @@ public class DBTestUtils {
                 context.failNow(e);
               }
             });
-  }
+  }*/
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
   public static void executeSQLQueryFromResourceWithDelay(

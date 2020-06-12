@@ -10,14 +10,11 @@ import dev.fastgql.db.DatasourceConfig;
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
 import io.vertx.core.DeploymentOptions;
-import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
@@ -59,6 +56,7 @@ public class FastGQLServerPostgresTest {
   private String deploymentID;
 
   private void setUpContainers(Vertx vertx, VertxTestContext context) {
+    TestUtils.closeContainers(kafkaContainer, postgresContainer, debeziumContainer, network);
     Startables.deepStart(Stream.of(kafkaContainer, postgresContainer, debeziumContainer)).join();
 
     try {
@@ -81,19 +79,8 @@ public class FastGQLServerPostgresTest {
 
     DatasourceConfig datasourceConfig = DBTestUtils.datasourceConfig(postgresContainer);
 
-    JsonObject config =
-        new JsonObject()
-            .put("http.port", port)
-            .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
-            .put(
-                "datasource",
-                Map.of(
-                    "jdbcUrl", datasourceConfig.getJdbcUrl(),
-                    "username", datasourceConfig.getUsername(),
-                    "password", datasourceConfig.getPassword(),
-                    "schema", datasourceConfig.getSchema()));
-
-    DeploymentOptions options = new DeploymentOptions().setConfig(config);
+    DeploymentOptions options =
+        TestUtils.getDeploymentOptions(datasourceConfig, kafkaContainer, port);
     vertx
         .rxDeployVerticle(new FastGQL(), options)
         .doOnSuccess(
@@ -101,6 +88,7 @@ public class FastGQLServerPostgresTest {
               this.deploymentID = deploymentID;
               context.completeNow();
             })
+        .doOnError(throwable -> {})
         .subscribe();
   }
 
@@ -109,10 +97,8 @@ public class FastGQLServerPostgresTest {
         .rxUndeploy(deploymentID)
         .doOnComplete(
             () -> {
-              debeziumContainer.close();
-              kafkaContainer.close();
-              postgresContainer.close();
-              network.close();
+              TestUtils.closeContainers(
+                  kafkaContainer, postgresContainer, debeziumContainer, network);
               context.completeNow();
             })
         .subscribe();
@@ -155,20 +141,9 @@ public class FastGQLServerPostgresTest {
 
     @ParameterizedTest(name = "{index} => Test: [{arguments}]")
     @MethodSource("dev.fastgql.TestUtils#subscriptionDirectories")
-    void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context) {
-      System.out.println(String.format("Test: %s", directory));
-      String query = String.format("%s/query.graphql", directory);
-      List<String> expected =
-          List.of(
-              String.format("%s/expected-1.json", directory),
-              String.format("%s/expected-2.json", directory));
-      GraphQLTestUtils.verifySubscription(port, query, expected, vertx, context);
-      DBTestUtils.executeSQLQueryFromResourceWithDelay(
-          String.format("%s/query.sql", directory),
-          10,
-          TimeUnit.SECONDS,
-          postgresContainer,
-          context);
+    public void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context) {
+      GraphQLTestUtils.verifySubscriptionSimple(
+          directory, port, 5, TimeUnit.SECONDS, postgresContainer, vertx, context);
     }
   }
 }

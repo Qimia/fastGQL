@@ -9,14 +9,11 @@ import dev.fastgql.db.DatasourceConfig;
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
 import io.vertx.core.DeploymentOptions;
-import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
@@ -25,7 +22,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,6 +57,7 @@ public class FastGQLServerMySQLTest {
   private String deploymentID;
 
   private void setUpContainers(Vertx vertx, VertxTestContext context) {
+    TestUtils.closeContainers(kafkaContainer, mysqlContainer, debeziumContainer, network);
     Startables.deepStart(Stream.of(kafkaContainer, mysqlContainer, debeziumContainer)).join();
 
     try {
@@ -89,19 +86,8 @@ public class FastGQLServerMySQLTest {
 
     DatasourceConfig datasourceConfig = DBTestUtils.datasourceConfig(mysqlContainer);
 
-    JsonObject config =
-        new JsonObject()
-            .put("http.port", port)
-            .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
-            .put(
-                "datasource",
-                Map.of(
-                    "jdbcUrl", datasourceConfig.getJdbcUrl(),
-                    "username", datasourceConfig.getUsername(),
-                    "password", datasourceConfig.getPassword(),
-                    "schema", datasourceConfig.getSchema()));
-
-    DeploymentOptions options = new DeploymentOptions().setConfig(config);
+    DeploymentOptions options =
+        TestUtils.getDeploymentOptions(datasourceConfig, kafkaContainer, port);
     vertx
         .rxDeployVerticle(new FastGQL(), options)
         .doOnSuccess(
@@ -117,10 +103,7 @@ public class FastGQLServerMySQLTest {
         .rxUndeploy(deploymentID)
         .doOnComplete(
             () -> {
-              debeziumContainer.close();
-              kafkaContainer.close();
-              mysqlContainer.close();
-              network.close();
+              TestUtils.closeContainers(kafkaContainer, mysqlContainer, debeziumContainer, network);
               context.completeNow();
             })
         .subscribe();
@@ -161,20 +144,11 @@ public class FastGQLServerMySQLTest {
       tearDownContainers(vertx, context);
     }
 
-    @Test
-    void shouldReceiveEventsForSimpleSubscription(Vertx vertx, VertxTestContext context) {
-      String query = "subscriptions/simple/select-customers/query.graphql";
-      List<String> expected =
-          List.of(
-              "subscriptions/simple/select-customers/expected-1.json",
-              "subscriptions/simple/select-customers/expected-2.json");
-      GraphQLTestUtils.verifySubscription(port, query, expected, vertx, context);
-      DBTestUtils.executeSQLQueryWithDelay(
-          "INSERT INTO customers VALUES (107, 'John', 'Qwe', 'john@qwe.com', 101)",
-          10,
-          TimeUnit.SECONDS,
-          mysqlContainer,
-          context);
+    @ParameterizedTest(name = "{index} => Test: [{arguments}]")
+    @MethodSource("dev.fastgql.TestUtils#subscriptionDirectories")
+    public void shoudReceiveResponse(String directory, Vertx vertx, VertxTestContext context) {
+      GraphQLTestUtils.verifySubscriptionSimple(
+          directory, port, 5, TimeUnit.SECONDS, mysqlContainer, vertx, context);
     }
   }
 }
