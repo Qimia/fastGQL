@@ -1,0 +1,58 @@
+{
+  "id": "1",
+  "type": "data",
+  "payload": {
+    "data": {
+      "customers": [
+        {
+          "id": 101,
+          "first_name": "John",
+          "address_ref": {
+            "id": 101,
+            "street": "Astreet"
+          }
+        },
+        {
+          "id": 102,
+          "first_name": "Uli",
+          "address_ref": {
+            "id": 101,
+            "street": "Astreet"
+          }
+        },
+        {
+          "id": 103,
+          "first_name": "a",
+          "address_ref": {
+            "id": 101,
+            "street": "Astreet"
+          }
+        },
+        {
+          "id": 104,
+          "first_name": "b",
+          "address_ref": {
+            "id": 102,
+            "street": "Bstreet"
+          }
+        },
+        {
+          "id": 105,
+          "first_name": "c",
+          "address_ref": {
+            "id": 102,
+            "street": "Bstreet"
+          }
+        },
+        {
+          "id": 106,
+          "first_name": "d",
+          "address_ref": {
+            "id": 102,
+            "street": "Bstreet"
+          }
+        }
+      ]
+    }
+  }
+}
