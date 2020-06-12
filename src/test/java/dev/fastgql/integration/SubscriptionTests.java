@@ -8,8 +8,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public interface SubscriptionTests extends SetupTearDownForEach {
+
+  /**
+   * Test GraphQL subscription / response given in input directory.
+   *
+   * @param directory directory in resources
+   * @param vertx vertx instance
+   * @param context vertx test context
+   */
   @ParameterizedTest(name = "{index} => Test: [{arguments}]")
-  @MethodSource("dev.fastgql.integration.TestUtils#subscriptionDirectories")
+  @MethodSource("dev.fastgql.integration.ResourcesTestUtils#subscriptionDirectories")
   default void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context) {
     System.out.println(String.format("Test: %s", directory));
     String query = String.format("%s/query.graphql", directory);

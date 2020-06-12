@@ -21,7 +21,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.lifecycle.Startables;
 
 public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
-  private final Logger LOGGER = LoggerFactory.getLogger(AbstractContainerEnvImpl.class);
+  private final Logger log = LoggerFactory.getLogger(AbstractContainerEnvImpl.class);
   // todo: random port?
   private final int port = 8081;
   protected final Network network = Network.newNetwork();
@@ -31,7 +31,7 @@ public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
       new DebeziumContainer("1.0")
           .withNetwork(network)
           .withKafka(kafkaContainer)
-          .withLogConsumer(new Slf4jLogConsumer(LOGGER))
+          .withLogConsumer(new Slf4jLogConsumer(log))
           .dependsOn(kafkaContainer);
   private String deploymentID;
 

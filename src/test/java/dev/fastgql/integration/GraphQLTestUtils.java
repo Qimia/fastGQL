@@ -3,6 +3,7 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
+
 package dev.fastgql.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,6 +24,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+/**
+ * Test utils for verifying GraphQL queries.
+ *
+ * @author Kamil Bobrowski
+ */
 public class GraphQLTestUtils {
 
   static class AtomicJsonObject {
@@ -38,14 +44,23 @@ public class GraphQLTestUtils {
     }
   }
 
+  /**
+   * Verify single GraphQL query.
+   *
+   * @param port port on which FastGQL is running
+   * @param inputResource resource which stores input query as GraphQL query
+   * @param outputResource resource which stores expected response as JSON
+   * @param vertx vertx instance
+   * @param context vertx test context
+   */
   public static void verifyQuery(
       int port,
       String inputResource,
       String outputResource,
       Vertx vertx,
       VertxTestContext context) {
-    String graphQLQuery = TestUtils.readResource(inputResource, context);
-    String expectedResponseString = TestUtils.readResource(outputResource, context);
+    String graphQLQuery = ResourcesTestUtils.readResource(inputResource, context);
+    String expectedResponseString = ResourcesTestUtils.readResource(outputResource, context);
 
     JsonObject expectedResponse = new JsonObject(expectedResponseString);
 
@@ -68,6 +83,15 @@ public class GraphQLTestUtils {
         .subscribe();
   }
 
+  /**
+   * Wrapper function which verifies that query stored in {@param directory}/query.graphql resulted
+   * in response stored in {@param directory}/expected.json.
+   *
+   * @param directory directory in resources
+   * @param port port on which FastGQL is running
+   * @param vertx vertx instance
+   * @param context vertx test context
+   */
   public static void verifyQuerySimple(
       String directory, int port, Vertx vertx, VertxTestContext context) {
     String query = String.format("%s/query.graphql", directory);
@@ -75,6 +99,16 @@ public class GraphQLTestUtils {
     verifyQuery(port, query, expected, vertx, context);
   }
 
+  /**
+   * Verify that GraphQL subscription stored in {@param inputResource} resulted in a series of
+   * responses stored in {@param outputResources}. Repeating responses are ignored.
+   *
+   * @param port port on which FastGQL is running
+   * @param inputResource resource which stores input query as GraphQL query
+   * @param outputResources list of resources which store expected responses as JSONs
+   * @param vertx vertx instance
+   * @param context vertx test context
+   */
   public static void verifySubscription(
       int port,
       String inputResource,
@@ -84,10 +118,10 @@ public class GraphQLTestUtils {
     Checkpoint checkpoints = context.checkpoint(outputResources.size());
     AtomicInteger currentResponseAtomic = new AtomicInteger(0);
 
-    String graphQLQuery = TestUtils.readResource(inputResource, context);
+    String graphQLQuery = ResourcesTestUtils.readResource(inputResource, context);
     List<JsonObject> expectedResponses =
         outputResources.stream()
-            .map(name -> TestUtils.readResource(name, context))
+            .map(name -> ResourcesTestUtils.readResource(name, context))
             .map(JsonObject::new)
             .collect(Collectors.toList());
 

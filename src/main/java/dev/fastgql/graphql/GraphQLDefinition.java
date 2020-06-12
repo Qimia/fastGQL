@@ -7,7 +7,7 @@
 package dev.fastgql.graphql;
 
 import dev.fastgql.db.DatabaseSchema;
-import dev.fastgql.kafka.KafkaConsumerFactory;
+import dev.fastgql.kafka.KafkaConsumerUtils;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.Component;
 import dev.fastgql.sql.ComponentExecutable;
@@ -235,7 +235,7 @@ public class GraphQLDefinition {
                             String.format("%s.%s.%s", serverName, schemaName, queriedTable))
                     .collect(Collectors.toSet());
             KafkaConsumer<String, String> kafkaConsumer =
-                KafkaConsumerFactory.createForTopics(topics, bootstrapServers, vertx);
+                KafkaConsumerUtils.createForTopics(topics, bootstrapServers, vertx);
             return kafkaConsumer
                 .toFlowable()
                 .flatMap(record -> sqlConnectionPool.rxGetConnection().toFlowable())

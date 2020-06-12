@@ -2,7 +2,8 @@ package dev.fastgql.integration;
 
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 public interface SetupTearDownForEach extends AbstractContainerEnv {
   @BeforeEach

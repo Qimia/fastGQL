@@ -8,7 +8,21 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
-public class KafkaConsumerFactory {
+/**
+ * Utils for creating Kafka consumer.
+ *
+ * @author Kamil Bobrowski
+ */
+public class KafkaConsumerUtils {
+
+  /**
+   * Create Kafka consumer and subscribe to given topics.
+   *
+   * @param topics set of topics to subscribe
+   * @param bootstrapServers Kafka bootstrap servers
+   * @param vertx vertx instance
+   * @return new Kafka consumer
+   */
   public static KafkaConsumer<String, String> createForTopics(
       Set<String> topics, String bootstrapServers, Vertx vertx) {
     Map<String, String> kafkaConfig = new HashMap<>();

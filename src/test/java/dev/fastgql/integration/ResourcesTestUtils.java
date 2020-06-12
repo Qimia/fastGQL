@@ -15,7 +15,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-public class TestUtils {
+/**
+ * Test utils for handling resources.
+ *
+ * @author Mingyi Zhang
+ */
+public class ResourcesTestUtils {
 
   @SuppressWarnings("UnstableApiUsage")
   public static String readResource(String name) throws IOException {
