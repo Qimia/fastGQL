@@ -7,7 +7,6 @@
 package dev.fastgql.graphql;
 
 import dev.fastgql.db.DatabaseSchema;
-import dev.fastgql.graphql.arguments.GraphQLArguments;
 import dev.fastgql.kafka.KafkaConsumerFactory;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.Component;
@@ -267,7 +266,6 @@ public class GraphQLDefinition {
       if (!(queryEnabled || subscriptionEnabled)) {
         throw new RuntimeException("query or subscription has to be enabled");
       }
-      GraphQLArguments graphQLArguments = new GraphQLArguments(databaseSchema);
       GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject().name("Query");
       GraphQLObjectType.Builder subscriptionBuilder =
           GraphQLObjectType.newObject().name("Subscription");
@@ -278,7 +276,7 @@ public class GraphQLDefinition {
       if (subscriptionEnabled) {
         builders.add(subscriptionBuilder);
       }
-      graphQLDatabaseSchema.applyToGraphQLObjectTypes(builders, graphQLArguments);
+      graphQLDatabaseSchema.applyToGraphQLObjectTypes(builders);
       if (queryEnabled) {
         graphQLSchemaBuilder.query(queryBuilder);
       }
