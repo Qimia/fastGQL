@@ -82,7 +82,6 @@ public class DBTestUtils {
             });
   }
 
-  @SuppressWarnings("ResultOfMethodCallIgnored")
   public static void executeSQLQueryFromResourceWithDelay(
       String sqlResource,
       long delay,
@@ -92,6 +91,7 @@ public class DBTestUtils {
     Observable.timer(delay, unit)
         .subscribe(
             result -> {
+              System.out.println("Execute sql query");
               try {
                 DBTestUtils.executeSQLQueryFromResource(sqlResource, jdbcDatabaseContainer);
               } catch (SQLException e) {

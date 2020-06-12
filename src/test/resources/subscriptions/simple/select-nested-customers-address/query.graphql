@@ -1,0 +1,10 @@
+subscription {
+  customers {
+    id
+    first_name
+    address_ref {
+      id
+      street
+    }
+  }
+}

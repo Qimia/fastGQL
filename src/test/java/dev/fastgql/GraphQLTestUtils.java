@@ -88,9 +88,8 @@ public class GraphQLTestUtils {
 
             webSocket.handler(
                 message -> {
-                  System.out.println(message);
-                  int currentResponse = currentResponseAtomic.getAndIncrement();
-                  if (currentResponse >= offset && currentResponse < expectedResponses.size()) {
+                  int currentResponse = currentResponseAtomic.getAndIncrement() - offset;
+                  if (currentResponse >= 0 && currentResponse < expectedResponses.size()) {
                     context.verify(
                         () ->
                             assertEquals(
