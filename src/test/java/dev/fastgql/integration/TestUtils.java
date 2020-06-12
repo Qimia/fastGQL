@@ -4,7 +4,7 @@
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package dev.fastgql;
+package dev.fastgql.integration;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
@@ -54,10 +54,12 @@ public class TestUtils {
         .map(Path::toString);
   }
 
+  @SuppressWarnings("UnstableApiUsage")
   private static Path getResourceRoot() {
     return Paths.get(Resources.getResource("").getPath());
   }
 
+  @SuppressWarnings("UnstableApiUsage")
   private static Path getBasePath(String dir) {
     return Paths.get(Resources.getResource(dir).getPath());
   }

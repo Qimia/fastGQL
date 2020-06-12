@@ -3,7 +3,7 @@
  *
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
-package dev.fastgql;
+package dev.fastgql.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -38,7 +38,6 @@ public class GraphQLTestUtils {
     }
   }
 
-  @SuppressWarnings("ResultOfMethodCallIgnored")
   public static void verifyQuery(
       int port,
       String inputResource,
@@ -58,14 +57,15 @@ public class GraphQLTestUtils {
         .expect(ResponsePredicate.JSON)
         .as(BodyCodec.jsonObject())
         .rxSendJsonObject(request)
-        .subscribe(
+        .doOnSuccess(
             response ->
                 context.verify(
                     () -> {
                       assertEquals(expectedResponse, response.body());
                       context.completeNow();
-                    }),
-            context::failNow);
+                    }))
+        .doOnError(context::failNow)
+        .subscribe();
   }
 
   public static void verifyQuerySimple(
