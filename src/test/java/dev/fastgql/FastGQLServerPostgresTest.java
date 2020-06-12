@@ -101,8 +101,8 @@ public class FastGQLServerPostgresTest {
     vertx
         .rxDeployVerticle(new FastGQL(), options)
         .doOnSuccess(
-            deploymentID1 -> {
-              deploymentID = deploymentID1;
+            deploymentID -> {
+              this.deploymentID = deploymentID;
               context.completeNow();
             })
         .subscribe();

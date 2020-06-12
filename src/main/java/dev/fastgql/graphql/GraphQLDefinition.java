@@ -159,9 +159,9 @@ public class GraphQLDefinition {
     private ComponentExecutable getExecutionRoot(
         DataFetchingEnvironment env, SQLExecutor sqlExecutor) {
       AliasGenerator aliasGenerator = new AliasGenerator();
-      SQLArguments args = new SQLArguments(env.getArguments());
+      SQLArguments sqlArguments = new SQLArguments(env.getArguments());
       ComponentExecutable executionRoot =
-          new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), args);
+          new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), sqlArguments);
       executionRoot.setSqlExecutor(sqlExecutor);
       traverseSelectionSet(
           graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());

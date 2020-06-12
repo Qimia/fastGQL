@@ -104,8 +104,8 @@ public class GraphQLDatabaseSchema {
                   fieldBuilder
                       .argument(args.getLimit())
                       .argument(args.getOffset())
-                      .argument(args.getOrderBys().get(foreignTableName))
-                      .argument(args.getWheres().get(foreignTableName));
+                      .argument(args.getOrderByFor(foreignTableName))
+                      .argument(args.getWhereFor(foreignTableName));
                 }
                 objectBuilder.field(fieldBuilder.build());
               });
@@ -119,8 +119,8 @@ public class GraphQLDatabaseSchema {
                           .type(GraphQLList.list(object))
                           .argument(args.getLimit())
                           .argument(args.getOffset())
-                          .argument(args.getOrderBys().get(tableName))
-                          .argument(args.getWheres().get(tableName))
+                          .argument(args.getOrderByFor(tableName))
+                          .argument(args.getWhereFor(tableName))
                           .build()));
         });
   }

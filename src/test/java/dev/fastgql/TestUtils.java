@@ -32,7 +32,7 @@ public class TestUtils {
   }
 
   public static Stream<String> queryDirectories() throws IOException {
-    int resourceRootNameCount = getResourceRoot().getNameCount();
+    int resourceRootNameCount = getResourceRoot().getNameCount() - 1;
     Path basePath = getBasePath("queries");
     Stream<Path> stream = Files.walk(basePath, 2);
     return stream
@@ -41,7 +41,7 @@ public class TestUtils {
                 Files.isDirectory(path)
                     && !path.getParent().equals(basePath)
                     && !path.equals(basePath))
-        .map(path -> path.subpath(resourceRootNameCount - 1, path.getNameCount()))
+        .map(path -> path.subpath(resourceRootNameCount, path.getNameCount()))
         .map(Path::toString);
   }
 

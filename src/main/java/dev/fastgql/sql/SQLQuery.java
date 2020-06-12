@@ -27,7 +27,7 @@ public class SQLQuery {
   private final SQLArguments args;
   private Set<String> keys;
   private List<String> joins;
-  private List<String> suffixes;
+  private List<String> whereConditions;
   private Map<String, String> fieldToAlias;
 
   /**
@@ -43,12 +43,12 @@ public class SQLQuery {
     this.args = args;
     this.keys = new HashSet<>();
     this.joins = new ArrayList<>();
-    this.suffixes = new ArrayList<>();
+    this.whereConditions = new ArrayList<>();
     this.fieldToAlias = new HashMap<>();
   }
 
   public void addKey(String table, String key) {
-    keys.add(String.format("%s.%s AS %s", table, key, getKeyAlias(table, key)));
+    keys.add(String.format("%s.%s AS %s_%s", table, key, table, key));
   }
 
   /**
@@ -76,15 +76,15 @@ public class SQLQuery {
     fieldToAlias.put(field, foreignTableAlias);
   }
 
-  public void addSuffix(String suffix) {
-    suffixes.add(suffix);
+  public void addWhereConditional(String whereConditional) {
+    whereConditions.add(whereConditional);
   }
 
   /** Reset query to initial state. */
   public void reset() {
     keys = new HashSet<>();
     joins = new ArrayList<>();
-    suffixes = new ArrayList<>();
+    whereConditions = new ArrayList<>();
   }
 
   /**
@@ -130,15 +130,11 @@ public class SQLQuery {
   private String buildWhereQuery() {
     if (args.getWhere() != null && args.getWhere().isJsonObject()) {
       String whereQuery = createBoolQuery(args.getWhere().getAsJsonObject(), alias, fieldToAlias);
-      addSuffix(String.format("(%s)", whereQuery));
+      addWhereConditional(String.format("(%s)", whereQuery));
     }
-    if (suffixes.isEmpty()) {
+    if (whereConditions.isEmpty()) {
       return "";
     }
-    return String.format("WHERE %s", String.join(" AND ", suffixes));
-  }
-
-  private String getKeyAlias(String table, String key) {
-    return String.format("%s_%s", table, key);
+    return String.format("WHERE %s", String.join(" AND ", whereConditions));
   }
 }

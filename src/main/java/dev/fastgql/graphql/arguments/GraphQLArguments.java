@@ -6,9 +6,9 @@
 
 package dev.fastgql.graphql.arguments;
 
+import static dev.fastgql.graphql.GraphQLFieldDefinition.keyTypeToGraphQLType;
 import static dev.fastgql.graphql.GraphQLNaming.getNameBoolType;
 import static dev.fastgql.graphql.GraphQLNaming.getNameForReferencingField;
-import static dev.fastgql.graphql.arguments.GraphQLArgumentsUtils.fieldTypeGraphQLScalarTypeMap;
 import static graphql.Scalars.GraphQLInt;
 
 import dev.fastgql.db.DatabaseSchema;
@@ -56,28 +56,39 @@ public class GraphQLArguments {
     return wheres;
   }
 
+  public GraphQLArgument getOrderByFor(String foreignTableName) {
+    return orderBys.get(foreignTableName);
+  }
+
+  public GraphQLArgument getWhereFor(String foreignTableName) {
+    return wheres.get(foreignTableName);
+  }
+
   private Map<String, GraphQLArgument> createOrderBys(DatabaseSchema databaseSchema) {
     Map<String, GraphQLArgument> orderBys = new HashMap<>();
     databaseSchema
         .getGraph()
         .forEach(
-            (parent, subGraph) -> {
-              String orderByName = GraphQLNaming.getNameOrderByType(parent);
+            (tableName, keyNameToKeyDefinition) -> {
+              String orderByName = GraphQLNaming.getNameOrderByType(tableName);
               GraphQLInputObjectType.Builder builder =
                   GraphQLInputObjectType.newInputObject().name(orderByName);
-              subGraph.forEach(
-                  (name, node) -> {
+              keyNameToKeyDefinition.forEach(
+                  (keyName, keyDefinition) -> {
                     builder.field(
                         GraphQLInputObjectField.newInputObjectField()
-                            .name(name)
+                            .name(keyName)
                             .type(OrderBy.enumType)
                             .build());
-                    // if node is referencing, add schema field referencing to corresponding schema
+                    // if keyDefinition is referencing, add schema field referencing to
+                    // corresponding schema
                     // type
-                    if (node.getReferencing() != null) {
-                      String referencingName = getNameForReferencingField(node.getQualifiedName());
+                    if (keyDefinition.getReferencing() != null) {
+                      String referencingName =
+                          getNameForReferencingField(keyDefinition.getQualifiedName());
                       String referencingTypeName =
-                          GraphQLNaming.getNameOrderByType(node.getReferencing().getTableName());
+                          GraphQLNaming.getNameOrderByType(
+                              keyDefinition.getReferencing().getTableName());
                       builder.field(
                           GraphQLInputObjectField.newInputObjectField()
                               .name(referencingName)
@@ -89,7 +100,7 @@ public class GraphQLArguments {
               // create argument
               GraphQLArgument orderBy =
                   GraphQLArgument.newArgument().name("order_by").type(orderByType).build();
-              orderBys.put(parent, orderBy);
+              orderBys.put(tableName, orderBy);
             });
     return orderBys;
   }
@@ -99,14 +110,14 @@ public class GraphQLArguments {
     databaseSchema
         .getGraph()
         .forEach(
-            (parent, subGraph) -> {
-              String whereName = getNameBoolType(parent);
+            (tableName, keyNameToKeyDefinition) -> {
+              String whereName = getNameBoolType(tableName);
               GraphQLInputObjectType.Builder builder = GraphQLInputObjectType.newInputObject();
               builder
                   .name(whereName)
                   .description(
                       "Boolean expression to filter rows from the table \""
-                          + parent
+                          + tableName
                           + "\". All fields are combined with a logical 'AND'.")
                   .field(
                       GraphQLInputObjectField.newInputObjectField()
@@ -123,20 +134,21 @@ public class GraphQLArguments {
                           .name("_or")
                           .type(GraphQLList.list(GraphQLTypeReference.typeRef(whereName)))
                           .build());
-              subGraph.forEach(
-                  (name, node) -> {
+              keyNameToKeyDefinition.forEach(
+                  (keyName, keyDefinition) -> {
                     GraphQLInputType nodeType =
                         ConditionalOperatorTypes.scalarTypeToComparisonExpMap.get(
-                            fieldTypeGraphQLScalarTypeMap.get(node.getKeyType()));
+                            keyTypeToGraphQLType.get(keyDefinition.getKeyType()));
                     builder.field(
                         GraphQLInputObjectField.newInputObjectField()
-                            .name(name)
+                            .name(keyName)
                             .type(nodeType)
                             .build());
-                    if (node.getReferencing() != null) {
-                      String referencingName = getNameForReferencingField(node.getQualifiedName());
+                    if (keyDefinition.getReferencing() != null) {
+                      String referencingName =
+                          getNameForReferencingField(keyDefinition.getQualifiedName());
                       String referencingTypeName =
-                          getNameBoolType(node.getReferencing().getTableName());
+                          getNameBoolType(keyDefinition.getReferencing().getTableName());
                       builder.field(
                           GraphQLInputObjectField.newInputObjectField()
                               .name(referencingName)
@@ -147,7 +159,7 @@ public class GraphQLArguments {
               GraphQLInputType whereType = builder.build();
               GraphQLArgument where =
                   GraphQLArgument.newArgument().name("where").type(whereType).build();
-              wheres.put(parent, where);
+              wheres.put(tableName, where);
             });
     return wheres;
   }
