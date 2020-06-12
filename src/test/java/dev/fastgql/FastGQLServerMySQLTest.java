@@ -58,7 +58,6 @@ public class FastGQLServerMySQLTest {
           .withKafka(kafkaContainer)
           .withLogConsumer(new Slf4jLogConsumer(LOGGER))
           .dependsOn(kafkaContainer);
-  private final int customersStartOffset = 5;
   private String deploymentID;
 
   private void setUpContainers(Vertx vertx, VertxTestContext context) {
@@ -169,12 +168,11 @@ public class FastGQLServerMySQLTest {
           List.of(
               "subscriptions/simple/select-customers/expected-1.json",
               "subscriptions/simple/select-customers/expected-2.json");
-      GraphQLTestUtils.verifySubscription(
-          port, query, expected, customersStartOffset, vertx, context);
+      GraphQLTestUtils.verifySubscription(port, query, expected, vertx, context);
       DBTestUtils.executeSQLQueryWithDelay(
           "INSERT INTO customers VALUES (107, 'John', 'Qwe', 'john@qwe.com', 101)",
-          1000,
-          TimeUnit.MILLISECONDS,
+          10,
+          TimeUnit.SECONDS,
           mysqlContainer,
           context);
     }

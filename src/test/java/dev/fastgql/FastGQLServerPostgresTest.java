@@ -56,7 +56,6 @@ public class FastGQLServerPostgresTest {
           .withKafka(kafkaContainer)
           .withLogConsumer(new Slf4jLogConsumer(LOGGER))
           .dependsOn(kafkaContainer);
-  private final int customersStartOffset = 5;
   private String deploymentID;
 
   private void setUpContainers(Vertx vertx, VertxTestContext context) {
@@ -163,12 +162,11 @@ public class FastGQLServerPostgresTest {
           List.of(
               String.format("%s/expected-1.json", directory),
               String.format("%s/expected-2.json", directory));
-      GraphQLTestUtils.verifySubscription(
-          port, query, expected, customersStartOffset, vertx, context);
+      GraphQLTestUtils.verifySubscription(port, query, expected, vertx, context);
       DBTestUtils.executeSQLQueryFromResourceWithDelay(
           String.format("%s/query.sql", directory),
-          1000,
-          TimeUnit.MILLISECONDS,
+          10,
+          TimeUnit.SECONDS,
           postgresContainer,
           context);
     }
