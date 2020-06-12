@@ -25,6 +25,18 @@ import java.util.stream.Collectors;
 
 public class GraphQLTestUtils {
 
+  static class AtomicJsonObject {
+    private JsonObject json = new JsonObject();
+    private synchronized boolean checkIfSameAsLastObjectAndUpdate(JsonObject newJson) {
+      if (json.equals(newJson)) {
+        return true;
+      } else {
+        this.json = newJson;
+        return false;
+      }
+    }
+  }
+
   @SuppressWarnings("ResultOfMethodCallIgnored")
   public static void verifyQuery(
       int port,
@@ -66,7 +78,6 @@ public class GraphQLTestUtils {
       int port,
       String inputResource,
       List<String> outputResources,
-      int offset,
       Vertx vertx,
       VertxTestContext context) {
     Checkpoint checkpoints = context.checkpoint(outputResources.size());
@@ -86,15 +97,19 @@ public class GraphQLTestUtils {
           if (websocketRes.succeeded()) {
             WebSocket webSocket = websocketRes.result();
 
+            AtomicJsonObject atomicJsonObject = new AtomicJsonObject();
             webSocket.handler(
                 message -> {
                   System.out.println(message);
+                  if (atomicJsonObject.checkIfSameAsLastObjectAndUpdate(message.toJsonObject())) {
+                    return;
+                  }
                   int currentResponse = currentResponseAtomic.getAndIncrement();
-                  if (currentResponse >= offset && currentResponse < expectedResponses.size()) {
+                  if (currentResponse < expectedResponses.size()) {
                     context.verify(
-                        () ->
-                            assertEquals(
-                                expectedResponses.get(currentResponse), message.toJsonObject()));
+                      () ->
+                        assertEquals(
+                          expectedResponses.get(currentResponse), message.toJsonObject()));
                   }
                   checkpoints.flag();
                 });
