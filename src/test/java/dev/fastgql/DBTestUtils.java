@@ -34,6 +34,16 @@ public class DBTestUtils {
     executeSQLQuery(TestUtils.readResource(sqlResource), jdbcUrl, username, password);
   }
 
+  public static void executeSQLQueryFromResource(
+      String sqlResource, JdbcDatabaseContainer<?> jdbcDatabaseContainer)
+      throws IOException, SQLException {
+    executeSQLQueryFromResource(
+        sqlResource,
+        jdbcDatabaseContainer.getJdbcUrl(),
+        jdbcDatabaseContainer.getUsername(),
+        jdbcDatabaseContainer.getPassword());
+  }
+
   public static void executeSQLQuery(
       String sqlQuery, JdbcDatabaseContainer<?> jdbcDatabaseContainer) throws SQLException {
     executeSQLQuery(
@@ -66,6 +76,24 @@ public class DBTestUtils {
             result -> {
               try {
                 DBTestUtils.executeSQLQuery(sqlQuery, jdbcDatabaseContainer);
+              } catch (SQLException e) {
+                context.failNow(e);
+              }
+            });
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  public static void executeSQLQueryFromResourceWithDelay(
+      String sqlResource,
+      long delay,
+      TimeUnit unit,
+      JdbcDatabaseContainer<?> jdbcDatabaseContainer,
+      VertxTestContext context) {
+    Observable.timer(delay, unit)
+        .subscribe(
+            result -> {
+              try {
+                DBTestUtils.executeSQLQueryFromResource(sqlResource, jdbcDatabaseContainer);
               } catch (SQLException e) {
                 context.failNow(e);
               }

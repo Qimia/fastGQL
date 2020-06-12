@@ -65,7 +65,7 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
     }
     modifyQuery(
         query ->
-            query.addSuffix(
+            query.addWhereConditional(
                 String.format(
                     "(%s.%s = %s)", foreignTableAlias, foreignKeyName, keyValue.toString())));
     return execute().map(response -> Map.of(fieldName, response));

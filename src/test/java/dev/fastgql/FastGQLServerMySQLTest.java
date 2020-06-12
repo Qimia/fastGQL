@@ -164,11 +164,11 @@ public class FastGQLServerMySQLTest {
 
     @Test
     void shouldReceiveEventsForSimpleSubscription(Vertx vertx, VertxTestContext context) {
-      String query = "subscription/simple/select-addresses/query.graphql";
+      String query = "subscriptions/simple/select-customers/query.graphql";
       List<String> expected =
           List.of(
-              "subscription/simple/select-addresses/expected-1.json",
-              "subscription/simple/select-addresses/expected-2.json");
+              "subscriptions/simple/select-customers/expected-1.json",
+              "subscriptions/simple/select-customers/expected-2.json");
       GraphQLTestUtils.verifySubscription(
           port, query, expected, customersStartOffset, vertx, context);
       DBTestUtils.executeSQLQueryWithDelay(
