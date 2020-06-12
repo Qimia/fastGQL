@@ -73,7 +73,7 @@ public class SQLQuery {
     fieldToAlias.put(field, foreignTableAlias);
   }
 
-  public void addWhereConditional(String whereConditional) {
+  public void addWhereConditions(String whereConditional) {
     whereConditions.add(whereConditional);
   }
 
@@ -128,7 +128,7 @@ public class SQLQuery {
   private String buildWhereQuery() {
     if (args.getWhere() != null && args.getWhere().isJsonObject()) {
       String whereQuery = SQLUtils.createBoolQuery(args.getWhere().getAsJsonObject(), alias, fieldToAlias);
-      addWhereConditional(String.format("(%s)", whereQuery));
+      addWhereConditions(String.format("(%s)", whereQuery));
     }
     if (whereConditions.isEmpty()) {
       return "";
