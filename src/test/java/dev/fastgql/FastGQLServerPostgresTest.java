@@ -26,7 +26,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -99,8 +98,8 @@ public class FastGQLServerPostgresTest {
     vertx
         .rxDeployVerticle(new FastGQL(), options)
         .doOnSuccess(
-            deploymentID1 -> {
-              deploymentID = deploymentID1;
+            deploymentID -> {
+              this.deploymentID = deploymentID;
               context.completeNow();
             })
         .subscribe();
@@ -155,17 +154,19 @@ public class FastGQLServerPostgresTest {
       tearDownContainers(vertx, context);
     }
 
-    @Test
-    void shouldReceiveEventsForSimpleSubscription(Vertx vertx, VertxTestContext context) {
-      String query = "subscription/simple/select-addresses/query.graphql";
+    @ParameterizedTest(name = "{index} => Test: [{arguments}]")
+    @MethodSource("dev.fastgql.TestUtils#subscriptionDirectories")
+    void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context) {
+      System.out.println(String.format("Test: %s", directory));
+      String query = String.format("%s/query.graphql", directory);
       List<String> expected =
           List.of(
-              "subscription/simple/select-addresses/expected-1.json",
-              "subscription/simple/select-addresses/expected-2.json");
+              String.format("%s/expected-1.json", directory),
+              String.format("%s/expected-2.json", directory));
       GraphQLTestUtils.verifySubscription(
           port, query, expected, customersStartOffset, vertx, context);
-      DBTestUtils.executeSQLQueryWithDelay(
-          "INSERT INTO customers VALUES (107, 'John', 'Qwe', 'john@qwe.com', 101)",
+      DBTestUtils.executeSQLQueryFromResourceWithDelay(
+          String.format("%s/query.sql", directory),
           1000,
           TimeUnit.MILLISECONDS,
           postgresContainer,

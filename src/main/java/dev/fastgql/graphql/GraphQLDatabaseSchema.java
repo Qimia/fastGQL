@@ -218,8 +218,7 @@ public class GraphQLDatabaseSchema {
                   (name, node) -> {
                     GraphQLInputType nodeType =
                         ConditionalOperatorTypes.scalarTypeToComparisonExpMap.get(
-                            GraphQLArgumentsUtils.fieldTypeGraphQLScalarTypeMap.get(
-                                node.getKeyType()));
+                            GraphQLFieldDefinition.keyTypeToGraphQLType.get(node.getKeyType()));
                     builder.field(
                         GraphQLInputObjectField.newInputObjectField()
                             .name(name)
