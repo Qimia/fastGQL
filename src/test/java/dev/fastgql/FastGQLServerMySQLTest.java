@@ -5,6 +5,8 @@
  */
 package dev.fastgql;
 
+import static dev.fastgql.GraphQLTestUtils.verifyQuerySimple;
+
 import dev.fastgql.db.DatasourceConfig;
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
@@ -19,10 +21,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.KafkaContainer;
@@ -35,31 +45,25 @@ import org.testcontainers.lifecycle.Startables;
 public class FastGQLServerMySQLTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FastGQLServerMySQLTest.class);
-  private String deploymentID;
-
   private static final int port = 8081;
-
   private static Network network = Network.newNetwork();
-
   private static KafkaContainer kafkaContainer = new KafkaContainer().withNetwork(network);
-
   private static MySQLContainer<?> mysqlContainer =
       new MySQLContainer<>("fastgql/mysql-testcontainers:latest")
           .withNetwork(network)
           .withNetworkAliases("mysql")
           .withUsername("debezium")
           .withPassword("dbz");
-
   private static DebeziumContainer debeziumContainer =
       new DebeziumContainer("1.0")
           .withNetwork(network)
           .withKafka(kafkaContainer)
           .withLogConsumer(new Slf4jLogConsumer(LOGGER))
           .dependsOn(kafkaContainer);
+  private final int customersStartOffset = 5;
+  private String deploymentID;
 
-  @BeforeEach
-  public void setUp(Vertx vertx, VertxTestContext context) {
-
+  private void setUpContainers(Vertx vertx, VertxTestContext context) {
     Startables.deepStart(Stream.of(kafkaContainer, mysqlContainer, debeziumContainer)).join();
 
     try {
@@ -111,8 +115,7 @@ public class FastGQLServerMySQLTest {
         .subscribe();
   }
 
-  @AfterEach
-  public void tearDown(Vertx vertx, VertxTestContext context) {
+  private void tearDownContainers(Vertx vertx, VertxTestContext context) {
     vertx
         .rxUndeploy(deploymentID)
         .doOnComplete(
@@ -126,125 +129,56 @@ public class FastGQLServerMySQLTest {
         .subscribe();
   }
 
-  @Test
-  public void shouldReceiveResponseForSimpleQuery(Vertx vertx, VertxTestContext context) {
-    String inputResource = "test-simple/test-query-input.graphql";
-    String outputResource = "test-simple/test-query-output.json";
-    GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
+  @Nested
+  @DisplayName("MySQL Query Tests")
+  @TestInstance(Lifecycle.PER_CLASS)
+  class QueryTests {
+    @BeforeAll
+    public void setUp(Vertx vertx, VertxTestContext context) {
+      setUpContainers(vertx, context);
+    }
+
+    @AfterAll
+    public void tearDown(Vertx vertx, VertxTestContext context) {
+      tearDownContainers(vertx, context);
+    }
+
+    @ParameterizedTest(name = "{index} => Test: [{arguments}]")
+    @MethodSource("dev.fastgql.TestUtils#queryDirectories")
+    void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context) {
+      System.out.println(String.format("Test: %s", directory));
+      verifyQuerySimple(directory, port, vertx, context);
+    }
   }
 
-  @Test
-  void shouldReceiveEventsForSimpleSubscription(Vertx vertx, VertxTestContext context) {
-    String inputResource = "test-simple/test-subscription-input.graphql";
-    List<String> outputResources =
-        List.of(
-            "test-simple/test-subscription-output-1.json",
-            "test-simple/test-subscription-output-1.json",
-            "test-simple/test-subscription-output-2.json");
-    GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
-    DBTestUtils.executeSQLQueryWithDelay(
-        "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-        5,
-        TimeUnit.SECONDS,
-        mysqlContainer,
-        context);
+  @Nested
+  @DisplayName("MySQL Subscription Tests")
+  class SubscriptionTests {
+    @BeforeEach
+    public void setUp(Vertx vertx, VertxTestContext context) {
+      setUpContainers(vertx, context);
+    }
+
+    @AfterEach
+    public void tearDown(Vertx vertx, VertxTestContext context) {
+      tearDownContainers(vertx, context);
+    }
+
+    @Test
+    void shouldReceiveEventsForSimpleSubscription(Vertx vertx, VertxTestContext context) {
+      String query = "subscription/simple/select-addresses/query.graphql";
+      List<String> expected =
+          List.of(
+              "subscription/simple/select-addresses/expected-1.json",
+              "subscription/simple/select-addresses/expected-2.json");
+      GraphQLTestUtils.verifySubscription(
+          port, query, expected, customersStartOffset, vertx, context);
+      DBTestUtils.executeSQLQueryWithDelay(
+          "INSERT INTO customers VALUES (107, 'John', 'Qwe', 'john@qwe.com', 101)",
+          1000,
+          TimeUnit.MILLISECONDS,
+          mysqlContainer,
+          context);
+    }
   }
-
-  /*
-    @Test
-    public void shouldReceiveResponseForQueryWithLimitOffset(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-limit-offset/test-query-input.graphql";
-      String outputResource = "test-limit-offset/test-query-output.json";
-      GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
-    }
-
-    @Test
-    void shouldReceiveEventsForSubscriptionWithLimitOffset(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-limit-offset/test-subscription-input.graphql";
-      List<String> outputResources =
-          List.of(
-              "test-limit-offset/test-subscription-output-1.json",
-              "test-limit-offset/test-subscription-output-1.json",
-              "test-limit-offset/test-subscription-output-2.json");
-      GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
-      DBTestUtils.executeSQLQueryWithDelay(
-          "DELETE FROM customers WHERE id = 101", 5, TimeUnit.SECONDS, postgresContainer, context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForQueryWithOrderBy(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-order-by/test-query-input.graphql";
-      String outputResource = "test-order-by/test-query-output.json";
-      GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
-    }
-
-    @Test
-    void shouldReceiveEventsForSubscriptionWithOrderBy(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-order-by/test-subscription-input.graphql";
-      List<String> outputResources =
-          List.of(
-              "test-order-by/test-subscription-output-1.json",
-              "test-order-by/test-subscription-output-1.json",
-              "test-order-by/test-subscription-output-2.json");
-      GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
-      DBTestUtils.executeSQLQueryWithDelay(
-          "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-          5,
-          TimeUnit.SECONDS,
-          postgresContainer,
-          context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForQueryWithWhere(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-where/test-query-input.graphql";
-      String outputResource = "test-where/test-query-output.json";
-      GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
-    }
-
-    @Test
-    void shouldReceiveEventsForSubscriptionWithWhere(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-where/test-subscription-input.graphql";
-      List<String> outputResources =
-          List.of(
-              "test-where/test-subscription-output-1.json",
-              "test-where/test-subscription-output-1.json",
-              "test-where/test-subscription-output-2.json");
-      GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
-      DBTestUtils.executeSQLQueryWithDelay(
-          "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-          5,
-          TimeUnit.SECONDS,
-          postgresContainer,
-          context);
-    }
-
-    @Test
-    public void shouldReceiveResponseForQueryWithDistinctOn(Vertx vertx, VertxTestContext context) {
-      DBTestUtils.executeSQLQuery(
-          "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-          postgresContainer,
-          context);
-      String inputResource = "test-distinct-on/test-query-input.graphql";
-      String outputResource = "test-distinct-on/test-query-output.json";
-      GraphQLTestUtils.verifyQuery(port, inputResource, outputResource, vertx, context);
-    }
-
-    @Test
-    void shouldReceiveEventsForSubscriptionWithDistinctOn(Vertx vertx, VertxTestContext context) {
-      String inputResource = "test-distinct-on/test-subscription-input.graphql";
-      List<String> outputResources =
-          List.of(
-              "test-distinct-on/test-subscription-output-1.json",
-              "test-distinct-on/test-subscription-output-1.json",
-              "test-distinct-on/test-subscription-output-2.json");
-      GraphQLTestUtils.verifySubscription(port, inputResource, outputResources, vertx, context);
-      DBTestUtils.executeSQLQueryWithDelay(
-          "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
-          5,
-          TimeUnit.SECONDS,
-          postgresContainer,
-          context);
-    }
-  */
 }

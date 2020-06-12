@@ -76,8 +76,14 @@ public class ExecutionRoot implements ComponentExecutable {
             Map.of("a3_model", "BMW", "a3_year", 2012, "a4_id", 102, "a4_first_name", "John"));
 
     AliasGenerator aliasGenerator = new AliasGenerator();
+    SQLArguments myArgs =
+        new SQLArguments(
+            Map.of(
+                "limit", 1,
+                "offset", 1));
 
-    ComponentExecutable executionRoot = new ExecutionRoot("customers", aliasGenerator.getAlias());
+    ComponentExecutable executionRoot =
+        new ExecutionRoot("customers", aliasGenerator.getAlias(), myArgs);
     executionRoot.setSqlExecutor(new SQLExecutor(query -> Single.just(forged)));
     executionRoot.addComponent(new ComponentRow("id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
@@ -99,7 +105,12 @@ public class ExecutionRoot implements ComponentExecutable {
 
     Component vehiclesOnCustomer =
         new ComponentReferenced(
-            "vehicles_on_customer", "id", "vehicles", aliasGenerator.getAlias(), "customer");
+            "vehicles_on_customer",
+            "id",
+            "vehicles",
+            aliasGenerator.getAlias(),
+            "customer",
+            myArgs);
     vehiclesOnCustomer.addComponent(new ComponentRow("model"));
     vehiclesOnCustomer.addComponent(new ComponentRow("year"));
 
@@ -121,11 +132,12 @@ public class ExecutionRoot implements ComponentExecutable {
    *
    * @param tableName name of the table
    * @param tableAlias alias of the table
+   * @param args argument from GraphQL query
    */
-  public ExecutionRoot(String tableName, String tableAlias) {
+  public ExecutionRoot(String tableName, String tableAlias, SQLArguments args) {
     this.tableName = tableName;
     this.tableAlias = tableAlias;
-    this.query = new SQLQuery(tableName, tableAlias);
+    this.query = new SQLQuery(tableName, tableAlias, args);
     this.components = new ArrayList<>();
     this.queriedTables.add(tableName);
     this.sqlExecutor = new SQLExecutor();

@@ -1,0 +1,31 @@
+{
+  "data": {
+    "addresses": [
+      {
+        "street": "Astreet",
+        "customers_on_address": []
+      },
+      {
+        "street": "Bstreet",
+        "customers_on_address": [
+          {
+            "id": 104,
+            "first_name": "b"
+          },
+          {
+            "id": 105,
+            "first_name": "c"
+          },
+          {
+            "id": 106,
+            "first_name": "d"
+          }
+        ]
+      },
+      {
+        "street": "Cstreet",
+        "customers_on_address": []
+      }
+    ]
+  }
+}

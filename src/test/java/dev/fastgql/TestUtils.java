@@ -9,6 +9,10 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import io.vertx.junit5.VertxTestContext;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 public class TestUtils {
 
@@ -25,5 +29,27 @@ public class TestUtils {
       context.failNow(e);
     }
     return resource;
+  }
+
+  public static Stream<String> queryDirectories() throws IOException {
+    int resourceRootNameCount = getResourceRoot().getNameCount();
+    Path basePath = getBasePath("queries");
+    Stream<Path> stream = Files.walk(basePath, 2);
+    return stream
+        .filter(
+            path ->
+                Files.isDirectory(path)
+                    && !path.getParent().equals(basePath)
+                    && !path.equals(basePath))
+        .map(path -> path.subpath(resourceRootNameCount - 1, path.getNameCount()))
+        .map(Path::toString);
+  }
+
+  private static Path getResourceRoot() {
+    return Paths.get(Resources.getResource("").getPath());
+  }
+
+  private static Path getBasePath(String dir) {
+    return Paths.get(Resources.getResource(dir).getPath());
   }
 }

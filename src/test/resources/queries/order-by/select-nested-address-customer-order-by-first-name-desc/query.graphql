@@ -1,0 +1,10 @@
+{
+  addresses (limit: 1){
+    id
+    street
+    customers_on_address (order_by: {first_name: desc}) {
+      id
+      first_name
+    }
+  }
+}

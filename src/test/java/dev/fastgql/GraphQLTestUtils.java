@@ -55,10 +55,18 @@ public class GraphQLTestUtils {
             context::failNow);
   }
 
+  public static void verifyQuerySimple(
+      String directory, int port, Vertx vertx, VertxTestContext context) {
+    String query = String.format("%s/query.graphql", directory);
+    String expected = String.format("%s/expected.json", directory);
+    verifyQuery(port, query, expected, vertx, context);
+  }
+
   public static void verifySubscription(
       int port,
       String inputResource,
       List<String> outputResources,
+      int offset,
       Vertx vertx,
       VertxTestContext context) {
     Checkpoint checkpoints = context.checkpoint(outputResources.size());
@@ -82,7 +90,7 @@ public class GraphQLTestUtils {
                 message -> {
                   System.out.println(message);
                   int currentResponse = currentResponseAtomic.getAndIncrement();
-                  if (currentResponse < expectedResponses.size()) {
+                  if (currentResponse >= offset && currentResponse < expectedResponses.size()) {
                     context.verify(
                         () ->
                             assertEquals(

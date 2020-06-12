@@ -1,0 +1,24 @@
+{
+  "data": {
+    "customers": [
+      {
+        "id": 101,
+        "address_ref": {
+          "street": "Astreet"
+        }
+      },
+      {
+        "id": 102,
+        "address_ref": {
+          "street": "Astreet"
+        }
+      },
+      {
+        "id": 103,
+        "address_ref": {
+          "street": "Astreet"
+        }
+      }
+    ]
+  }
+}

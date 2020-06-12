@@ -6,8 +6,13 @@
 
 package dev.fastgql.graphql;
 
+import static dev.fastgql.graphql.GraphQLNaming.getNameForReferencedByField;
+import static dev.fastgql.graphql.GraphQLNaming.getNameForReferencingField;
+
 import dev.fastgql.common.QualifiedName;
+import dev.fastgql.common.ReferenceType;
 import dev.fastgql.db.DatabaseSchema;
+import dev.fastgql.graphql.arguments.GraphQLArguments;
 import graphql.schema.GraphQLList;
 import graphql.schema.GraphQLObjectType;
 import java.util.HashMap;
@@ -26,16 +31,6 @@ import java.util.Set;
  */
 public class GraphQLDatabaseSchema {
   private Map<String, Map<String, GraphQLFieldDefinition>> graph;
-
-  private String getNameForReferencingField(QualifiedName qualifiedName) {
-    Objects.requireNonNull(qualifiedName);
-    return String.format("%s_ref", qualifiedName.getKeyName());
-  }
-
-  private String getNameForReferencedByField(QualifiedName qualifiedName) {
-    Objects.requireNonNull(qualifiedName);
-    return String.format("%s_on_%s", qualifiedName.getTableName(), qualifiedName.getKeyName());
-  }
 
   public GraphQLFieldDefinition fieldAt(String table, String field) {
     return graph.get(table).get(field);
@@ -85,24 +80,36 @@ public class GraphQLDatabaseSchema {
 
   /**
    * Applies this schema to given {@link GraphQLObjectType} builders (e.g. Query or Subscription
-   * object builders). Has to be done this way since internally it constructs other {@link
-   * GraphQLObjectType}, which should be constructed only once with the same name.
+   * object builders) and {@link GraphQLArguments}. Has to be done this way since internally it
+   * constructs other {@link GraphQLObjectType}, which should be constructed only once with the same
+   * name.
    *
    * @param builders builders to which this schema will be applied
+   * @param args arguments with this schema
    */
-  public void applyToGraphQLObjectTypes(List<GraphQLObjectType.Builder> builders) {
+  public void applyToGraphQLObjectTypes(
+      List<GraphQLObjectType.Builder> builders, GraphQLArguments args) {
     Objects.requireNonNull(builders);
     graph.forEach(
         (tableName, fieldNameToGraphQLFieldDefinition) -> {
           GraphQLObjectType.Builder objectBuilder = GraphQLObjectType.newObject().name(tableName);
           fieldNameToGraphQLFieldDefinition.forEach(
               (fieldName, graphQLFieldDefinition) -> {
-                objectBuilder.field(
+                graphql.schema.GraphQLFieldDefinition.Builder fieldBuilder =
                     graphql.schema.GraphQLFieldDefinition.newFieldDefinition()
                         .name(fieldName)
-                        .type(graphQLFieldDefinition.getGraphQLType())
-                        .build());
+                        .type(graphQLFieldDefinition.getGraphQLType());
+                if (graphQLFieldDefinition.getReferenceType() == ReferenceType.REFERENCED) {
+                  String foreignTableName = graphQLFieldDefinition.getForeignName().getTableName();
+                  fieldBuilder
+                      .argument(args.getLimit())
+                      .argument(args.getOffset())
+                      .argument(args.getOrderBys().get(foreignTableName))
+                      .argument(args.getWheres().get(foreignTableName));
+                }
+                objectBuilder.field(fieldBuilder.build());
               });
+
           GraphQLObjectType object = objectBuilder.build();
           builders.forEach(
               builder ->
@@ -110,6 +117,10 @@ public class GraphQLDatabaseSchema {
                       graphql.schema.GraphQLFieldDefinition.newFieldDefinition()
                           .name(tableName)
                           .type(GraphQLList.list(object))
+                          .argument(args.getLimit())
+                          .argument(args.getOffset())
+                          .argument(args.getOrderBys().get(tableName))
+                          .argument(args.getWheres().get(tableName))
                           .build()));
         });
   }

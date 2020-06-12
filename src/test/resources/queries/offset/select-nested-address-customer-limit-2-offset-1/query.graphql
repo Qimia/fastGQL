@@ -1,0 +1,10 @@
+{
+  addresses (limit: 1) {
+    id
+    street
+    customers_on_address (limit: 2, offset: 1) {
+      id
+      first_name
+    }
+  }
+}

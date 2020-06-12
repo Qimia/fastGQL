@@ -1,0 +1,24 @@
+{
+  "data": {
+    "addresses": [
+      {
+        "id": 101,
+        "street": "Astreet",
+        "customers_on_address": [
+          {
+            "id": 102,
+            "first_name": "Uli"
+          },
+          {
+            "id": 101,
+            "first_name": "John"
+          },
+          {
+            "id": 103,
+            "first_name": "a"
+          }
+        ]
+      }
+    ]
+  }
+}
