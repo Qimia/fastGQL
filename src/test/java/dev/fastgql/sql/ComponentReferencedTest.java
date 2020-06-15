@@ -7,7 +7,7 @@
 package dev.fastgql.sql;
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ComponentReferencedTest {
 
@@ -16,8 +16,17 @@ public class ComponentReferencedTest {
         SQLQuery sqlQuery = new SQLQuery("mytable", "tablealias");
         sqlQuery.addKey("key1", "val1");
         sqlQuery.addKey("key2", "val2");
-        System.out.println(sqlQuery.build());
-        assertEquals("mytable", sqlQuery.build().substring(sqlQuery.build().indexOf("FROM") + 5).split(" ")[0]);
-        assertEquals("tablealias", sqlQuery.build().substring(sqlQuery.build().indexOf("FROM") + 5).split(" ")[1]);
+
+        ComponentReferenced componentReferenced = new ComponentReferenced("myFieldName", "myKeyName",
+                "myForeignTable", "myForeignTableAlias", "myForeignKeyName");
+        componentReferenced.setParentTableAlias("myPatentTable");
+        componentReferenced.updateQuery(sqlQuery);
+
+        assertTrue(sqlQuery.build().contains("myPatentTable.myKeyName AS myPatentTable_myKeyName"));
+    }
+
+    @Test
+    public void testExtractValues() {
+        // TODO
     }
 }
