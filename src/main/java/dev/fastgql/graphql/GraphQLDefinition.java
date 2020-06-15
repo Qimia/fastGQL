@@ -7,6 +7,7 @@
 package dev.fastgql.graphql;
 
 import dev.fastgql.db.DatabaseSchema;
+import dev.fastgql.kafka.KafkaConsumerFactory;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.Component;
 import dev.fastgql.sql.ComponentExecutable;
@@ -27,6 +28,8 @@ import graphql.schema.GraphQLSchema;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.SqlConnection;
 import java.util.ArrayList;
@@ -34,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -206,10 +210,12 @@ public class GraphQLDefinition {
      * Enables subscription by defining subscription data fetcher and adding it to {@link
      * GraphQLCodeRegistry}.
      *
-     * @param modifiedTablesStream flowable which emits names of altered tables
+     * @param vertx vertx instance
+     * @param bootstrapServers kafka bootstrap servers
      * @return this
      */
-    public Builder enableSubscription(Flowable<String> modifiedTablesStream) {
+    public Builder enableSubscription(
+        Vertx vertx, String bootstrapServers, String serverName, String schemaName) {
       if (subscriptionEnabled) {
         return this;
       }
@@ -219,10 +225,17 @@ public class GraphQLDefinition {
             log.info("new subscription");
             SQLExecutor sqlExecutor = new SQLExecutor();
             ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
-            Set<String> queriedTables = executionRoot.getQueriedTables();
-            return modifiedTablesStream
-                .filter(queriedTables::contains)
-                .flatMap(table -> sqlConnectionPool.rxGetConnection().toFlowable())
+            Set<String> topics =
+                executionRoot.getQueriedTables().stream()
+                    .map(
+                        queriedTable ->
+                            String.format("%s.%s.%s", serverName, schemaName, queriedTable))
+                    .collect(Collectors.toSet());
+            KafkaConsumer<String, String> kafkaConsumer =
+                KafkaConsumerFactory.createForTopics(topics, bootstrapServers, vertx);
+            return kafkaConsumer
+                .toFlowable()
+                .flatMap(record -> sqlConnectionPool.rxGetConnection().toFlowable())
                 .flatMap(
                     connection -> {
                       sqlExecutor.setSqlExecutorFunction(query -> executeQuery(query, connection));

@@ -5,6 +5,7 @@
  */
 package dev.fastgql;
 
+import dev.fastgql.db.DatasourceConfig;
 import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import io.debezium.testing.testcontainers.DebeziumContainer;
 import io.vertx.core.DeploymentOptions;
@@ -15,6 +16,7 @@ import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -24,15 +26,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.lifecycle.Startables;
 
 @ExtendWith(VertxExtension.class)
-public class FastGQLServerTest {
+public class FastGQLServerMySQLTest {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FastGQLServerTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FastGQLServerMySQLTest.class);
   private String deploymentID;
 
   private static final int port = 8081;
@@ -41,10 +43,12 @@ public class FastGQLServerTest {
 
   private static KafkaContainer kafkaContainer = new KafkaContainer().withNetwork(network);
 
-  private static PostgreSQLContainer<?> postgresContainer =
-      new PostgreSQLContainer<>("debezium/postgres:11")
+  private static MySQLContainer<?> mysqlContainer =
+      new MySQLContainer<>("fastgql/mysql-testcontainers:latest")
           .withNetwork(network)
-          .withNetworkAliases("postgres");
+          .withNetworkAliases("mysql")
+          .withUsername("debezium")
+          .withPassword("dbz");
 
   private static DebeziumContainer debeziumContainer =
       new DebeziumContainer("1.0")
@@ -56,10 +60,10 @@ public class FastGQLServerTest {
   @BeforeEach
   public void setUp(Vertx vertx, VertxTestContext context) {
 
-    Startables.deepStart(Stream.of(kafkaContainer, postgresContainer, debeziumContainer)).join();
+    Startables.deepStart(Stream.of(kafkaContainer, mysqlContainer, debeziumContainer)).join();
 
     try {
-      DBTestUtils.executeSQLQueryFromResource("init.sql", postgresContainer);
+      DBTestUtils.executeSQLQueryFromResource("init.sql", mysqlContainer);
     } catch (SQLException | IOException e) {
       context.failNow(e);
       return;
@@ -68,19 +72,33 @@ public class FastGQLServerTest {
     try {
       debeziumContainer.registerConnector(
           "my-connector",
-          ConnectorConfiguration.forJdbcContainer(postgresContainer)
+          ConnectorConfiguration.forJdbcContainer(mysqlContainer)
               .with("database.server.name", "dbserver")
-              .with("slot.name", "debezium"));
+              .with("slot.name", "debezium")
+              .with(
+                  "database.history.kafka.bootstrap.servers",
+                  String.format("%s:9092", kafkaContainer.getNetworkAliases().get(0)))
+              .with(
+                  "database.history.kafka.topic",
+                  String.format("schema-changes.%s", mysqlContainer.getDatabaseName())));
     } catch (IOException e) {
       context.failNow(e);
       return;
     }
 
+    DatasourceConfig datasourceConfig = DBTestUtils.datasourceConfig(mysqlContainer);
+
     JsonObject config =
         new JsonObject()
             .put("http.port", port)
             .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
-            .put("datasource", JsonObject.mapFrom(DBTestUtils.datasourceConfig(postgresContainer)));
+            .put(
+                "datasource",
+                Map.of(
+                    "jdbcUrl", datasourceConfig.getJdbcUrl(),
+                    "username", datasourceConfig.getUsername(),
+                    "password", datasourceConfig.getPassword(),
+                    "schema", datasourceConfig.getSchema()));
 
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
     vertx
@@ -101,7 +119,7 @@ public class FastGQLServerTest {
             () -> {
               debeziumContainer.close();
               kafkaContainer.close();
-              postgresContainer.close();
+              mysqlContainer.close();
               network.close();
               context.completeNow();
             })
@@ -128,7 +146,7 @@ public class FastGQLServerTest {
         "INSERT INTO customers VALUES (103, 'John', 'Qwe', 'john@qwe.com')",
         5,
         TimeUnit.SECONDS,
-        postgresContainer,
+        mysqlContainer,
         context);
   }
 
