@@ -12,8 +12,12 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import dev.fastgql.graphql.ConditionalOperatorTypes;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 
 /**
@@ -154,5 +158,46 @@ public class SQLUtils {
     } else {
       return String.format("'%s'", json.getAsString());
     }
+  }
+
+  public static String removeRedundantParentheses(String query) {
+    query = removeRedundantSpaces(query);
+    Map<Integer, Integer> parenthesesPairs = new HashMap<>();
+    Stack<Integer> indexStack = new Stack<>();
+    for (int i = 0; i < query.length(); i++) {
+      if (query.charAt(i) == '(') {
+        indexStack.push(i);
+      } else if (query.charAt(i) == ')') {
+        parenthesesPairs.put(indexStack.pop(), i);
+      }
+    }
+    Set<Integer> redundantIndices = new HashSet<>();
+    for (int i = 1; i < query.length(); i++) {
+      if (query.charAt(i - 1) == '(' && query.charAt(i) == ')') {
+        redundantIndices.add(i - 1);
+        redundantIndices.add(i);
+      }
+      if (query.charAt(i - 1) == '('
+          && query.charAt(i) == '('
+          && parenthesesPairs.get(i - 1) - parenthesesPairs.get(i) == 1) {
+        redundantIndices.addAll(List.of(i, parenthesesPairs.get(i)));
+      }
+    }
+    StringBuilder newQueryBuilder = new StringBuilder();
+    for (int i = 0; i < query.length(); i++) {
+      if (!redundantIndices.contains(i)) {
+        newQueryBuilder.append(query.charAt(i));
+      }
+    }
+    return newQueryBuilder.toString();
+  }
+
+  private static String removeRedundantSpaces(String query) {
+    return query
+        .trim()
+        .replaceAll("\\(\\s*\\(", "((")
+        .replaceAll("\\(\\s*\\)", "()")
+        .replaceAll("\\)\\s*\\)", "))")
+        .replaceAll("\\)\\s*\\(", ")(");
   }
 }
