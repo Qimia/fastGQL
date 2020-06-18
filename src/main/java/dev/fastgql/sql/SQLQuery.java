@@ -134,6 +134,6 @@ public class SQLQuery {
     if (whereConditions.isEmpty()) {
       return "";
     }
-    return String.format("WHERE %s", String.join(" AND ", whereConditions));
+    return SQLUtils.removeRedundantParentheses(String.format("WHERE %s", String.join(" AND ", whereConditions)));
   }
 }
