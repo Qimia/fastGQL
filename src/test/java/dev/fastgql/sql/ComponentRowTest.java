@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.fastgql.TestUtils;
 import io.reactivex.Single;
-import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,8 +58,8 @@ public class ComponentRowTest {
   @Test
   public void testSetParentTableAlias() throws NoSuchFieldException, IllegalAccessException {
     componentRow.setParentTableAlias(parentTableAlias);
-    final Field field = TestUtils.getField(componentRow, "parentTableAlias");
-    assertEquals(parentTableAlias, field.get(componentRow));
+    assertEquals(
+        parentTableAlias, TestUtils.getFieldByReflection(componentRow, "parentTableAlias"));
   }
 
   @ParameterizedTest(name = "testExtractValues {index} => Test: [arguments]")

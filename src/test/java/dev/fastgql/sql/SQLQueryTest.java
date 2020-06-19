@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonNull;
 import dev.fastgql.TestUtils;
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,16 +50,16 @@ public class SQLQueryTest {
   @Test
   public void testAddKey() throws NoSuchFieldException, IllegalAccessException {
     sqlQuery.addKey("table", "key");
-    final Field field = TestUtils.getField(sqlQuery, "keys");
-    assertTrue(((Set<?>) field.get(sqlQuery)).contains("table.key AS table_key"));
+    assertTrue(
+        ((Set<?>) TestUtils.getFieldByReflection(sqlQuery, "keys"))
+            .contains("table.key AS table_key"));
   }
 
   @Test
   public void testAddJoin() throws NoSuchFieldException, IllegalAccessException {
     sqlQuery.addJoin("thisTable", "thisKey", "foreignTable", "foreignTableAlias", "foreignKey");
-    final Field field = TestUtils.getField(sqlQuery, "joins");
     assertTrue(
-        ((List<?>) field.get(sqlQuery))
+        ((List<?>) TestUtils.getFieldByReflection(sqlQuery, "joins"))
             .contains(
                 "LEFT JOIN foreignTable foreignTableAlias ON thisTable.thisKey = foreignTableAlias.foreignKey"));
   }
@@ -68,15 +67,17 @@ public class SQLQueryTest {
   @Test
   public void testAddWhereConditions() throws NoSuchFieldException, IllegalAccessException {
     sqlQuery.addWhereConditions("whereConditional");
-    final Field field = TestUtils.getField(sqlQuery, "whereConditions");
-    assertTrue(((List<?>) field.get(sqlQuery)).contains("whereConditional"));
+    assertTrue(
+        ((List<?>) TestUtils.getFieldByReflection(sqlQuery, "whereConditions"))
+            .contains("whereConditional"));
   }
 
   @Test
   public void testAddFieldToAlias() throws NoSuchFieldException, IllegalAccessException {
     sqlQuery.addFieldToAlias("field", "foreignTableAlias");
-    final Field field = TestUtils.getField(sqlQuery, "fieldToAlias");
-    assertEquals("foreignTableAlias", ((Map<?, ?>) field.get(sqlQuery)).get("field"));
+    assertEquals(
+        "foreignTableAlias",
+        ((Map<?, ?>) TestUtils.getFieldByReflection(sqlQuery, "fieldToAlias")).get("field"));
   }
 
   @Test
@@ -89,11 +90,8 @@ public class SQLQueryTest {
   @Test
   public void testReset() throws NoSuchFieldException, IllegalAccessException {
     sqlQuery.reset();
-    final Field keysField = TestUtils.getField(sqlQuery, "keys");
-    final Field joinsField = TestUtils.getField(sqlQuery, "joins");
-    final Field whereConditionsField = TestUtils.getField(sqlQuery, "whereConditions");
-    assertTrue(((Set<?>) keysField.get(sqlQuery)).isEmpty());
-    assertTrue(((List<?>) joinsField.get(sqlQuery)).isEmpty());
-    assertTrue(((List<?>) whereConditionsField.get(sqlQuery)).isEmpty());
+    assertTrue(((Set<?>) TestUtils.getFieldByReflection(sqlQuery, "keys")).isEmpty());
+    assertTrue(((List<?>) TestUtils.getFieldByReflection(sqlQuery, "joins")).isEmpty());
+    assertTrue(((List<?>) TestUtils.getFieldByReflection(sqlQuery, "whereConditions")).isEmpty());
   }
 }

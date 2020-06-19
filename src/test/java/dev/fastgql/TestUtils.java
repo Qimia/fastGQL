@@ -15,4 +15,9 @@ public class TestUtils {
     field.setAccessible(true);
     return field;
   }
+
+  public static Object getFieldByReflection(Object object, String name)
+      throws NoSuchFieldException, IllegalAccessException {
+    return getField(object, name).get(object);
+  }
 }
