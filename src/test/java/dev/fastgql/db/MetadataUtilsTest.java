@@ -39,9 +39,7 @@ public class MetadataUtilsTest {
             postgreSQLContainer.getUsername(),
             postgreSQLContainer.getPassword(),
             "public");
-    DBTestUtils.executeSQLQueryFromResource(
-        "db/metadataUtilsTest.sql",
-        postgreSQLContainer);
+    DBTestUtils.executeSQLQueryFromResource("db/metadataUtilsTest.sql", postgreSQLContainer);
   }
 
   @Test
@@ -61,17 +59,17 @@ public class MetadataUtilsTest {
             new QualifiedName("addresses/id"),
             null);
     KeyDefinition expectedCustomersIdKeyDefinition =
-        new KeyDefinition(
-            new QualifiedName("customers/id"),
-            KeyType.INT,
-            null,
-            null);
+        new KeyDefinition(new QualifiedName("customers/id"), KeyType.INT, null, null);
 
     assertTrue(databaseSchema.getTableNames().containsAll(List.of("customers", "addresses")));
     assertEquals(2, databaseSchema.getTableNames().size());
-    assertEquals(expectedAddressesIdKeyDefinition, databaseSchema.getGraph().get("addresses").get("id"));
-    assertEquals(expectedCustomersAddressKeyDefinition, databaseSchema.getGraph().get("customers").get("address"));
-    assertEquals(expectedCustomersIdKeyDefinition, databaseSchema.getGraph().get("customers").get("id"));
+    assertEquals(
+        expectedAddressesIdKeyDefinition, databaseSchema.getGraph().get("addresses").get("id"));
+    assertEquals(
+        expectedCustomersAddressKeyDefinition,
+        databaseSchema.getGraph().get("customers").get("address"));
+    assertEquals(
+        expectedCustomersIdKeyDefinition, databaseSchema.getGraph().get("customers").get("id"));
     connection.close();
   }
 }

@@ -32,8 +32,7 @@ public class QualifiedNameTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> new QualifiedName("tableName"),
-        "qualified name has to be in the format of \"table/key\""
-    );
+        "qualified name has to be in the format of \"table/key\"");
   }
 
   @Test
@@ -49,8 +48,7 @@ public class QualifiedNameTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> new QualifiedName("", "keyName"),
-        "qualified name: table or key cannot be empty"
-    );
+        "qualified name: table or key cannot be empty");
   }
 
   @Test
@@ -58,7 +56,6 @@ public class QualifiedNameTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> new QualifiedName("tableName", ""),
-        "qualified name: table or key cannot be empty"
-    );
+        "qualified name: table or key cannot be empty");
   }
 }
