@@ -6,45 +6,76 @@
 
 package dev.fastgql.sql;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.google.gson.JsonNull;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+@ExtendWith(MockitoExtension.class)
 public class SQLQueryTest {
 
-    SQLQuery sqlQuery;
+  static SQLQuery sqlQuery;
 
-    @BeforeEach
-    public void setUp() {
-        sqlQuery = new SQLQuery("mytable", "tablealias");
-        sqlQuery.addKey("key1", "val1");
-    }
+  @BeforeAll
+  static void setUp(@Mock SQLArguments sqlArguments) {
+    sqlQuery = new SQLQuery("testTable", "testAlias", sqlArguments);
+    Mockito.when(sqlArguments.getLimit()).thenReturn(1);
+    Mockito.when(sqlArguments.getOffset()).thenReturn(2);
+    Mockito.when(sqlArguments.getOrderBy()).thenReturn(JsonNull.INSTANCE);
+    Mockito.when(sqlArguments.getWhere()).thenReturn(JsonNull.INSTANCE);
+  }
 
-    @Test
-    public void testAddKey() {
-        sqlQuery.addKey("key2", "val2");
-        assertEquals("mytable", sqlQuery.build().substring(sqlQuery.build().indexOf("FROM") + 5).split(" ")[0]);
-        assertEquals("tablealias", sqlQuery.build().substring(sqlQuery.build().indexOf("FROM") + 5).split(" ")[1]);
-        assertTrue(sqlQuery.build().contains("key1.val1"));
-        assertTrue(sqlQuery.build().contains("key2.val2"));
-    }
+  @BeforeEach
+  void setUp() {
+    sqlQuery.addKey("table0", "key0");
+  }
 
-    @Test
-    public void testAddJoin() {
-        sqlQuery.addJoin("mytable", "mykey", "foreignTable", "foreignAlias", "foreignKey");
-        assertTrue(sqlQuery.build().contains("LEFT JOIN foreignTable foreignAlias ON mytable.mykey = foreignAlias.foreignKey"));
-    }
+  @AfterEach
+  void tearDown() {
+    sqlQuery.reset();
+  }
 
-    @Test void testAddSuffix() {
-        sqlQuery.addSuffix("newSuffix");
-        String[] res = sqlQuery.build().split(" ");
-        assertTrue(res[res.length-1].contains("newSuffix"));
-    }
+  @Test
+  public void testAddKey() {
+    sqlQuery.addKey("table", "key");
+    assertTrue(sqlQuery.build().contains("table.key AS table_key"));
+  }
 
-    @Test
-    public void testResetQuery() {
-        sqlQuery.reset();
-        assertFalse(sqlQuery.build().contains("key1.val1"));
-    }
+  @Test
+  public void testAddJoin() {
+    sqlQuery.addJoin("thisTable", "thisKey", "foreignTable", "foreignTableAlias", "foreignKey");
+    assertTrue(
+        sqlQuery
+            .build()
+            .contains(
+                "LEFT JOIN foreignTable foreignTableAlias ON thisTable.thisKey = foreignTableAlias.foreignKey"));
+  }
+
+  @Test
+  public void testAddWhereConditions() {
+    sqlQuery.addWhereConditions("whereConditional");
+    assertTrue(sqlQuery.build().contains("whereConditional"));
+  }
+
+  @Test
+  public void testBuild() {
+    assertEquals(
+        "SELECT table0.key0 AS table0_key0 FROM testTable testAlias LIMIT 1 OFFSET 2",
+        sqlQuery.build());
+  }
+
+  @Test
+  public void testReset() {
+    sqlQuery.reset();
+    assertFalse(sqlQuery.build().contains("table0.key0 AS table0_key0"));
+  }
 }
