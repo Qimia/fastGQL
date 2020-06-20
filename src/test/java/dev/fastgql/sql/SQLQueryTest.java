@@ -93,5 +93,6 @@ public class SQLQueryTest {
     assertTrue(((Set<?>) TestUtils.getFieldByReflection(sqlQuery, "keys")).isEmpty());
     assertTrue(((List<?>) TestUtils.getFieldByReflection(sqlQuery, "joins")).isEmpty());
     assertTrue(((List<?>) TestUtils.getFieldByReflection(sqlQuery, "whereConditions")).isEmpty());
+    assertTrue(((List<?>) TestUtils.getFieldByReflection(sqlQuery, "fieldToAlias")).isEmpty());
   }
 }

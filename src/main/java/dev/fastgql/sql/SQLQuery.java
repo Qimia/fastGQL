@@ -82,6 +82,7 @@ public class SQLQuery {
     keys = new HashSet<>();
     joins = new ArrayList<>();
     whereConditions = new ArrayList<>();
+    fieldToAlias = new HashMap<>();
   }
 
   /**
