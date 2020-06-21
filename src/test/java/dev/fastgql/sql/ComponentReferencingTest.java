@@ -13,7 +13,6 @@ import dev.fastgql.TestUtils;
 import io.reactivex.Single;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 public class ComponentReferencingTest {
@@ -77,9 +75,8 @@ public class ComponentReferencingTest {
 
     // then
     Component mockComponentVerifierOneTime = Mockito.verify(component, Mockito.times(1));
-    mockComponentVerifierOneTime.setParentTableAlias(
-        ArgumentMatchers.argThat(argument -> argument.equals(foreignTableAlias)));
-    mockComponentVerifierOneTime.setSqlExecutor(ArgumentMatchers.argThat(Objects::isNull));
+    mockComponentVerifierOneTime.setParentTableAlias(foreignTableAlias);
+    mockComponentVerifierOneTime.setSqlExecutor(null);
     mockComponentVerifierOneTime.getQueriedTables();
 
     assertEquals(
@@ -111,20 +108,11 @@ public class ComponentReferencingTest {
 
     // then
     SQLQuery mockSqlQueryVerifierOneTime = Mockito.verify(sqlQuery, Mockito.times(1));
-    mockSqlQueryVerifierOneTime.addKey(
-        ArgumentMatchers.argThat(Objects::isNull),
-        ArgumentMatchers.argThat(argument -> argument.equals(keyName)));
+    mockSqlQueryVerifierOneTime.addKey(null, keyName);
     mockSqlQueryVerifierOneTime.addJoin(
-        ArgumentMatchers.argThat(Objects::isNull),
-        ArgumentMatchers.argThat(argument -> argument.equals(keyName)),
-        ArgumentMatchers.argThat(argument -> argument.equals(foreignTableName)),
-        ArgumentMatchers.argThat(argument -> argument.equals(foreignTableAlias)),
-        ArgumentMatchers.argThat(argument -> argument.equals(foreignKeyName)));
-    mockSqlQueryVerifierOneTime.addFieldToAlias(
-        ArgumentMatchers.argThat(argument -> argument.equals(fieldName)),
-        ArgumentMatchers.argThat(argument -> argument.equals(foreignTableAlias)));
-    Mockito.verify(component, Mockito.times(1))
-        .updateQuery(ArgumentMatchers.argThat(argument -> argument.equals(sqlQuery)));
+        null, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
+    mockSqlQueryVerifierOneTime.addFieldToAlias(fieldName, foreignTableAlias);
+    Mockito.verify(component, Mockito.times(1)).updateQuery(sqlQuery);
   }
 
   @Test
@@ -146,8 +134,7 @@ public class ComponentReferencingTest {
 
     // then
     assertEquals(sqlExecutor, TestUtils.getFieldByReflection(componentReferencing, "sqlExecutor"));
-    Mockito.verify(component, Mockito.times(1))
-        .setSqlExecutor(ArgumentMatchers.argThat(argument -> argument == sqlExecutor));
+    Mockito.verify(component, Mockito.times(1)).setSqlExecutor(sqlExecutor);
   }
 
   @ParameterizedTest(name = "testExtractValues {index} => Test: [arguments]")

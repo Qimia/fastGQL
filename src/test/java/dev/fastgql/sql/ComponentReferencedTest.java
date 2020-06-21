@@ -11,10 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import dev.fastgql.TestUtils;
 import java.lang.reflect.Field;
 import java.util.Map;
-import java.util.Objects;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
@@ -53,10 +51,7 @@ public class ComponentReferencedTest {
   public void testUpdateQueryWithNullParentTableAlias() {
     SQLQuery sqlQuery = Mockito.mock(SQLQuery.class);
     componentReferenced.updateQuery(sqlQuery);
-    Mockito.verify(sqlQuery, Mockito.times(1))
-        .addKey(
-            ArgumentMatchers.argThat(Objects::isNull),
-            ArgumentMatchers.argThat(argument -> argument.equals(keyName)));
+    Mockito.verify(sqlQuery, Mockito.times(1)).addKey(null, keyName);
   }
 
   @Test
@@ -69,10 +64,7 @@ public class ComponentReferencedTest {
     // when
     componentReferenced.updateQuery(sqlQuery);
     // then
-    Mockito.verify(sqlQuery, Mockito.times(1))
-        .addKey(
-            ArgumentMatchers.argThat(argument -> argument.equals(parentTableAlias)),
-            ArgumentMatchers.argThat(argument -> argument.equals(keyName)));
+    Mockito.verify(sqlQuery, Mockito.times(1)).addKey(parentTableAlias, keyName);
   }
 
   @Test
@@ -94,5 +86,4 @@ public class ComponentReferencedTest {
   // TODO: test extractValues that return non trivial response
   @Test
   public void testExtractValuesShouldReturnNonTrivialResponse() {}
-
 }

@@ -20,4 +20,9 @@ public class TestUtils {
       throws NoSuchFieldException, IllegalAccessException {
     return getField(object, name).get(object);
   }
+
+  public static void setFieldByReflection(Object object, String name, Object mockObject)
+      throws NoSuchFieldException, IllegalAccessException {
+    getField(object, name).set(object, mockObject);
+  }
 }

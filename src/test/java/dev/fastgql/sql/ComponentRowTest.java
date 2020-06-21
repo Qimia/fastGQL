@@ -7,7 +7,6 @@
 package dev.fastgql.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 public class ComponentRowTest {
@@ -47,12 +45,7 @@ public class ComponentRowTest {
   public void testUpdateQuery() {
     SQLQuery sqlQuery = Mockito.mock(SQLQuery.class);
     componentRow.updateQuery(sqlQuery);
-    ArgumentCaptor<String> argumentCaptor1 = ArgumentCaptor.forClass(String.class);
-    ArgumentCaptor<String> argumentCaptor2 = ArgumentCaptor.forClass(String.class);
-    Mockito.verify(sqlQuery, Mockito.times(1))
-        .addKey(argumentCaptor1.capture(), argumentCaptor2.capture());
-    assertNull(argumentCaptor1.getValue());
-    assertEquals(keyName, argumentCaptor2.getValue());
+    Mockito.verify(sqlQuery, Mockito.times(1)).addKey(null, keyName);
   }
 
   @Test
