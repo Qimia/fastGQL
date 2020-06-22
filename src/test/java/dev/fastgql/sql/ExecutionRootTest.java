@@ -10,15 +10,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.fastgql.TestUtils;
+import io.reactivex.Single;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class ExecutionRootTest {
 
   static final String tableName = "testTableName";
@@ -26,7 +31,7 @@ public class ExecutionRootTest {
 
   ExecutionRoot executionRoot;
 
-  @Mock SQLArguments sqlArguments;
+  @Mock SQLArguments sqlArguments = new SQLArguments(Map.of());
 
   @BeforeEach
   public void setUp() {
@@ -52,7 +57,18 @@ public class ExecutionRootTest {
 
   @Test
   public void testExecute() {
-    // TODO
+    List<Map<String, Object>> forged =
+        List.of(
+            Map.of("testTableAlias_id", 101, "testTableAlias_first_name", "John"),
+            Map.of("testTableAlias_id", 102, "testTableAlias_first_name", "Mike"));
+    List<Map<String, Object>> expected =
+        List.of(Map.of("id", 101, "first_name", "John"), Map.of("id", 102, "first_name", "Mike"));
+
+    executionRoot.setSqlExecutor(new SQLExecutor(query -> Single.just(forged)));
+    executionRoot.addComponent(new ComponentRow("id"));
+    executionRoot.addComponent(new ComponentRow("first_name"));
+
+    executionRoot.execute().test().assertNoErrors().assertValue(v -> v.equals(expected));
   }
 
   @Test
