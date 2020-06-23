@@ -12,4 +12,6 @@ public interface AbstractContainerEnv {
   int getDeploymentPort();
 
   JdbcDatabaseContainer<?> getJdbcDatabaseContainer();
+
+  String getJdbcUrlForMultipleQueries();
 }

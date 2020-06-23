@@ -1,10 +1,7 @@
 {
   addresses {
-    id
-    street
     customers_on_address {
       id
-      first_name
     }
   }
 }

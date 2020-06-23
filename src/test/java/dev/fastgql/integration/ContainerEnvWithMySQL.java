@@ -38,7 +38,7 @@ public class ContainerEnvWithMySQL extends AbstractContainerEnvImpl {
   }
 
   @Override
-  protected String getJdbcUrlForMultipleQueries() {
+  public String getJdbcUrlForMultipleQueries() {
     return String.format("%s?allowMultiQueries=true", jdbcDatabaseContainer.getJdbcUrl());
   }
 }

@@ -9,7 +9,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -41,7 +40,7 @@ public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
 
   protected abstract DatasourceConfig createDatasourceConfig();
 
-  protected abstract String getJdbcUrlForMultipleQueries();
+  public abstract String getJdbcUrlForMultipleQueries();
 
   @Override
   public int getDeploymentPort() {
@@ -58,16 +57,18 @@ public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
     Startables.deepStart(Stream.of(kafkaContainer, jdbcDatabaseContainer, debeziumContainer))
         .join();
 
-    try {
-      DBTestUtils.executeSQLQueryFromResource(
-          "init.sql",
-          getJdbcUrlForMultipleQueries(),
-          jdbcDatabaseContainer.getUsername(),
-          jdbcDatabaseContainer.getPassword());
-    } catch (SQLException | IOException e) {
-      context.failNow(e);
-      return;
-    }
+    /*
+        try {
+          DBTestUtils.executeSQLQueryFromResource(
+              "init.sql",
+              getJdbcUrlForMultipleQueries(),
+              jdbcDatabaseContainer.getUsername(),
+              jdbcDatabaseContainer.getPassword());
+        } catch (SQLException | IOException e) {
+          context.failNow(e);
+          return;
+        }
+    */
 
     try {
       debeziumContainer.registerConnector("my-connector", createConnectorConfiguration());

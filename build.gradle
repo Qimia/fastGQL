@@ -8,7 +8,7 @@ plugins {
 group 'ai.qimia'
 version '1.0-SNAPSHOT'
 
-sourceCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_11
 
 repositories {
     mavenCentral()
@@ -33,7 +33,7 @@ spotless {
 vertx {
     mainVerticle = 'dev.fastgql.FastGQL'
     vertxVersion = '3.8.3'
-    config = 'src/main/conf.json'
+    config = 'src/main/resources/conf.json'
 }
 
 dependencies {

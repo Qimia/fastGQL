@@ -30,7 +30,7 @@ public class ContainerEnvWithPostgres extends AbstractContainerEnvImpl {
   }
 
   @Override
-  protected String getJdbcUrlForMultipleQueries() {
+  public String getJdbcUrlForMultipleQueries() {
     return jdbcDatabaseContainer.getJdbcUrl();
   }
 }
