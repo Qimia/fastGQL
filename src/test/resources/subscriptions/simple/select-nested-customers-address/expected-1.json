@@ -5,50 +5,30 @@
     "data": {
       "customers": [
         {
-          "id": 101,
-          "first_name": "John",
+          "id": 0,
           "address_ref": {
-            "id": 101,
+            "id": 0,
             "street": "Astreet"
           }
         },
         {
-          "id": 102,
-          "first_name": "Uli",
+          "id": 1,
           "address_ref": {
-            "id": 101,
+            "id": 0,
             "street": "Astreet"
           }
         },
         {
-          "id": 103,
-          "first_name": "a",
+          "id": 2,
           "address_ref": {
-            "id": 101,
-            "street": "Astreet"
-          }
-        },
-        {
-          "id": 104,
-          "first_name": "b",
-          "address_ref": {
-            "id": 102,
+            "id": 1,
             "street": "Bstreet"
           }
         },
         {
-          "id": 105,
-          "first_name": "c",
+          "id": 3,
           "address_ref": {
-            "id": 102,
-            "street": "Bstreet"
-          }
-        },
-        {
-          "id": 106,
-          "first_name": "d",
-          "address_ref": {
-            "id": 102,
+            "id": 1,
             "street": "Bstreet"
           }
         }

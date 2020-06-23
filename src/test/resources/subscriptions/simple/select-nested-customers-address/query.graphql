@@ -1,7 +1,6 @@
 subscription {
   customers (order_by: {id: asc}) {
     id
-    first_name
     address_ref {
       id
       street

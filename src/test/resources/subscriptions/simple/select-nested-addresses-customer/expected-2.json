@@ -5,45 +5,23 @@
     "data": {
       "addresses": [
         {
-          "id": 101,
-          "street": "Astreet",
+          "id": 0,
           "customers_on_address": [
             {
-              "id": 101,
-              "first_name": "NewName"
-            },
-            {
-              "id": 102,
-              "first_name": "Uli"
-            },
-            {
-              "id": 103,
-              "first_name": "a"
+              "id": 1
             }
           ]
         },
         {
-          "id": 102,
-          "street": "Bstreet",
+          "id": 1,
           "customers_on_address": [
             {
-              "id": 104,
-              "first_name": "b"
+              "id": 0
             },
             {
-              "id": 105,
-              "first_name": "c"
-            },
-            {
-              "id": 106,
-              "first_name": "d"
+              "id": 2
             }
           ]
-        },
-        {
-          "id": 103,
-          "street": "Cstreet",
-          "customers_on_address": []
         }
       ]
     }

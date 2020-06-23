@@ -1,6 +1,0 @@
-{
-  customers (order_by: {first_name: asc}) {
-    id
-    first_name
-  }
-}

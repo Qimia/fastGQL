@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS customers;
-DROP TABLE IF EXISTS addresses;
+DROP TABLE IF EXISTS customers CASCADE;
+DROP TABLE IF EXISTS addresses CASCADE;
 
 CREATE TABLE addresses(
   id INT PRIMARY KEY
@@ -16,3 +16,4 @@ INSERT INTO addresses VALUES (1);
 INSERT INTO customers VALUES (0, 0);
 INSERT INTO customers VALUES (1, 0);
 INSERT INTO customers VALUES (2, 1);
+INSERT INTO customers VALUES (3, 1);

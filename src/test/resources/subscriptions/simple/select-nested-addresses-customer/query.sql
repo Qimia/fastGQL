@@ -1,1 +1,1 @@
-UPDATE customers SET first_name = 'NewName' WHERE id = 101;
+UPDATE customers SET address = 1 WHERE id = 0;

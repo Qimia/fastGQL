@@ -1,0 +1,8 @@
+{
+  addresses {
+    id
+    customers_on_address (order_by: {id: desc}) {
+      id
+    }
+  }
+}

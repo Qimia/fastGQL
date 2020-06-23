@@ -1,10 +1,8 @@
 subscription {
   addresses (order_by: {id: asc}) {
     id
-    street
     customers_on_address (order_by: {id: asc}) {
       id
-      first_name
     }
   }
 }

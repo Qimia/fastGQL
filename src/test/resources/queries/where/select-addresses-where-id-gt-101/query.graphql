@@ -1,5 +1,0 @@
-{
-  addresses (where: {id: {_gt: 101}}) {
-    id
-  }
-}

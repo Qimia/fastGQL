@@ -1,1 +1,1 @@
-UPDATE addresses SET street = 'Dstreet' WHERE id = 101;
+UPDATE addresses SET street = 'Cstreet' WHERE id = 0;
