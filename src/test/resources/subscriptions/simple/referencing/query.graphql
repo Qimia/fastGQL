@@ -1,0 +1,9 @@
+subscription {
+  customers (order_by: {id: asc}) {
+    id
+    address_ref {
+      id
+      street
+    }
+  }
+}

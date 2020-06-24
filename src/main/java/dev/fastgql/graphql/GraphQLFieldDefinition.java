@@ -6,6 +6,7 @@
 
 package dev.fastgql.graphql;
 
+import static graphql.Scalars.GraphQLBoolean;
 import static graphql.Scalars.GraphQLFloat;
 import static graphql.Scalars.GraphQLInt;
 import static graphql.Scalars.GraphQLString;
@@ -25,15 +26,27 @@ import java.util.Map;
  * @author Kamil Bobrowski
  */
 public class GraphQLFieldDefinition {
+  public static final Map<KeyType, GraphQLScalarType> keyTypeToGraphQLType =
+      Map.of(
+          KeyType.INT, GraphQLInt,
+          KeyType.STRING, GraphQLString,
+          KeyType.FLOAT, GraphQLFloat,
+          KeyType.BOOL, GraphQLBoolean);
   private final QualifiedName qualifiedName;
   private final GraphQLOutputType graphQLType;
   private final QualifiedName foreignName;
   private final ReferenceType referenceType;
-  private static final Map<KeyType, GraphQLScalarType> keyTypeToGraphQLType =
-      Map.of(
-          KeyType.INT, GraphQLInt,
-          KeyType.STRING, GraphQLString,
-          KeyType.FLOAT, GraphQLFloat);
+
+  private GraphQLFieldDefinition(
+      QualifiedName qualifiedName,
+      GraphQLOutputType graphQLType,
+      QualifiedName foreignName,
+      ReferenceType referenceType) {
+    this.qualifiedName = qualifiedName;
+    this.graphQLType = graphQLType;
+    this.foreignName = foreignName;
+    this.referenceType = referenceType;
+  }
 
   /**
    * Create a field which extracts value for given key in a table. This type of field in GraphQL
@@ -96,17 +109,6 @@ public class GraphQLFieldDefinition {
 
   public ReferenceType getReferenceType() {
     return referenceType;
-  }
-
-  private GraphQLFieldDefinition(
-      QualifiedName qualifiedName,
-      GraphQLOutputType graphQLType,
-      QualifiedName foreignName,
-      ReferenceType referenceType) {
-    this.qualifiedName = qualifiedName;
-    this.graphQLType = graphQLType;
-    this.foreignName = foreignName;
-    this.referenceType = referenceType;
   }
 
   @Override

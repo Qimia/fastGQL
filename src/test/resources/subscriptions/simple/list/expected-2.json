@@ -1,0 +1,16 @@
+{
+  "id": "1",
+  "type": "data",
+  "payload": {
+    "data": {
+      "addresses": [
+        {
+          "id": 0
+        },
+        {
+          "id": 1
+        }
+      ]
+    }
+  }
+}

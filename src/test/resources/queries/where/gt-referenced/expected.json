@@ -1,0 +1,24 @@
+{
+  "data": {
+    "addresses": [
+      {
+        "id": 0,
+        "customers_on_address": []
+      },
+      {
+        "id": 1,
+        "customers_on_address": [
+          {
+            "id": 3
+          },
+          {
+            "id": 4
+          },
+          {
+            "id": 5
+          }
+        ]
+      }
+    ]
+  }
+}

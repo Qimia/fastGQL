@@ -7,8 +7,10 @@
 package dev.fastgql.sql;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -19,22 +21,27 @@ import java.util.Set;
 public class SQLQuery {
   private final String table;
   private final String alias;
+  private final SQLArguments args;
   private Set<String> keys;
   private List<String> joins;
-  private List<String> suffixes;
+  private List<String> whereConditions;
+  private Map<String, String> fieldToAlias;
 
   /**
    * Construct SQLQuery with table and its alias.
    *
    * @param table name of the table
    * @param alias alias of the table
+   * @param args arguments parsed from GraphQL query
    */
-  public SQLQuery(String table, String alias) {
+  public SQLQuery(String table, String alias, SQLArguments args) {
     this.table = table;
     this.alias = alias;
+    this.args = args;
     this.keys = new HashSet<>();
     this.joins = new ArrayList<>();
-    this.suffixes = new ArrayList<>();
+    this.whereConditions = new ArrayList<>();
+    this.fieldToAlias = new HashMap<>();
   }
 
   public void addKey(String table, String key) {
@@ -62,15 +69,19 @@ public class SQLQuery {
             foreignTable, foreignTableAlias, thisTable, thisKey, foreignTableAlias, foreignKey));
   }
 
-  public void addSuffix(String suffix) {
-    suffixes.add(suffix);
+  public void addFieldToAlias(String field, String foreignTableAlias) {
+    fieldToAlias.put(field, foreignTableAlias);
+  }
+
+  public void addWhereConditions(String whereConditional) {
+    whereConditions.add(whereConditional);
   }
 
   /** Reset query to initial state. */
   public void reset() {
     keys = new HashSet<>();
     joins = new ArrayList<>();
-    suffixes = new ArrayList<>();
+    whereConditions = new ArrayList<>();
   }
 
   /**
@@ -80,7 +91,49 @@ public class SQLQuery {
    */
   public String build() {
     return String.format(
-        "SELECT %s FROM %s %s %s %s",
-        String.join(", ", keys), table, alias, String.join(" ", joins), String.join(" ", suffixes));
+            "SELECT %s FROM %s %s %s %s",
+            String.join(", ", keys), table, alias, String.join(" ", joins), buildConstraints())
+        .replaceAll("\\s+", " ");
+  }
+
+  private String buildConstraints() {
+    return String.format(
+        "%s %s %s %s",
+        buildWhereQuery(), buildOrderByQuery(), buildLimitQuery(), buildOffsetQuery());
+  }
+
+  private String buildOrderByQuery() {
+    if (args.getOrderBy() == null || !args.getOrderBy().isJsonArray()) {
+      return "";
+    }
+    return String.format(
+        "ORDER BY %s",
+        SQLUtils.createOrderByQuery(args.getOrderBy().getAsJsonArray(), alias, fieldToAlias));
+  }
+
+  private String buildLimitQuery() {
+    if (args.getLimit() == null) {
+      return "";
+    }
+    return String.format("LIMIT %d", args.getLimit());
+  }
+
+  private String buildOffsetQuery() {
+    if (args.getOffset() == null) {
+      return "";
+    }
+    return String.format("OFFSET %d", args.getOffset());
+  }
+
+  private String buildWhereQuery() {
+    if (args.getWhere() != null && args.getWhere().isJsonObject()) {
+      String whereQuery =
+          SQLUtils.createBoolQuery(args.getWhere().getAsJsonObject(), alias, fieldToAlias);
+      addWhereConditions(String.format("(%s)", whereQuery));
+    }
+    if (whereConditions.isEmpty()) {
+      return "";
+    }
+    return String.format("WHERE %s", String.join(" AND ", whereConditions));
   }
 }

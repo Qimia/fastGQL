@@ -1,0 +1,10 @@
+{
+  "http.port": 8080,
+  "bootstrap.servers": "http://localhost:9092",
+  "datasource": {
+    "jdbcUrl": "jdbc:postgresql://localhost:5432/quarkus_test",
+    "username": "quarkus_test",
+    "password": "quarkus_test",
+    "schema": "public"
+  }
+}

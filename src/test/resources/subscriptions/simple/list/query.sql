@@ -1,0 +1,1 @@
+INSERT INTO addresses VALUES (1);

@@ -10,4 +10,5 @@ public enum KeyType {
   INT,
   FLOAT,
   STRING,
+  BOOL,
 }

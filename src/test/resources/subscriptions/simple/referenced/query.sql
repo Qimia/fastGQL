@@ -1,0 +1,1 @@
+UPDATE customers SET address = 1 WHERE id = 0;

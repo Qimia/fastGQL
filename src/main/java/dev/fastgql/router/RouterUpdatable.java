@@ -6,11 +6,15 @@
 
 package dev.fastgql.router;
 
+import dev.fastgql.graphql.GraphQLFactory;
 import graphql.GraphQL;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.http.HttpServerResponse;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
+import java.sql.SQLException;
 
 /**
  * Class which contains {@link Router} instance, and allows for updating this instance with new
@@ -26,19 +30,22 @@ public class RouterUpdatable {
   private final GraphQLHandlerUpdatable graphQLHandlerUpdatable;
   private final ApolloWSHandlerUpdatable apolloWSHandlerUpdatable;
 
-  public static RouterUpdatable createWithQueryAndSubscription(Vertx vertx) {
-    return new RouterUpdatable(vertx, true, true);
+  public static RouterUpdatable createWithQueryAndSubscription(Vertx vertx, JsonObject config) {
+    return new RouterUpdatable(vertx, config, true, true);
   }
 
-  public static RouterUpdatable createWithQuery(Vertx vertx) {
-    return new RouterUpdatable(vertx, true, false);
-  }
+  /*
+    public static RouterUpdatable createWithQuery(Vertx vertx) {
+      return new RouterUpdatable(vertx, true, false);
+    }
 
-  public static RouterUpdatable createWithSubscription(Vertx vertx) {
-    return new RouterUpdatable(vertx, false, true);
-  }
+    public static RouterUpdatable createWithSubscription(Vertx vertx) {
+      return new RouterUpdatable(vertx, false, true);
+    }
+  */
 
-  private RouterUpdatable(Vertx vertx, boolean withQuery, boolean withSubscription) {
+  private RouterUpdatable(
+      Vertx vertx, JsonObject config, boolean withQuery, boolean withSubscription) {
     this.withQuery = withQuery;
     this.withSubscription = withSubscription;
     graphQLHandlerUpdatable = GraphQLHandlerUpdatable.create();
@@ -53,6 +60,20 @@ public class RouterUpdatable {
     router
         .route("/graphiql/*")
         .handler(GraphiQLHandler.create(new GraphiQLHandlerOptions().setEnabled(true)));
+    router
+        .route("/update")
+        .handler(
+            context -> {
+              GraphQL graphQL = null;
+              try {
+                graphQL = GraphQLFactory.getGraphQL(config, vertx);
+              } catch (SQLException e) {
+                e.printStackTrace();
+              }
+              update(graphQL);
+              HttpServerResponse response = context.response();
+              response.putHeader("content-type", "text/html").end("updated");
+            });
   }
 
   /**

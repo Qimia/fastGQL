@@ -1,0 +1,38 @@
+{
+  "id": "1",
+  "type": "data",
+  "payload": {
+    "data": {
+      "customers": [
+        {
+          "id": 0,
+          "address_ref": {
+            "id": 0,
+            "street": "Cstreet"
+          }
+        },
+        {
+          "id": 1,
+          "address_ref": {
+            "id": 0,
+            "street": "Cstreet"
+          }
+        },
+        {
+          "id": 2,
+          "address_ref": {
+            "id": 1,
+            "street": "Bstreet"
+          }
+        },
+        {
+          "id": 3,
+          "address_ref": {
+            "id": 1,
+            "street": "Bstreet"
+          }
+        }
+      ]
+    }
+  }
+}

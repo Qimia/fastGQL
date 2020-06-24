@@ -16,11 +16,11 @@ import java.util.Map;
  * @author Kamil Bobrowski
  */
 public class ComponentReferenced extends ExecutionRoot implements Component {
-  private String parentTableAlias;
   private final String keyName;
   private final String fieldName;
   private final String foreignTableAlias;
   private final String foreignKeyName;
+  private String parentTableAlias;
 
   /**
    * Construct component by providing information about key which is referenced by foreign key and
@@ -31,14 +31,16 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
    * @param foreignTable name of foreign table which is referencing this table
    * @param foreignTableAlias alias of foreign table which is referencing this table
    * @param foreignKeyName foreign key which is referencing this key
+   * @param args arguments parsed from GraphQL query
    */
   public ComponentReferenced(
       String fieldName,
       String keyName,
       String foreignTable,
       String foreignTableAlias,
-      String foreignKeyName) {
-    super(foreignTable, foreignTableAlias);
+      String foreignKeyName,
+      SQLArguments args) {
+    super(foreignTable, foreignTableAlias, args);
     this.keyName = keyName;
     this.fieldName = fieldName;
     this.foreignTableAlias = foreignTableAlias;
@@ -63,9 +65,9 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
     }
     modifyQuery(
         query ->
-            query.addSuffix(
+            query.addWhereConditions(
                 String.format(
-                    "WHERE %s.%s = %s", foreignTableAlias, foreignKeyName, keyValue.toString())));
+                    "(%s.%s = %s)", foreignTableAlias, foreignKeyName, keyValue.toString())));
     return execute().map(response -> Map.of(fieldName, response));
   }
 }

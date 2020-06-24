@@ -1,0 +1,8 @@
+subscription {
+  addresses (order_by: {id: asc}) {
+    id
+    customers_on_address (order_by: {id: asc}) {
+      id
+    }
+  }
+}

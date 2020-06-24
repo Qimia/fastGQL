@@ -1,0 +1,30 @@
+{
+  "data": {
+    "customers": [
+      {
+        "id": 2,
+        "address_ref": {
+          "id": 1
+        }
+      },
+      {
+        "id": 3,
+        "address_ref": {
+          "id": 1
+        }
+      },
+      {
+        "id": 0,
+        "address_ref": {
+          "id": 0
+        }
+      },
+      {
+        "id": 1,
+        "address_ref": {
+          "id": 0
+        }
+      }
+    ]
+  }
+}

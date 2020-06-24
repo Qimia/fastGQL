@@ -1,0 +1,8 @@
+{
+ 	addresses {
+    id
+    customers_on_address (where: {id: {_gt: 2}}) {
+      id
+    }
+  }
+}

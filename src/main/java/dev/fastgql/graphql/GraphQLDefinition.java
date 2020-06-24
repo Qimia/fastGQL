@@ -7,7 +7,7 @@
 package dev.fastgql.graphql;
 
 import dev.fastgql.db.DatabaseSchema;
-import dev.fastgql.kafka.KafkaConsumerFactory;
+import dev.fastgql.kafka.KafkaConsumerUtils;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.Component;
 import dev.fastgql.sql.ComponentExecutable;
@@ -16,6 +16,7 @@ import dev.fastgql.sql.ComponentReferenced;
 import dev.fastgql.sql.ComponentReferencing;
 import dev.fastgql.sql.ComponentRow;
 import dev.fastgql.sql.ExecutionRoot;
+import dev.fastgql.sql.SQLArguments;
 import dev.fastgql.sql.SQLExecutor;
 import graphql.GraphQL;
 import graphql.schema.DataFetcher;
@@ -139,7 +140,8 @@ public class GraphQLDefinition {
                             graphQLFieldDefinition.getQualifiedName().getKeyName(),
                             graphQLFieldDefinition.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
-                            graphQLFieldDefinition.getForeignName().getKeyName());
+                            graphQLFieldDefinition.getForeignName().getKeyName(),
+                            new SQLArguments(selectedField.getArguments()));
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
                         componentReferenced,
@@ -156,8 +158,9 @@ public class GraphQLDefinition {
     private ComponentExecutable getExecutionRoot(
         DataFetchingEnvironment env, SQLExecutor sqlExecutor) {
       AliasGenerator aliasGenerator = new AliasGenerator();
+      SQLArguments sqlArguments = new SQLArguments(env.getArguments());
       ComponentExecutable executionRoot =
-          new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias());
+          new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), sqlArguments);
       executionRoot.setSqlExecutor(sqlExecutor);
       traverseSelectionSet(
           graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
@@ -232,7 +235,7 @@ public class GraphQLDefinition {
                             String.format("%s.%s.%s", serverName, schemaName, queriedTable))
                     .collect(Collectors.toSet());
             KafkaConsumer<String, String> kafkaConsumer =
-                KafkaConsumerFactory.createForTopics(topics, bootstrapServers, vertx);
+                KafkaConsumerUtils.createForTopics(topics, bootstrapServers, vertx);
             return kafkaConsumer
                 .toFlowable()
                 .flatMap(record -> sqlConnectionPool.rxGetConnection().toFlowable())

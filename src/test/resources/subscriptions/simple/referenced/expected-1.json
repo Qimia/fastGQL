@@ -1,0 +1,29 @@
+{
+  "id": "1",
+  "type": "data",
+  "payload": {
+    "data": {
+      "addresses": [
+        {
+          "id": 0,
+          "customers_on_address": [
+            {
+              "id": 0
+            },
+            {
+              "id": 1
+            }
+          ]
+        },
+        {
+          "id": 1,
+          "customers_on_address": [
+            {
+              "id": 2
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
