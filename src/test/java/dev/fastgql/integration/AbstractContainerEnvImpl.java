@@ -27,7 +27,7 @@ public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
   protected final KafkaContainer kafkaContainer = new KafkaContainer().withNetwork(network);
   protected final JdbcDatabaseContainer<?> jdbcDatabaseContainer = createJdbcContainer();
   private final DebeziumContainer debeziumContainer =
-      new DebeziumContainer("1.0")
+      new DebeziumContainer("debezium/connect:1.2.0.Final")
           .withNetwork(network)
           .withKafka(kafkaContainer)
           .withLogConsumer(new Slf4jLogConsumer(log))
