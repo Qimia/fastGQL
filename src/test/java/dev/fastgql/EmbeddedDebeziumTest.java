@@ -26,7 +26,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.lifecycle.Startables;
 
 public class EmbeddedDebeziumTest {
-  private static Network network = Network.newNetwork();
+  private static final Network network = Network.newNetwork();
   public static PostgreSQLContainer<?> postgreSQLContainer =
       new PostgreSQLContainer<>("debezium/postgres:11")
           .withNetwork(network)
@@ -44,7 +44,6 @@ public class EmbeddedDebeziumTest {
         Statement statement = connection.createStatement();
         DebeziumEngine<ChangeEvent<String, String>> engine =
             DebeziumEngine.create(Json.class).using(props).notifying(System.out::println).build()) {
-
       ExecutorService executor = Executors.newSingleThreadExecutor();
       executor.execute(engine);
       statement.execute("create schema todo");
