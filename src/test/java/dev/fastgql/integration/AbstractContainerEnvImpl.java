@@ -57,19 +57,6 @@ public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
     Startables.deepStart(Stream.of(kafkaContainer, jdbcDatabaseContainer, debeziumContainer))
         .join();
 
-    /*
-        try {
-          DBTestUtils.executeSQLQueryFromResource(
-              "init.sql",
-              getJdbcUrlForMultipleQueries(),
-              jdbcDatabaseContainer.getUsername(),
-              jdbcDatabaseContainer.getPassword());
-        } catch (SQLException | IOException e) {
-          context.failNow(e);
-          return;
-        }
-    */
-
     try {
       debeziumContainer.registerConnector("my-connector", createConnectorConfiguration());
     } catch (IOException e) {
@@ -82,7 +69,15 @@ public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
     JsonObject config =
         new JsonObject()
             .put("http.port", port)
-            .put("bootstrap.servers", kafkaContainer.getBootstrapServers())
+            .put(
+                "debezium",
+                Map.of(
+                    "embedded",
+                    false,
+                    "bootstrap.servers",
+                    kafkaContainer.getBootstrapServers(),
+                    "server",
+                    "dbserver"))
             .put(
                 "datasource",
                 Map.of(

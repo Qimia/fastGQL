@@ -9,6 +9,10 @@ package dev.fastgql;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.format.Json;
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -40,10 +44,18 @@ public class EmbeddedDebeziumTest {
   @Test
   public void canConnectPostgreSql() {
     Properties props = setEngineProperties(postgreSQLContainer);
+
+    Subject<String> updatedTopics = BehaviorSubject.<String>create().toSerialized();
+    Flowable<String> flowableTopics = updatedTopics.toFlowable(BackpressureStrategy.LATEST);
+    flowableTopics.doOnNext(System.out::println).subscribe();
+
     try (Connection connection = getConnection(postgreSQLContainer);
         Statement statement = connection.createStatement();
         DebeziumEngine<ChangeEvent<String, String>> engine =
-            DebeziumEngine.create(Json.class).using(props).notifying(System.out::println).build()) {
+            DebeziumEngine.create(Json.class)
+                .using(props)
+                .notifying(event -> updatedTopics.onNext(event.toString()))
+                .build()) {
       ExecutorService executor = Executors.newSingleThreadExecutor();
       executor.execute(engine);
       statement.execute("create schema todo");

@@ -1,6 +1,10 @@
 {
   "http.port": 8080,
-  "bootstrap.servers": "http://localhost:9092",
+  "debezium": {
+    "embedded": true,
+    "bootstrap.servers": "http://localhost:9092",
+    "server": "dbserver"
+  },
   "datasource": {
     "jdbcUrl": "jdbc:postgresql://localhost:5432/quarkus_test",
     "username": "quarkus_test",
