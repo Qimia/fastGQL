@@ -36,9 +36,9 @@ public class EventFlowableFactory {
                         debeziumConfig.getServerName(), datasourceConfig.getSchema(), queriedTable))
             .collect(Collectors.toSet());
     if (debeziumConfig.isEmbedded()) {
-      return createForKafka(topics, debeziumConfig, vertx);
-    } else {
       return createForEmbedded(topics, datasourceConfig, debeziumConfig);
+    } else {
+      return createForKafka(topics, debeziumConfig, vertx);
     }
   }
 
