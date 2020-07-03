@@ -36,42 +36,15 @@ public class EventFlowableFactory {
                         debeziumConfig.getServerName(), datasourceConfig.getSchema(), queriedTable))
             .collect(Collectors.toSet());
     if (debeziumConfig.isEmbedded()) {
-      return createForEmbedded(topics, datasourceConfig, debeziumConfig);
+      return createForEmbedded(topics);
     } else {
       return createForKafka(topics, debeziumConfig, vertx);
     }
   }
 
   private static Flowable<ChangeEvent<String, String>> createForEmbedded(
-      Set<String> topics, DatasourceConfig datasourceConfig, DebeziumConfig debeziumConfig) {
-    Random random = new Random();
-    Properties props = new Properties();
-    props.setProperty("name", "engine");
-    props.setProperty("connector.class", "io.debezium.connector.postgresql.PostgresConnector");
-    props.setProperty("offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore");
-    props.setProperty(
-        "offset.storage.file.filename",
-        String.format("/tmp/offsets-%d.dat", random.ints().findFirst().getAsInt()));
-    props.setProperty("offset.flush.interval.ms", "1000");
-
-    props.setProperty("database.hostname", datasourceConfig.getHost());
-    props.setProperty("database.port", Integer.toString(datasourceConfig.getPort()));
-    props.setProperty("database.user", datasourceConfig.getUsername());
-    props.setProperty("database.password", datasourceConfig.getPassword());
-    props.setProperty("database.dbname", datasourceConfig.getDb());
-    props.setProperty("database.server.name", debeziumConfig.getServerName());
-
-    Flowable<ChangeEvent<String, String>> eventFlowable =
-        Flowable.create(
-            emitter -> {
-              DebeziumEngine<ChangeEvent<String, String>> engine =
-                  DebeziumEngine.create(Json.class).using(props).notifying(emitter::onNext).build();
-              ExecutorService executor = Executors.newSingleThreadExecutor();
-              executor.execute(engine);
-            },
-            BackpressureStrategy.BUFFER);
-
-    return eventFlowable.filter(changeEvent -> topics.contains(changeEvent.destination()));
+      Set<String> topics) {
+    return DebeziumEngineSingleton.getChangeEventFlowable().filter(changeEvent -> topics.contains(changeEvent.destination()));
   }
 
   private static Flowable<ChangeEvent<String, String>> createForKafka(

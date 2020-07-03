@@ -11,8 +11,11 @@ import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
+import org.apache.log4j.Logger;
 
 public class FastGQL extends AbstractVerticle {
+
+  private static final Logger log = Logger.getLogger(FastGQL.class);
 
   public static void main(String[] args) {
     Launcher.executeCommand(
@@ -29,7 +32,10 @@ public class FastGQL extends AbstractVerticle {
         .createHttpServer(new HttpServerOptions().setWebsocketSubProtocols("graphql-ws"))
         .requestHandler(routerUpdatable.getRouter())
         .rxListen(config().getInteger("http.port", 8080))
-        .doOnSuccess(server -> future.complete())
+        .doOnSuccess(server -> {
+          log.debug("deployed server");
+          future.complete();
+        })
         .doOnError(server -> future.fail(server.getCause()))
         .subscribe();
   }

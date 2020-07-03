@@ -9,6 +9,7 @@ package dev.fastgql.graphql;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
+import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.events.EventFlowableFactory;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.Component;
@@ -34,6 +35,8 @@ import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.SqlConnection;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -222,6 +225,15 @@ public class GraphQLDefinition {
 
       if (subscriptionEnabled) {
         return this;
+      }
+
+      if (debeziumConfig.isEmbedded()) {
+        try {
+          DebeziumEngineSingleton.startNewEngine(datasourceConfig, debeziumConfig);
+        } catch (IOException e) {
+          log.error("subscription not enabled: debezium engine could not start");
+          return this;
+        }
       }
 
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
