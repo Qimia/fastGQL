@@ -7,8 +7,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 public class ContainerEnvWithPostgres extends AbstractContainerEnvImpl {
   @Override
   protected JdbcDatabaseContainer<?> createJdbcContainer() {
-    return new PostgreSQLContainer<>("debezium/postgres:11")
-        .withNetworkAliases("postgres");
+    return new PostgreSQLContainer<>("debezium/postgres:11").withNetworkAliases("postgres");
   }
 
   @Override

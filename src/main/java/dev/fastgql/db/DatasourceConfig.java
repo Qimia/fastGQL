@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * @author Kamil Bobrowski
  */
 public class DatasourceConfig {
-  private enum DBType {
+  public enum DBType {
     postgresql,
     mysql,
     other
@@ -204,5 +204,9 @@ public class DatasourceConfig {
 
   public String getPassword() {
     return password;
+  }
+
+  public DBType getDbType() {
+    return dbType;
   }
 }

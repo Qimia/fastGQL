@@ -35,7 +35,6 @@ import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.SqlConnection;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;

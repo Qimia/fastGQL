@@ -18,11 +18,13 @@ public class IntegrationTests {
 
     @Nested
     @DisplayName("PostgreSQL Subscription Tests with external Debezium")
-    class PostgresSubscriptionExternalDebezium extends ContainerEnvWithPostgresDebezium implements SubscriptionTests {}
+    class PostgresSubscriptionExternalDebezium extends ContainerEnvWithPostgresDebezium
+        implements SubscriptionTests {}
 
     @Nested
     @DisplayName("PostgreSQL Subscription Tests with embedded Debezium")
-    class PostgresSubscriptionEmbeddedDebezium extends ContainerEnvWithPostgres implements SubscriptionTests {}
+    class PostgresSubscriptionEmbeddedDebezium extends ContainerEnvWithPostgres
+        implements SubscriptionTests {}
   }
 
   @Nested

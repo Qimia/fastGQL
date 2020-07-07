@@ -6,7 +6,6 @@
 
 package dev.fastgql.router;
 
-import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.graphql.GraphQLFactory;
 import graphql.GraphQL;
 import io.vertx.core.json.JsonObject;
@@ -15,9 +14,8 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.http.HttpServerResponse;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
-import org.apache.log4j.Logger;
-
 import java.sql.SQLException;
+import org.apache.log4j.Logger;
 
 /**
  * Class which contains {@link Router} instance, and allows for updating this instance with new

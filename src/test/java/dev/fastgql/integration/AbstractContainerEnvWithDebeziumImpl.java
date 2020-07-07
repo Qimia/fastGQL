@@ -8,21 +8,24 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
+import java.io.IOException;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.lifecycle.Startables;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.stream.Stream;
+public abstract class AbstractContainerEnvWithDebeziumImpl extends AbstractContainerEnvImpl
+    implements AbstractContainerEnv {
 
-public abstract class AbstractContainerEnvWithDebeziumImpl extends AbstractContainerEnvImpl implements AbstractContainerEnv {
-  private final Logger log = LoggerFactory.getLogger(AbstractContainerEnvWithDebeziumImpl.class);
+  private final Logger log = LoggerFactory.getLogger(AbstractContainerEnvImpl.class);
   protected final Network network = Network.newNetwork();
   protected final KafkaContainer kafkaContainer = new KafkaContainer().withNetwork(network);
+  protected final JdbcDatabaseContainer<?> jdbcDatabaseContainer = createJdbcContainer();
   private final DebeziumContainer debeziumContainer =
       new DebeziumContainer("debezium/connect:1.2.0.Final")
           .withNetwork(network)
@@ -31,6 +34,11 @@ public abstract class AbstractContainerEnvWithDebeziumImpl extends AbstractConta
           .dependsOn(kafkaContainer);
 
   protected abstract ConnectorConfiguration createConnectorConfiguration();
+
+  @Override
+  public JdbcDatabaseContainer<?> getJdbcDatabaseContainer() {
+    return jdbcDatabaseContainer;
+  }
 
   @Override
   public void setup(Vertx vertx, VertxTestContext context) {
@@ -70,11 +78,10 @@ public abstract class AbstractContainerEnvWithDebeziumImpl extends AbstractConta
     vertx
         .rxDeployVerticle(new FastGQL(), options)
         .subscribe(
-      deploymentID -> {
-        this.deploymentID = deploymentID;
-        context.completeNow();
-      }
-        );
+            deploymentID -> {
+              this.deploymentID = deploymentID;
+              context.completeNow();
+            });
   }
 
   @Override
@@ -82,14 +89,12 @@ public abstract class AbstractContainerEnvWithDebeziumImpl extends AbstractConta
     vertx
         .rxUndeploy(deploymentID)
         .subscribe(
-
-      () -> {
-        debeziumContainer.close();
-        kafkaContainer.close();
-        jdbcDatabaseContainer.close();
-        network.close();
-        context.completeNow();
-      }
-        );
+            () -> {
+              debeziumContainer.close();
+              kafkaContainer.close();
+              jdbcDatabaseContainer.close();
+              network.close();
+              context.completeNow();
+            });
   }
 }

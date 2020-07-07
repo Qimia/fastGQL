@@ -38,21 +38,14 @@ public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
 
   @Override
   public void setup(Vertx vertx, VertxTestContext context) {
-    Startables.deepStart(Stream.of(jdbcDatabaseContainer))
-        .join();
+    Startables.deepStart(Stream.of(jdbcDatabaseContainer)).join();
 
     DatasourceConfig datasourceConfig = createDatasourceConfig();
 
     JsonObject config =
         new JsonObject()
             .put("http.port", port)
-            .put(
-                "debezium",
-                Map.of(
-                    "embedded",
-                    true,
-                    "server",
-                    "dbserver"))
+            .put("debezium", Map.of("embedded", true, "server", "dbserver"))
             .put(
                 "datasource",
                 Map.of(
@@ -65,11 +58,10 @@ public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
     vertx
         .rxDeployVerticle(new FastGQL(), options)
         .subscribe(
-      deploymentID -> {
-        this.deploymentID = deploymentID;
-        context.completeNow();
-      }
-        );
+            deploymentID -> {
+              this.deploymentID = deploymentID;
+              context.completeNow();
+            });
   }
 
   @Override
@@ -77,10 +69,9 @@ public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
     vertx
         .rxUndeploy(deploymentID)
         .subscribe(
-      () -> {
-        jdbcDatabaseContainer.close();
-        context.completeNow();
-      }
-        );
+            () -> {
+              jdbcDatabaseContainer.close();
+              context.completeNow();
+            });
   }
 }

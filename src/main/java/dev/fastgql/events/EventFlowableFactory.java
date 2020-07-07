@@ -4,9 +4,6 @@ import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.sql.ComponentExecutable;
 import io.debezium.engine.ChangeEvent;
-import io.debezium.engine.DebeziumEngine;
-import io.debezium.engine.format.Json;
-import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Function;
@@ -14,8 +11,6 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumerRecord;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
@@ -42,9 +37,9 @@ public class EventFlowableFactory {
     }
   }
 
-  private static Flowable<ChangeEvent<String, String>> createForEmbedded(
-      Set<String> topics) {
-    return DebeziumEngineSingleton.getChangeEventFlowable().filter(changeEvent -> topics.contains(changeEvent.destination()));
+  private static Flowable<ChangeEvent<String, String>> createForEmbedded(Set<String> topics) {
+    return DebeziumEngineSingleton.getChangeEventFlowable()
+        .filter(changeEvent -> topics.contains(changeEvent.destination()));
   }
 
   private static Flowable<ChangeEvent<String, String>> createForKafka(

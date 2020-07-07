@@ -4,13 +4,10 @@ import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.db.MetadataUtils;
-import dev.fastgql.events.DebeziumEngineSingleton;
 import graphql.GraphQL;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.sqlclient.Pool;
-
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 

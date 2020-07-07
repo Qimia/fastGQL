@@ -9,13 +9,12 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
-import org.apache.log4j.Logger;
-
 import java.io.IOException;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.log4j.Logger;
 
 public class DebeziumEngineSingleton {
 
@@ -23,11 +22,13 @@ public class DebeziumEngineSingleton {
 
   private DebeziumEngineSingleton() {}
 
-  private static final Subject<ChangeEvent<String, String>> changeEventSubject = BehaviorSubject.<ChangeEvent<String, String>>create().toSerialized();
+  private static final Subject<ChangeEvent<String, String>> changeEventSubject =
+      BehaviorSubject.<ChangeEvent<String, String>>create().toSerialized();
   private static DebeziumEngine<ChangeEvent<String, String>> debeziumEngine;
   private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-  public static synchronized void startNewEngine(DatasourceConfig datasourceConfig, DebeziumConfig debeziumConfig) throws IOException {
+  public static synchronized void startNewEngine(
+      DatasourceConfig datasourceConfig, DebeziumConfig debeziumConfig) throws IOException {
     stopEngine();
 
     Random random = new Random();
@@ -36,8 +37,8 @@ public class DebeziumEngineSingleton {
     props.setProperty("connector.class", "io.debezium.connector.postgresql.PostgresConnector");
     props.setProperty("offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore");
     props.setProperty(
-      "offset.storage.file.filename",
-      String.format("/tmp/offsets-%d.dat", random.ints().findFirst().getAsInt()));
+        "offset.storage.file.filename",
+        String.format("/tmp/offsets-%d.dat", random.ints().findFirst().getAsInt()));
     props.setProperty("offset.flush.interval.ms", "1000");
 
     props.setProperty("database.hostname", datasourceConfig.getHost());
@@ -47,7 +48,11 @@ public class DebeziumEngineSingleton {
     props.setProperty("database.dbname", datasourceConfig.getDb());
     props.setProperty("database.server.name", debeziumConfig.getServerName());
 
-    debeziumEngine = DebeziumEngine.create(Json.class).using(props).notifying(changeEventSubject::onNext).build();
+    debeziumEngine =
+        DebeziumEngine.create(Json.class)
+            .using(props)
+            .notifying(changeEventSubject::onNext)
+            .build();
     log.debug("starting debezium engine");
     executorService.execute(debeziumEngine);
   }
