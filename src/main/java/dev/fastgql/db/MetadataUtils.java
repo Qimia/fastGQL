@@ -15,6 +15,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class to extract metadata from a database which are necessary to build {@link DatabaseSchema}.
@@ -22,6 +24,8 @@ import java.util.Map;
  * @author Mingyi Zhang
  */
 public class MetadataUtils {
+
+  private static final Logger log = LoggerFactory.getLogger(MetadataUtils.class);
 
   private static final Map<Integer, KeyType> sqlDataTypeToKeyType =
       Map.of(
@@ -63,8 +67,8 @@ public class MetadataUtils {
       while (columnsResultSet.next()) {
         Integer dataType = columnsResultSet.getInt("DATA_TYPE");
         if (!sqlDataTypeToKeyType.containsKey(dataType)) {
-          throw new RuntimeException(
-              "Only integer or string class for columns currently supported");
+          log.debug("Only integer or string class for columns currently supported");
+          continue;
         }
         String columnName = columnsResultSet.getString("COLUMN_NAME");
         String qualifiedName = QualifiedName.generate(tableName, columnName);
