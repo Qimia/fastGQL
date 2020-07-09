@@ -49,6 +49,10 @@ dependencies {
     implementation 'org.apache.kafka:kafka-clients:2.4.0'
     implementation 'com.google.guava:guava:28.2-jre'
     implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'io.debezium:debezium-api:1.2.0.Final'
+    implementation 'io.debezium:debezium-embedded:1.2.0.Final'
+    implementation 'io.debezium:debezium-connector-postgres:1.2.0.Final'
+    implementation 'io.debezium:debezium-connector-mysql:1.2.0.Final'
     runtimeOnly 'org.slf4j:slf4j-log4j12:1.7.30'
 
     testImplementation 'io.vertx:vertx-junit5'

@@ -7,7 +7,10 @@
 package dev.fastgql.graphql;
 
 import dev.fastgql.db.DatabaseSchema;
-import dev.fastgql.kafka.KafkaConsumerUtils;
+import dev.fastgql.db.DatasourceConfig;
+import dev.fastgql.db.DebeziumConfig;
+import dev.fastgql.events.DebeziumEngineSingleton;
+import dev.fastgql.events.EventFlowableFactory;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.Component;
 import dev.fastgql.sql.ComponentExecutable;
@@ -30,15 +33,13 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.SqlConnection;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -214,13 +215,24 @@ public class GraphQLDefinition {
      * GraphQLCodeRegistry}.
      *
      * @param vertx vertx instance
-     * @param bootstrapServers kafka bootstrap servers
+     * @param datasourceConfig datasource config
+     * @param debeziumConfig debezium config
      * @return this
      */
     public Builder enableSubscription(
-        Vertx vertx, String bootstrapServers, String serverName, String schemaName) {
+        Vertx vertx, DatasourceConfig datasourceConfig, DebeziumConfig debeziumConfig) {
+
       if (subscriptionEnabled) {
         return this;
+      }
+
+      if (debeziumConfig.isEmbedded()) {
+        try {
+          DebeziumEngineSingleton.startNewEngine(datasourceConfig, debeziumConfig);
+        } catch (IOException e) {
+          log.error("subscription not enabled: debezium engine could not start");
+          return this;
+        }
       }
 
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
@@ -228,16 +240,8 @@ public class GraphQLDefinition {
             log.info("new subscription");
             SQLExecutor sqlExecutor = new SQLExecutor();
             ComponentExecutable executionRoot = getExecutionRoot(env, sqlExecutor);
-            Set<String> topics =
-                executionRoot.getQueriedTables().stream()
-                    .map(
-                        queriedTable ->
-                            String.format("%s.%s.%s", serverName, schemaName, queriedTable))
-                    .collect(Collectors.toSet());
-            KafkaConsumer<String, String> kafkaConsumer =
-                KafkaConsumerUtils.createForTopics(topics, bootstrapServers, vertx);
-            return kafkaConsumer
-                .toFlowable()
+            return EventFlowableFactory.create(
+                    executionRoot, vertx, datasourceConfig, debeziumConfig)
                 .flatMap(record -> sqlConnectionPool.rxGetConnection().toFlowable())
                 .flatMap(
                     connection -> {

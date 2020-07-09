@@ -1,16 +1,31 @@
 package dev.fastgql.integration;
 
 import dev.fastgql.db.DatasourceConfig;
+import io.debezium.testing.testcontainers.ConnectorConfiguration;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.MySQLContainer;
 
-public class ContainerEnvWithMySQL extends AbstractContainerEnvImpl {
+public class ContainerEnvWithMySQLDebezium extends AbstractContainerEnvWithDebeziumImpl {
   @Override
   protected JdbcDatabaseContainer<?> createJdbcContainer() {
     return new MySQLContainer<>("fastgql/mysql-testcontainers:latest")
+        .withNetwork(network)
         .withNetworkAliases("mysql")
         .withUsername("debezium")
         .withPassword("dbz");
+  }
+
+  @Override
+  protected ConnectorConfiguration createConnectorConfiguration() {
+    return ConnectorConfiguration.forJdbcContainer(jdbcDatabaseContainer)
+        .with("database.server.name", "dbserver")
+        .with("slot.name", "debezium")
+        .with(
+            "database.history.kafka.bootstrap.servers",
+            String.format("%s:9092", kafkaContainer.getNetworkAliases().get(0)))
+        .with(
+            "database.history.kafka.topic",
+            String.format("schema-changes.%s", jdbcDatabaseContainer.getDatabaseName()));
   }
 
   @Override

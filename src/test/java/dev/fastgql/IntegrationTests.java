@@ -1,9 +1,6 @@
 package dev.fastgql;
 
-import dev.fastgql.integration.ContainerEnvWithMySQL;
-import dev.fastgql.integration.ContainerEnvWithPostgres;
-import dev.fastgql.integration.QueryTests;
-import dev.fastgql.integration.SubscriptionTests;
+import dev.fastgql.integration.*;
 import io.vertx.junit5.VertxExtension;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,8 +17,14 @@ public class IntegrationTests {
     class PostgresQuery extends ContainerEnvWithPostgres implements QueryTests {}
 
     @Nested
-    @DisplayName("PostgreSQL Subscription Tests")
-    class PostgresSubscription extends ContainerEnvWithPostgres implements SubscriptionTests {}
+    @DisplayName("PostgreSQL Subscription Tests with external Debezium")
+    class PostgresSubscriptionExternalDebezium extends ContainerEnvWithPostgresDebezium
+        implements SubscriptionTests {}
+
+    @Nested
+    @DisplayName("PostgreSQL Subscription Tests with embedded Debezium")
+    class PostgresSubscriptionEmbeddedDebezium extends ContainerEnvWithPostgres
+        implements SubscriptionTests {}
   }
 
   @Nested
@@ -32,7 +35,13 @@ public class IntegrationTests {
     class MySQLQuery extends ContainerEnvWithMySQL implements QueryTests {}
 
     @Nested
-    @DisplayName("MySQL Subscription Tests")
-    class MySQLSubscription extends ContainerEnvWithMySQL implements SubscriptionTests {}
+    @DisplayName("MySQL Subscription Tests with external Debezium")
+    class MySQLSubscriptionExternalDebezium extends ContainerEnvWithMySQLDebezium
+        implements SubscriptionTests {}
+
+    @Nested
+    @DisplayName("MySQL Subscription Tests with embedded Debezium")
+    class MySQLSubscriptionEmbeddedDebezium extends ContainerEnvWithMySQL
+        implements SubscriptionTests {}
   }
 }
