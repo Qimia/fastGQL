@@ -222,7 +222,8 @@ public class GraphQLDefinition {
     public Builder enableSubscription(
         Vertx vertx, DatasourceConfig datasourceConfig, DebeziumConfig debeziumConfig) {
 
-      if (subscriptionEnabled) {
+      if (subscriptionEnabled || !debeziumConfig.isActive()) {
+        log.debug("Subscription already enabled or debezium is not configured");
         return this;
       }
 

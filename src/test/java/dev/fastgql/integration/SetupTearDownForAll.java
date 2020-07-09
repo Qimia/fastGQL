@@ -7,7 +7,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public interface SetupTearDownForAll extends AbstractContainerEnv {
+public interface SetupTearDownForAll extends WithFastGQL {
   @BeforeAll
   default void beforeAll(Vertx vertx, VertxTestContext context) {
     setup(vertx, context);
