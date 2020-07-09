@@ -1,0 +1,110 @@
+package dev.fastgql.integration;
+
+import dev.fastgql.FastGQL;
+import dev.fastgql.db.DatasourceConfig;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.json.JsonObject;
+import io.vertx.junit5.VertxTestContext;
+import io.vertx.reactivex.core.Vertx;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.lifecycle.Startables;
+
+public interface WithFastGQL {
+  String getDeploymentID();
+
+  void setDeploymentID(String deploymentID);
+
+  JdbcDatabaseContainer<?> getJdbcDatabaseContainer();
+
+  JdbcDatabaseContainer<?> createJdbcDatabaseContainerWithoutNetwork();
+
+  DatasourceConfig createDatasourceConfig();
+
+  String getJdbcUrlForMultipleQueries();
+
+  default Network getNetwork() {
+    return null;
+  }
+  ;
+
+  default int getDeploymentPort() {
+    return 8081;
+  }
+
+  default boolean isDebeziumActive() {
+    return false;
+  }
+
+  default JdbcDatabaseContainer<?> createJdbcDatabaseContainer() {
+    if (getNetwork() != null) {
+      return createJdbcDatabaseContainerWithoutNetwork().withNetwork(getNetwork());
+    } else {
+      return createJdbcDatabaseContainerWithoutNetwork();
+    }
+  }
+
+  default Map<String, Object> createDebeziumConfigEntry() {
+    return Map.of();
+  }
+
+  default Stream<GenericContainer<?>> getAllContainers() {
+    return Stream.of(getJdbcDatabaseContainer());
+  }
+
+  default void closeAllContainers() {
+    getJdbcDatabaseContainer().close();
+  }
+
+  default JsonObject createConfig() {
+    DatasourceConfig datasourceConfig = createDatasourceConfig();
+    JsonObject config =
+        new JsonObject()
+            .put("http.port", getDeploymentPort())
+            .put(
+                "datasource",
+                Map.of(
+                    "jdbcUrl", datasourceConfig.getJdbcUrl(),
+                    "username", datasourceConfig.getUsername(),
+                    "password", datasourceConfig.getPassword(),
+                    "schema", datasourceConfig.getSchema()));
+
+    if (isDebeziumActive()) {
+      config.put("debezium", createDebeziumConfigEntry());
+    }
+
+    return config;
+  }
+
+  default boolean registerConnector(VertxTestContext context) {
+    return true;
+  }
+
+  default void setup(Vertx vertx, VertxTestContext context) {
+    Startables.deepStart(getAllContainers()).join();
+    if (!registerConnector(context)) {
+      return;
+    }
+    DeploymentOptions options = new DeploymentOptions().setConfig(createConfig());
+    vertx
+        .rxDeployVerticle(new FastGQL(), options)
+        .subscribe(
+            deploymentID -> {
+              setDeploymentID(deploymentID);
+              context.completeNow();
+            });
+  }
+
+  default void tearDown(Vertx vertx, VertxTestContext context) {
+    vertx
+        .rxUndeploy(getDeploymentID())
+        .subscribe(
+            () -> {
+              closeAllContainers();
+              context.completeNow();
+            });
+  }
+}

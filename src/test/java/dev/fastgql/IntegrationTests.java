@@ -14,17 +14,17 @@ public class IntegrationTests {
   class Postgres {
     @Nested
     @DisplayName("PostgreSQL Query Tests")
-    class PostgresQuery extends ContainerEnvWithPostgres implements QueryTests {}
+    class PostgresQuery extends ContainerEnvWithDatabase implements WithPostgres, QueryTests {}
 
     @Nested
     @DisplayName("PostgreSQL Subscription Tests with external Debezium")
-    class PostgresSubscriptionExternalDebezium extends ContainerEnvWithPostgresDebezium
-        implements SubscriptionTests {}
+    class PostgresSubscriptionExternalDebezium extends ContainerEnvWithDatabaseAndDebezium
+        implements WithPostgres, WithPostgresConnector, SubscriptionTests {}
 
     @Nested
     @DisplayName("PostgreSQL Subscription Tests with embedded Debezium")
-    class PostgresSubscriptionEmbeddedDebezium extends ContainerEnvWithPostgres
-        implements SubscriptionTests {}
+    class PostgresSubscriptionEmbeddedDebezium extends ContainerEnvWithDatabase
+        implements WithPostgres, WithEmbeddedDebezium, SubscriptionTests {}
   }
 
   @Nested
@@ -32,16 +32,16 @@ public class IntegrationTests {
   class MySQL {
     @Nested
     @DisplayName("MySQL Query Tests")
-    class MySQLQuery extends ContainerEnvWithMySQL implements QueryTests {}
+    class MySQLQuery extends ContainerEnvWithDatabase implements WithMySQL, QueryTests {}
 
     @Nested
     @DisplayName("MySQL Subscription Tests with external Debezium")
-    class MySQLSubscriptionExternalDebezium extends ContainerEnvWithMySQLDebezium
-        implements SubscriptionTests {}
+    class MySQLSubscriptionExternalDebezium extends ContainerEnvWithDatabaseAndDebezium
+        implements WithMySQL, WithMySQLConnector, SubscriptionTests {}
 
     @Nested
     @DisplayName("MySQL Subscription Tests with embedded Debezium")
-    class MySQLSubscriptionEmbeddedDebezium extends ContainerEnvWithMySQL
-        implements SubscriptionTests {}
+    class MySQLSubscriptionEmbeddedDebezium extends ContainerEnvWithDatabase
+        implements WithMySQL, WithEmbeddedDebezium, SubscriptionTests {}
   }
 }
