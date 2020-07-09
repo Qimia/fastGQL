@@ -6,20 +6,20 @@ import org.testcontainers.containers.MySQLContainer;
 
 public interface WithMySQL extends WithFastGQL {
   @Override
-  default JdbcDatabaseContainer<?> createJdbcDatabaseContainer() {
+  default JdbcDatabaseContainer<?> createJdbcDatabaseContainerWithoutNetwork() {
     return new MySQLContainer<>("fastgql/mysql-testcontainers:latest")
-      .withNetworkAliases("mysql")
-      .withUsername("debezium")
-      .withPassword("dbz");
+        .withNetworkAliases("mysql")
+        .withUsername("debezium")
+        .withPassword("dbz");
   }
 
   @Override
   default DatasourceConfig createDatasourceConfig() {
     return DatasourceConfig.createDatasourceConfig(
-      getJdbcDatabaseContainer().getJdbcUrl(),
-      getJdbcDatabaseContainer().getUsername(),
-      getJdbcDatabaseContainer().getPassword(),
-      getJdbcDatabaseContainer().getDatabaseName());
+        getJdbcDatabaseContainer().getJdbcUrl(),
+        getJdbcDatabaseContainer().getUsername(),
+        getJdbcDatabaseContainer().getPassword(),
+        getJdbcDatabaseContainer().getDatabaseName());
   }
 
   @Override

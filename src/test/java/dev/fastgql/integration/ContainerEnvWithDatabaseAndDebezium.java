@@ -14,11 +14,11 @@ public abstract class ContainerEnvWithDatabaseAndDebezium implements WithExterna
   private final JdbcDatabaseContainer<?> jdbcDatabaseContainer = createJdbcDatabaseContainer();
   private final KafkaContainer kafkaContainer = new KafkaContainer().withNetwork(network);
   private final DebeziumContainer debeziumContainer =
-    new DebeziumContainer("debezium/connect:1.2.0.Final")
-      .withNetwork(network)
-      .withKafka(kafkaContainer)
-      .withLogConsumer(new Slf4jLogConsumer(log))
-      .dependsOn(kafkaContainer);
+      new DebeziumContainer("debezium/connect:1.2.0.Final")
+          .withNetwork(network)
+          .withKafka(kafkaContainer)
+          .withLogConsumer(new Slf4jLogConsumer(log))
+          .dependsOn(kafkaContainer);
   private String deploymentID;
 
   @Override

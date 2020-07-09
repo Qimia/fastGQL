@@ -25,9 +25,9 @@ public class DebeziumConfig {
   public static DebeziumConfig createWithJsonConfig(JsonObject config) {
     if (config != null) {
       return new DebeziumConfig(
-        config.getBoolean("embedded"),
-        config.getString("bootstrap.servers"),
-        config.getString("server"));
+          config.getBoolean("embedded"),
+          config.getString("bootstrap.servers"),
+          config.getString("server"));
     } else {
       return new DebeziumConfig();
     }

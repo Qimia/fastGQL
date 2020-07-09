@@ -1,8 +1,10 @@
 package dev.fastgql.integration;
 
+import java.util.Map;
+
 public interface WithEmbeddedDebezium extends WithDebezium {
   @Override
-  default boolean isDebeziumEmbedded() {
-    return true;
-  };
+  default Map<String, Object> createDebeziumConfigEntry() {
+    return Map.of("embedded", true, "server", "dbserver");
+  }
 }

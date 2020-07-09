@@ -6,17 +6,17 @@ import org.testcontainers.containers.PostgreSQLContainer;
 
 public interface WithPostgres extends WithFastGQL {
   @Override
-  default JdbcDatabaseContainer<?> createJdbcDatabaseContainer() {
+  default JdbcDatabaseContainer<?> createJdbcDatabaseContainerWithoutNetwork() {
     return new PostgreSQLContainer<>("debezium/postgres:11").withNetworkAliases("postgres");
   }
 
   @Override
   default DatasourceConfig createDatasourceConfig() {
     return DatasourceConfig.createDatasourceConfig(
-      getJdbcDatabaseContainer().getJdbcUrl(),
-      getJdbcDatabaseContainer().getUsername(),
-      getJdbcDatabaseContainer().getPassword(),
-      "public");
+        getJdbcDatabaseContainer().getJdbcUrl(),
+        getJdbcDatabaseContainer().getUsername(),
+        getJdbcDatabaseContainer().getPassword(),
+        "public");
   }
 
   @Override
