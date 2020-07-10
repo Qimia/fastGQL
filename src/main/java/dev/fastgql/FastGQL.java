@@ -32,12 +32,11 @@ public class FastGQL extends AbstractVerticle {
         .createHttpServer(new HttpServerOptions().setWebsocketSubProtocols("graphql-ws"))
         .requestHandler(routerUpdatable.getRouter())
         .rxListen(config().getInteger("http.port", 8080))
-        .doOnSuccess(
+        .subscribe(
             server -> {
               log.debug("deployed server");
               future.complete();
-            })
-        .doOnError(server -> future.fail(server.getCause()))
-        .subscribe();
+            },
+            server -> future.fail(server.getCause()));
   }
 }
