@@ -20,7 +20,6 @@ import dev.fastgql.sql.ComponentReferencing;
 import dev.fastgql.sql.ComponentRow;
 import dev.fastgql.sql.ExecutionRoot;
 import dev.fastgql.sql.SQLArguments;
-import dev.fastgql.sql.SQLExecutor;
 import graphql.GraphQL;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -156,13 +155,12 @@ public class GraphQLDefinition {
               });
     }
 
-    private ComponentExecutable getExecutionRoot(
-        DataFetchingEnvironment env) {
+    private ComponentExecutable getExecutionRoot(DataFetchingEnvironment env) {
       AliasGenerator aliasGenerator = new AliasGenerator();
       SQLArguments sqlArguments = new SQLArguments(env.getArguments());
       ComponentExecutable executionRoot =
           new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), sqlArguments);
-      //executionRoot.setSqlExecutor(sqlExecutor);
+      // executionRoot.setSqlExecutor(sqlExecutor);
       traverseSelectionSet(
           graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
       return executionRoot;

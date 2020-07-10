@@ -34,12 +34,12 @@ public class ExecutionRoot implements ComponentExecutable {
   private final Set<String> queriedTables = new HashSet<>();
   private SQLExecutor sqlExecutor;
 
-  ///**
+  /// **
   // * just for quick testing, will be moved to tests.
   // *
   // * @param args args
   // */
-  //public static void main(String[] args) {
+  // public static void main(String[] args) {
 
   //  final List<Map<String, Object>> forged =
   //      List.of(
@@ -125,7 +125,7 @@ public class ExecutionRoot implements ComponentExecutable {
   //  vehiclesOnCustomer.setSqlExecutor(query -> Single.just(forged2));
   //  System.out.println(executionRoot.getQueriedTables());
   //  System.out.println(executionRoot.execute().blockingGet());
-  //}
+  // }
 
   /**
    * Construct execution root by providing table name and its alias.
