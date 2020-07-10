@@ -29,103 +29,103 @@ public class ExecutionRoot implements ComponentExecutable {
   private final Logger log = LoggerFactory.getLogger(ExecutionRoot.class);
   private final String tableName;
   private final String tableAlias;
+  private final SQLQuery query;
+  private final List<Component> components;
+  private final Set<String> queriedTables = new HashSet<>();
   private SQLExecutor sqlExecutor;
-  private SQLQuery query;
-  private List<Component> components;
-  private Set<String> queriedTables = new HashSet<>();
 
-  /**
-   * just for quick testing, will be moved to tests.
-   *
-   * @param args args
-   */
-  public static void main(String[] args) {
+  /// **
+  // * just for quick testing, will be moved to tests.
+  // *
+  // * @param args args
+  // */
+  // public static void main(String[] args) {
 
-    final List<Map<String, Object>> forged =
-        List.of(
-            Map.of(
-                "a0_id",
-                101,
-                "a0_first_name",
-                "John",
-                "a1_id",
-                101,
-                "a1_street",
-                "StreetA",
-                "a2_id",
-                101,
-                "a2_model",
-                "Subaru"),
-            Map.of(
-                "a0_id",
-                102,
-                "a0_first_name",
-                "Mike",
-                "a1_id",
-                102,
-                "a1_street",
-                "StreetB",
-                "a2_id",
-                102,
-                "a2_model",
-                "Ford"));
+  //  final List<Map<String, Object>> forged =
+  //      List.of(
+  //          Map.of(
+  //              "a0_id",
+  //              101,
+  //              "a0_first_name",
+  //              "John",
+  //              "a1_id",
+  //              101,
+  //              "a1_street",
+  //              "StreetA",
+  //              "a2_id",
+  //              101,
+  //              "a2_model",
+  //              "Subaru"),
+  //          Map.of(
+  //              "a0_id",
+  //              102,
+  //              "a0_first_name",
+  //              "Mike",
+  //              "a1_id",
+  //              102,
+  //              "a1_street",
+  //              "StreetB",
+  //              "a2_id",
+  //              102,
+  //              "a2_model",
+  //              "Ford"));
 
-    final List<Map<String, Object>> forged2 =
-        List.of(
-            Map.of("a3_model", "Subaru", "a3_year", 2010, "a4_id", 101, "a4_first_name", "Klaus"),
-            Map.of("a3_model", "BMW", "a3_year", 2012, "a4_id", 102, "a4_first_name", "John"));
+  //  final List<Map<String, Object>> forged2 =
+  //      List.of(
+  //          Map.of("a3_model", "Subaru", "a3_year", 2010, "a4_id", 101, "a4_first_name", "Klaus"),
+  //          Map.of("a3_model", "BMW", "a3_year", 2012, "a4_id", 102, "a4_first_name", "John"));
 
-    AliasGenerator aliasGenerator = new AliasGenerator();
-    SQLArguments myArgs =
-        new SQLArguments(
-            Map.of(
-                "limit", 1,
-                "offset", 1));
+  //  AliasGenerator aliasGenerator = new AliasGenerator();
+  //  SQLArguments myArgs =
+  //      new SQLArguments(
+  //          Map.of(
+  //              "limit", 1,
+  //              "offset", 1));
 
-    ComponentExecutable executionRoot =
-        new ExecutionRoot("customers", aliasGenerator.getAlias(), myArgs);
-    executionRoot.setSqlExecutor(new SQLExecutor(query -> Single.just(forged)));
-    executionRoot.addComponent(new ComponentRow("id"));
-    executionRoot.addComponent(new ComponentRow("first_name"));
+  //  ComponentExecutable executionRoot =
+  //      new ExecutionRoot("customers", aliasGenerator.getAlias(), myArgs);
+  //  executionRoot.setSqlExecutor(query -> Single.just(forged));
+  //  executionRoot.addComponent(new ComponentRow("id"));
+  //  executionRoot.addComponent(new ComponentRow("first_name"));
 
-    Component addressRef =
-        new ComponentReferencing(
-            "address_ref", "address", "addresses", aliasGenerator.getAlias(), "id");
-    addressRef.addComponent(new ComponentRow("id"));
-    addressRef.addComponent(new ComponentRow("street"));
+  //  Component addressRef =
+  //      new ComponentReferencing(
+  //          "address_ref", "address", "addresses", aliasGenerator.getAlias(), "id");
+  //  addressRef.addComponent(new ComponentRow("id"));
+  //  addressRef.addComponent(new ComponentRow("street"));
 
-    Component vehiclesRef =
-        new ComponentReferencing(
-            "vehicles_ref", "vehicle", "vehicles", aliasGenerator.getAlias(), "id");
-    vehiclesRef.addComponent(new ComponentRow("id"));
-    vehiclesRef.addComponent(new ComponentRow("model"));
+  //  Component vehiclesRef =
+  //      new ComponentReferencing(
+  //          "vehicles_ref", "vehicle", "vehicles", aliasGenerator.getAlias(), "id");
+  //  vehiclesRef.addComponent(new ComponentRow("id"));
+  //  vehiclesRef.addComponent(new ComponentRow("model"));
 
-    addressRef.addComponent(vehiclesRef);
-    executionRoot.addComponent(addressRef);
+  //  addressRef.addComponent(vehiclesRef);
+  //  executionRoot.addComponent(addressRef);
 
-    Component vehiclesOnCustomer =
-        new ComponentReferenced(
-            "vehicles_on_customer",
-            "id",
-            "vehicles",
-            aliasGenerator.getAlias(),
-            "customer",
-            myArgs);
-    vehiclesOnCustomer.addComponent(new ComponentRow("model"));
-    vehiclesOnCustomer.addComponent(new ComponentRow("year"));
+  //  Component vehiclesOnCustomer =
+  //      new ComponentReferenced(
+  //          "vehicles_on_customer",
+  //          "id",
+  //          "vehicles",
+  //          aliasGenerator.getAlias(),
+  //          "customer",
+  //          myArgs);
+  //  vehiclesOnCustomer.addComponent(new ComponentRow("model"));
+  //  vehiclesOnCustomer.addComponent(new ComponentRow("year"));
 
-    Component customerRef =
-        new ComponentReferencing(
-            "customer_ref", "customer", "customers", aliasGenerator.getAlias(), "id");
-    customerRef.addComponent(new ComponentRow("id"));
-    customerRef.addComponent(new ComponentRow("first_name"));
-    vehiclesOnCustomer.addComponent(customerRef);
+  //  Component customerRef =
+  //      new ComponentReferencing(
+  //          "customer_ref", "customer", "customers", aliasGenerator.getAlias(), "id");
+  //  customerRef.addComponent(new ComponentRow("id"));
+  //  customerRef.addComponent(new ComponentRow("first_name"));
+  //  vehiclesOnCustomer.addComponent(customerRef);
 
-    executionRoot.addComponent(vehiclesOnCustomer);
-    vehiclesOnCustomer.setSqlExecutor(new SQLExecutor(query -> Single.just(forged2)));
-    System.out.println(executionRoot.getQueriedTables());
-    System.out.println(executionRoot.execute().blockingGet());
-  }
+  //  executionRoot.addComponent(vehiclesOnCustomer);
+  //  vehiclesOnCustomer.setSqlExecutor(query -> Single.just(forged2));
+  //  System.out.println(executionRoot.getQueriedTables());
+  //  System.out.println(executionRoot.execute().blockingGet());
+  // }
 
   /**
    * Construct execution root by providing table name and its alias.
@@ -140,18 +140,19 @@ public class ExecutionRoot implements ComponentExecutable {
     this.query = new SQLQuery(tableName, tableAlias, args);
     this.components = new ArrayList<>();
     this.queriedTables.add(tableName);
-    this.sqlExecutor = new SQLExecutor();
   }
 
   @Override
   public Single<List<Map<String, Object>>> execute() {
+    if (sqlExecutor == null) {
+      throw new RuntimeException("SQLExecutor not initialized");
+    }
     components.forEach(component -> component.updateQuery(query));
     String queryString = query.build();
     log.debug("executing query: {}", queryString);
     query.reset();
     return sqlExecutor
-        .getSqlExecutorFunction()
-        .apply(queryString)
+        .execute(queryString)
         .flatMap(
             rowList -> {
               if (rowList.size() > 0) {
