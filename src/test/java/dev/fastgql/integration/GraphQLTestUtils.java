@@ -72,15 +72,14 @@ public class GraphQLTestUtils {
         .expect(ResponsePredicate.JSON)
         .as(BodyCodec.jsonObject())
         .rxSendJsonObject(request)
-        .doOnSuccess(
+        .subscribe(
             response ->
                 context.verify(
                     () -> {
                       assertEquals(expectedResponse, response.body());
                       context.completeNow();
-                    }))
-        .doOnError(context::failNow)
-        .subscribe();
+                    }),
+            context::failNow);
   }
 
   /**

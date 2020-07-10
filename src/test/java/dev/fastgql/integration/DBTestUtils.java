@@ -76,14 +76,14 @@ public class DBTestUtils {
       JdbcDatabaseContainer<?> jdbcDatabaseContainer,
       VertxTestContext context) {
     Observable.timer(delay, unit)
-        .doOnComplete(
-            () -> {
+        .subscribe(
+            result -> {
               try {
                 DBTestUtils.executeSQLQueryFromResource(sqlResource, jdbcDatabaseContainer);
               } catch (SQLException e) {
                 context.failNow(e);
               }
-            })
-        .subscribe();
+            },
+            context::failNow);
   }
 }

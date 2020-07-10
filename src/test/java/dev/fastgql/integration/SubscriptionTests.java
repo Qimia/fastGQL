@@ -39,7 +39,7 @@ public interface SubscriptionTests extends SetupTearDownForEach {
     client
         .get(getDeploymentPort(), "localhost", "/update")
         .rxSend()
-        .doOnSuccess(
+        .subscribe(
             response -> {
               String query = String.format("%s/query.graphql", directory);
               List<String> expected =
@@ -54,7 +54,7 @@ public interface SubscriptionTests extends SetupTearDownForEach {
                   TimeUnit.SECONDS,
                   getJdbcDatabaseContainer(),
                   context);
-            })
-        .subscribe();
+            },
+            context::failNow);
   }
 }
