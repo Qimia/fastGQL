@@ -18,6 +18,8 @@ public interface WithFastGQL {
 
   void setDeploymentID(String deploymentID);
 
+  String getDatabaseDockerImageName();
+
   JdbcDatabaseContainer<?> getJdbcDatabaseContainer();
 
   JdbcDatabaseContainer<?> createJdbcDatabaseContainerWithoutNetwork();
@@ -29,7 +31,6 @@ public interface WithFastGQL {
   default Network getNetwork() {
     return null;
   }
-  ;
 
   default int getDeploymentPort() {
     return 8081;

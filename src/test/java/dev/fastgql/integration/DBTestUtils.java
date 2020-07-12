@@ -79,8 +79,11 @@ public class DBTestUtils {
         .subscribe(
             result -> {
               try {
+                System.out.println("start execute sql query");
                 DBTestUtils.executeSQLQueryFromResource(sqlResource, jdbcDatabaseContainer);
+                System.out.println("executed sql query");
               } catch (SQLException e) {
+                System.out.println("execute failed");
                 context.failNow(e);
               }
             },
