@@ -20,7 +20,8 @@ public class IntegrationTests {
   class Postgres96 {
     @Nested
     @DisplayName("PostgreSQL 9.6 Query Tests")
-    class PostgreskltgrQuery extends ContainerEnvWithDatabase implements WithPostgres96, QueryTests {}
+    class PostgreskltgrQuery extends ContainerEnvWithDatabase
+        implements WithPostgres96, QueryTests {}
 
     @Nested
     @DisplayName("PostgreSQL 9.6 Subscription Tests with external Debezium")
