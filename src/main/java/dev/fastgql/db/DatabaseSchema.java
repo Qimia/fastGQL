@@ -22,6 +22,10 @@ import java.util.Set;
 public class DatabaseSchema {
   private final Map<String, Map<String, KeyDefinition>> graph;
 
+  private DatabaseSchema(Map<String, Map<String, KeyDefinition>> graph) {
+    this.graph = graph;
+  }
+
   public static DatabaseSchema.Builder newSchema() {
     return new DatabaseSchema.Builder();
   }
@@ -120,9 +124,5 @@ public class DatabaseSchema {
                 referencing, keyDefinition.getKeyType(), null, Set.of(qualifiedName)));
       }
     }
-  }
-
-  private DatabaseSchema(Map<String, Map<String, KeyDefinition>> graph) {
-    this.graph = graph;
   }
 }
