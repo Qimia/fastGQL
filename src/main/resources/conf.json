@@ -6,9 +6,9 @@
     "server": "dbserver"
   },
   "datasource": {
-    "jdbcUrl": "jdbc:postgresql://localhost:5432/quarkus_test",
-    "username": "quarkus_test",
-    "password": "quarkus_test",
+    "jdbcUrl": "jdbc:postgresql://localhost:5432/postgres_test",
+    "username": "postgres_test",
+    "password": "postgres_test",
     "schema": "public"
   }
 }
