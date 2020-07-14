@@ -68,6 +68,7 @@ public class GraphQLTestUtils {
 
     WebClient.create(vertx)
         .post(port, "localhost", "/graphql")
+        .bearerTokenAuthentication("eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE1OTQ3MTk2NDZ9.Y88rOApF1jYtB8Gs7iqE3Bp5Jgriyqr3B7bs7RKgiUzFYcAz-KGTmrhn8e-CbM7eqNAEN7r8AxRw5jkgXxoE1A7zQ7YXK1y9xPiMo9VqpLMSSl-u4ujFJvijIDsYfyrmTJr3bnOctmd2Lq2LlNOQQoarVBVZkrCa5jA654l6rIKls5DiX8-Ya9gp2TFDJ-ADG2iv36b4XykZqZeES7qGEAm8ZCvMQ9AUawbTjIa74CIBqgZbeCWb-o884vxFOr1qnC9_U139hIeXX2p71Q_5v0Kb7ggBgCydMmPtKT-JEkWTBcVXfzGHP-wNKHkKzkPKu2_e1O560SWGLgfB9L-9DA")
         .expect(ResponsePredicate.SC_OK)
         .expect(ResponsePredicate.JSON)
         .as(BodyCodec.jsonObject())

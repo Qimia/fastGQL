@@ -9,10 +9,14 @@ package dev.fastgql.router;
 import dev.fastgql.graphql.GraphQLFactory;
 import graphql.GraphQL;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.PubSecKeyOptions;
+import io.vertx.ext.auth.jwt.JWTAuthOptions;
 import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.http.HttpServerResponse;
+import io.vertx.reactivex.ext.auth.jwt.JWTAuth;
 import io.vertx.reactivex.ext.web.Router;
+import io.vertx.reactivex.ext.web.handler.JWTAuthHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
 import java.sql.SQLException;
 import org.apache.log4j.Logger;
@@ -56,6 +60,7 @@ public class RouterUpdatable {
     graphQLHandlerUpdatable = GraphQLHandlerUpdatable.create();
     apolloWSHandlerUpdatable = ApolloWSHandlerUpdatable.create();
     router = Router.router(vertx);
+    secureRouter(vertx, config);
     if (withSubscription) {
       router.route("/graphql").handler(apolloWSHandlerUpdatable);
     }
@@ -92,6 +97,27 @@ public class RouterUpdatable {
     }
     if (withSubscription) {
       apolloWSHandlerUpdatable.updateGraphQL(graphQL);
+    }
+  }
+
+  /**
+   * Secure /graphql using JWT
+   *
+   * @param vertx the Vert.x instance
+   * @param config configuration of verticle
+   */
+  private void secureRouter(Vertx vertx, JsonObject config) {
+    if (config.containsKey("auth")) {
+      JsonObject optionsJson = config.getJsonObject("auth");
+      if (optionsJson.containsKey("algorithm") && optionsJson.containsKey("publicKey")) {
+        JWTAuthOptions jwtAuthOptions = new JWTAuthOptions()
+            .addPubSecKey(new PubSecKeyOptions(optionsJson));
+        JWTAuth jwt = JWTAuth.create(vertx, jwtAuthOptions);
+        router.route("/graphql").handler(JWTAuthHandler.create(jwt));
+        log.debug("Succeeded in securing /graphql.");
+      } else {
+        log.debug("Failed to secured /graphql: algorithm or publicKey is missing.");
+      }
     }
   }
 

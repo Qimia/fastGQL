@@ -35,6 +35,11 @@ public class IntegrationTests {
     class MySQLQuery extends ContainerEnvWithDatabase implements WithMySQL, QueryTests {}
 
     @Nested
+    @DisplayName("MySQL Query Tests")
+    class MySQLQueryWithSecurity extends ContainerEnvWithDatabase implements WithMySQL,
+        WithSecurity, QueryTests {}
+
+    @Nested
     @DisplayName("MySQL Subscription Tests with external Debezium")
     class MySQLSubscriptionExternalDebezium extends ContainerEnvWithDatabaseAndDebezium
         implements WithMySQL, WithMySQLConnector, SubscriptionTests {}
