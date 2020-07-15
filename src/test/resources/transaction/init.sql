@@ -12,5 +12,4 @@ CREATE TABLE customers(
 );
 
 INSERT INTO addresses VALUES (0);
-INSERT INTO addresses VALUES (1);
 INSERT INTO customers VALUES (0, 0);
