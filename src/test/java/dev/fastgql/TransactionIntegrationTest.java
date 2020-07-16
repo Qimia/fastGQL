@@ -13,6 +13,8 @@ import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.sqlclient.Pool;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.RowSet;
 import io.vertx.reactivex.sqlclient.SqlConnection;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -73,7 +75,7 @@ public class TransactionIntegrationTest {
   }
 
   @AfterEach
-  public void tearDown(Vertx vertx, VertxTestContext context) throws SQLException {
+  public void tearDown(Vertx vertx, VertxTestContext context) {
     databaseContainer.close();
     context.completeNow();
   }
@@ -85,7 +87,7 @@ public class TransactionIntegrationTest {
         .doOnSuccess(
             connection -> {
               executionRoot.setSqlExecutor(
-                  query -> executeQuery(query, connection).delay(5, TimeUnit.SECONDS));
+                  query -> mapRowSetToList(executeQueryWithDelay(query, 5000, connection)));
               executionRoot
                   .execute()
                   .doOnSuccess(
@@ -103,41 +105,36 @@ public class TransactionIntegrationTest {
         .rxGetConnection()
         .doOnSuccess(
             connection ->
-                connection
-                    .rxQuery("INSERT INTO customers VALUES (1, 0)")
-                    .delay(3, TimeUnit.SECONDS)
+                executeQueryWithDelay("INSERT INTO customers VALUES (1, 0)", 3000, connection)
                     .doOnSuccess(
-                        rows -> {
-                          connection
-                              .rxQuery("INSERT INTO customers VALUES (2, 0)")
-                              .doOnSuccess(
-                                  rows1 -> {
-                                    connection.close();
-                                  })
-                              .subscribe();
-                        })
+                        rows ->
+                            connection
+                                .rxQuery("INSERT INTO customers VALUES (2, 0)")
+                                .doOnSuccess(rows1 -> connection.close())
+                                .subscribe())
                     .subscribe())
         .subscribe();
-
-    System.out.println("complete");
   }
 
-  private static Single<List<Map<String, Object>>> executeQuery(
-      String query, SqlConnection connection) {
-    return connection
-        .rxQuery(query)
-        .map(
-            rowSet -> {
-              List<String> columnNames = rowSet.columnsNames();
-              List<Map<String, Object>> retList = new ArrayList<>();
-              rowSet.forEach(
-                  row -> {
-                    Map<String, Object> r = new HashMap<>();
-                    columnNames.forEach(columnName -> r.put(columnName, row.getValue(columnName)));
-                    retList.add(r);
-                  });
-              return retList;
-            });
+  private static Single<RowSet<Row>> executeQueryWithDelay(
+      String query, long delay, SqlConnection connection) {
+    return connection.rxQuery(query).delay(delay, TimeUnit.MILLISECONDS);
+  }
+
+  private static Single<List<Map<String, Object>>> mapRowSetToList(
+      Single<RowSet<Row>> rowSetSingle) {
+    return rowSetSingle.map(
+        rowSet -> {
+          List<String> columnNames = rowSet.columnsNames();
+          List<Map<String, Object>> retList = new ArrayList<>();
+          rowSet.forEach(
+              row -> {
+                Map<String, Object> r = new HashMap<>();
+                columnNames.forEach(columnName -> r.put(columnName, row.getValue(columnName)));
+                retList.add(r);
+              });
+          return retList;
+        });
   }
 
   private static ExecutionRoot getExecutorRoot() {
