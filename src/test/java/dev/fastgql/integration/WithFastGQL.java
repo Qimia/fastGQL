@@ -29,7 +29,6 @@ public interface WithFastGQL {
   default Network getNetwork() {
     return null;
   }
-  ;
 
   default int getDeploymentPort() {
     return 8081;

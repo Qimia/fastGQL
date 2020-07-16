@@ -12,9 +12,15 @@ public class IntegrationTests {
   @Nested
   @DisplayName("PostgreSQL Tests")
   class Postgres {
+
     @Nested
     @DisplayName("PostgreSQL Query Tests")
     class PostgresQuery extends ContainerEnvWithDatabase implements WithPostgres, QueryTests {}
+
+    @Nested
+    @DisplayName("PostgreSQL Query Tests with JWT Security")
+    class PostgresQueryWithSecurity extends ContainerEnvWithDatabase
+        implements WithPostgres, WithSecurity, QueryTestsWithSecurity {}
 
     @Nested
     @DisplayName("PostgreSQL Subscription Tests with external Debezium")
@@ -30,14 +36,15 @@ public class IntegrationTests {
   @Nested
   @DisplayName("MySQL Tests")
   class MySQL {
+
     @Nested
     @DisplayName("MySQL Query Tests")
     class MySQLQuery extends ContainerEnvWithDatabase implements WithMySQL, QueryTests {}
 
     @Nested
-    @DisplayName("MySQL Query Tests")
-    class MySQLQueryWithSecurity extends ContainerEnvWithDatabase implements WithMySQL,
-        WithSecurity, QueryTests {}
+    @DisplayName("MySQL Query Tests with JWT Security")
+    class MySQLQueryWithSecurity extends ContainerEnvWithDatabase
+        implements WithMySQL, WithSecurity, QueryTestsWithSecurity {}
 
     @Nested
     @DisplayName("MySQL Subscription Tests with external Debezium")

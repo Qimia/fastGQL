@@ -110,13 +110,13 @@ public class RouterUpdatable {
     if (config.containsKey("auth")) {
       JsonObject optionsJson = config.getJsonObject("auth");
       if (optionsJson.containsKey("algorithm") && optionsJson.containsKey("publicKey")) {
-        JWTAuthOptions jwtAuthOptions = new JWTAuthOptions()
-            .addPubSecKey(new PubSecKeyOptions(optionsJson));
+        JWTAuthOptions jwtAuthOptions =
+            new JWTAuthOptions().addPubSecKey(new PubSecKeyOptions(optionsJson));
         JWTAuth jwt = JWTAuth.create(vertx, jwtAuthOptions);
         router.route("/graphql").handler(JWTAuthHandler.create(jwt));
         log.debug("Succeeded in securing /graphql.");
       } else {
-        log.debug("Failed to secured /graphql: algorithm or publicKey is missing.");
+        log.warn("Failed to secured /graphql: algorithm or publicKey is missing.");
       }
     }
   }

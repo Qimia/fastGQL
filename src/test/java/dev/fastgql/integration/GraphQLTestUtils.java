@@ -17,6 +17,7 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.core.http.HttpClient;
 import io.vertx.reactivex.core.http.WebSocket;
+import io.vertx.reactivex.ext.web.client.HttpRequest;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import io.vertx.reactivex.ext.web.client.predicate.ResponsePredicate;
 import io.vertx.reactivex.ext.web.codec.BodyCodec;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 public class GraphQLTestUtils {
 
   static class AtomicJsonObject {
+
     private JsonObject json = new JsonObject();
 
     private synchronized boolean checkIfSameAsLastObjectAndUpdate(JsonObject newJson) {
@@ -45,18 +47,51 @@ public class GraphQLTestUtils {
   }
 
   /**
+   * Wrapper function which verifies that query stored in {@param directory}/query.graphql resulted
+   * in response stored in {@param directory}/expected.json.
+   *
+   * @param directory directory in resources
+   * @param port port on which FastGQL is running
+   * @param vertx vertx instance
+   * @param context vertx test context
+   */
+  public static void verifyQuerySimple(
+      String directory, int port, Vertx vertx, VertxTestContext context) {
+    verifyQuerySimpleWithToken(directory, port, "", vertx, context);
+  }
+
+  /**
+   * Wrapper function which verifies that query stored in {@param directory}/query.graphql resulted
+   * in response stored in {@param directory}/expected.json. With JWT token provided.
+   *
+   * @param directory directory in resources
+   * @param port port on which FastGQL is running
+   * @param token JWT token
+   * @param vertx Vert.x instance
+   * @param context Vert.x test context
+   */
+  public static void verifyQuerySimpleWithToken(
+      String directory, int port, String token, Vertx vertx, VertxTestContext context) {
+    String query = String.format("%s/query.graphql", directory);
+    String expected = String.format("%s/expected.json", directory);
+    verifyQueryWithToken(port, query, expected, token, vertx, context);
+  }
+
+  /**
    * Verify single GraphQL query.
    *
    * @param port port on which FastGQL is running
    * @param inputResource resource which stores input query as GraphQL query
    * @param outputResource resource which stores expected response as JSON
-   * @param vertx vertx instance
-   * @param context vertx test context
+   * @param token JWT token
+   * @param vertx Vert.x instance
+   * @param context Vert.x test context
    */
-  public static void verifyQuery(
+  private static void verifyQueryWithToken(
       int port,
       String inputResource,
       String outputResource,
+      String token,
       Vertx vertx,
       VertxTestContext context) {
     String graphQLQuery = ResourcesTestUtils.readResource(inputResource, context);
@@ -66,9 +101,12 @@ public class GraphQLTestUtils {
 
     JsonObject request = new JsonObject().put("query", graphQLQuery);
 
-    WebClient.create(vertx)
-        .post(port, "localhost", "/graphql")
-        .bearerTokenAuthentication("eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE1OTQ3MTk2NDZ9.Y88rOApF1jYtB8Gs7iqE3Bp5Jgriyqr3B7bs7RKgiUzFYcAz-KGTmrhn8e-CbM7eqNAEN7r8AxRw5jkgXxoE1A7zQ7YXK1y9xPiMo9VqpLMSSl-u4ujFJvijIDsYfyrmTJr3bnOctmd2Lq2LlNOQQoarVBVZkrCa5jA654l6rIKls5DiX8-Ya9gp2TFDJ-ADG2iv36b4XykZqZeES7qGEAm8ZCvMQ9AUawbTjIa74CIBqgZbeCWb-o884vxFOr1qnC9_U139hIeXX2p71Q_5v0Kb7ggBgCydMmPtKT-JEkWTBcVXfzGHP-wNKHkKzkPKu2_e1O560SWGLgfB9L-9DA")
+    HttpRequest<Buffer> bufferHttpRequest =
+        WebClient.create(vertx).post(port, "localhost", "/graphql");
+    if (!token.isEmpty()) {
+      bufferHttpRequest.bearerTokenAuthentication(token);
+    }
+    bufferHttpRequest
         .expect(ResponsePredicate.SC_OK)
         .expect(ResponsePredicate.JSON)
         .as(BodyCodec.jsonObject())
@@ -81,22 +119,6 @@ public class GraphQLTestUtils {
                       context.completeNow();
                     }),
             context::failNow);
-  }
-
-  /**
-   * Wrapper function which verifies that query stored in {@param directory}/query.graphql resulted
-   * in response stored in {@param directory}/expected.json.
-   *
-   * @param directory directory in resources
-   * @param port port on which FastGQL is running
-   * @param vertx vertx instance
-   * @param context vertx test context
-   */
-  public static void verifyQuerySimple(
-      String directory, int port, Vertx vertx, VertxTestContext context) {
-    String query = String.format("%s/query.graphql", directory);
-    String expected = String.format("%s/expected.json", directory);
-    verifyQuery(port, query, expected, vertx, context);
   }
 
   /**
@@ -159,5 +181,28 @@ public class GraphQLTestUtils {
             context.failNow(websocketRes.cause());
           }
         });
+  }
+
+  /**
+   * Verify that the endpoint /graphql will return Unauthorized Status Code 401 if the token is not
+   * not provided.
+   *
+   * @param port port on which FastGQL is running
+   * @param vertx Vert.x instance
+   * @param context Vert.x test context
+   */
+  public static void verifyUnauthorized(int port, Vertx vertx, VertxTestContext context) {
+    WebClient.create(vertx)
+        .post(port, "localhost", "/graphql")
+        .expect(ResponsePredicate.SC_UNAUTHORIZED)
+        .rxSend()
+        .subscribe(
+            response ->
+                context.verify(
+                    () -> {
+                      assertEquals(401, response.statusCode());
+                      context.completeNow();
+                    }),
+            context::failNow);
   }
 }
