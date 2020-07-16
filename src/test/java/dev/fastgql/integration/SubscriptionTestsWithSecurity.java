@@ -6,19 +6,21 @@ import io.vertx.reactivex.ext.web.client.WebClient;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
-public interface QueryTestsWithSecurity extends SetupTearDownForAll {
+public interface SubscriptionTestsWithSecurity extends SetupTearDownForAll {
 
   /**
-   * Test GraphQL query with security / response given in input directory
+   * Test GraphQL subscription with security / response given in input directory.
    *
    * @param vertx Vert.x instance
    * @param context Vert.x test context
    */
   @Test
   default void shouldAuthorized(Vertx vertx, VertxTestContext context) {
-    String directory = "queries/simple/list";
+    String directory = "subscriptions/simple/list";
     System.out.println(String.format("Test: %s", directory));
     try {
       DBTestUtils.executeSQLQueryFromResource(
@@ -30,6 +32,7 @@ public interface QueryTestsWithSecurity extends SetupTearDownForAll {
       context.failNow(e);
       return;
     }
+
     String token =
         "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9."
             + "eyJpYXQiOjE1OTQ3MTk2NDZ9."
@@ -46,14 +49,26 @@ public interface QueryTestsWithSecurity extends SetupTearDownForAll {
         .get(getDeploymentPort(), "localhost", "/update")
         .rxSend()
         .subscribe(
-            response ->
-                GraphQLTestUtils.verifyQuerySimpleWithToken(
-                    directory, getDeploymentPort(), token, vertx, context),
+            response -> {
+              String query = String.format("%s/query.graphql", directory);
+              List<String> expected =
+                  List.of(
+                      String.format("%s/expected-1.json", directory),
+                      String.format("%s/expected-2.json", directory));
+              GraphQLTestUtils.verifySubscriptionWithToken(
+                  getDeploymentPort(), query, expected, token, vertx, context);
+              DBTestUtils.executeSQLQueryFromResourceWithDelay(
+                  String.format("%s/query.sql", directory),
+                  10,
+                  TimeUnit.SECONDS,
+                  getJdbcDatabaseContainer(),
+                  context);
+            },
             context::failNow);
   }
 
   /**
-   * Test GraphQL query with security / connection will be unauthorized.
+   * Test GraphQL subscription with security / connection will be unauthorized.
    *
    * @param vertx Vert.x instance
    * @param context Vert.x test context
@@ -65,7 +80,8 @@ public interface QueryTestsWithSecurity extends SetupTearDownForAll {
         .rxSend()
         .subscribe(
             response ->
-                GraphQLTestUtils.verifyUnauthorizedQuery(getDeploymentPort(), vertx, context),
+                GraphQLTestUtils.verifyUnauthorizedSubscription(
+                    getDeploymentPort(), vertx, context),
             context::failNow);
   }
 }

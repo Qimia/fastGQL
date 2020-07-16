@@ -31,6 +31,14 @@ public class IntegrationTests {
     @DisplayName("PostgreSQL Subscription Tests with embedded Debezium")
     class PostgresSubscriptionEmbeddedDebezium extends ContainerEnvWithDatabase
         implements WithPostgres, WithEmbeddedDebezium, SubscriptionTests {}
+
+    @Nested
+    @DisplayName("PostgreSQL Subscription Tests with JWT Security")
+    class PostgresSubscriptionWithSecurity extends ContainerEnvWithDatabaseAndDebezium
+        implements WithPostgres,
+            WithPostgresConnector,
+            WithSecurity,
+            SubscriptionTestsWithSecurity {}
   }
 
   @Nested
@@ -55,5 +63,10 @@ public class IntegrationTests {
     @DisplayName("MySQL Subscription Tests with embedded Debezium")
     class MySQLSubscriptionEmbeddedDebezium extends ContainerEnvWithDatabase
         implements WithMySQL, WithEmbeddedDebezium, SubscriptionTests {}
+
+    @Nested
+    @DisplayName("MySQL Subscription Tests with JWT Security")
+    class MySQLSubscriptionWithSecurity extends ContainerEnvWithDatabaseAndDebezium
+        implements WithMySQL, WithMySQLConnector, WithSecurity, SubscriptionTestsWithSecurity {}
   }
 }

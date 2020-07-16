@@ -6,16 +6,14 @@
 
 package dev.fastgql.integration;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.graphql.ApolloWSMessageType;
 import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.core.http.HttpClient;
 import io.vertx.reactivex.core.http.WebSocket;
 import io.vertx.reactivex.ext.web.client.HttpRequest;
 import io.vertx.reactivex.ext.web.client.WebClient;
@@ -24,6 +22,7 @@ import io.vertx.reactivex.ext.web.codec.BodyCodec;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * Test utils for verifying GraphQL queries.
@@ -115,7 +114,7 @@ public class GraphQLTestUtils {
             response ->
                 context.verify(
                     () -> {
-                      assertEquals(expectedResponse, response.body());
+                      Assertions.assertEquals(expectedResponse, response.body());
                       context.completeNow();
                     }),
             context::failNow);
@@ -137,6 +136,28 @@ public class GraphQLTestUtils {
       List<String> outputResources,
       Vertx vertx,
       VertxTestContext context) {
+    verifySubscriptionWithToken(port, inputResource, outputResources, "", vertx, context);
+  }
+
+  /**
+   * Verify that GraphQL subscription stored in {@param inputResource} resulted in a series of
+   * responses stored in {@param outputResources}, with JWT token provided. Repeating responses are
+   * ignored.
+   *
+   * @param port port on which FastGQL is running
+   * @param inputResource resource which stores input query as GraphQL query
+   * @param outputResources list of resources which store expected responses as JSONs
+   * @param token JWT token
+   * @param vertx vertx instance
+   * @param context vertx test context
+   */
+  public static void verifySubscriptionWithToken(
+      int port,
+      String inputResource,
+      List<String> outputResources,
+      String token,
+      Vertx vertx,
+      VertxTestContext context) {
     Checkpoint checkpoints = context.checkpoint(outputResources.size());
     AtomicInteger currentResponseAtomic = new AtomicInteger(0);
 
@@ -147,40 +168,49 @@ public class GraphQLTestUtils {
             .map(JsonObject::new)
             .collect(Collectors.toList());
 
-    HttpClient httpClient = vertx.createHttpClient(new HttpClientOptions().setDefaultPort(port));
-    httpClient.webSocket(
-        "/graphql",
-        websocketRes -> {
-          if (websocketRes.succeeded()) {
-            WebSocket webSocket = websocketRes.result();
+    WebSocketConnectOptions webSocketConnectOptions =
+        new WebSocketConnectOptions().setHost("localhost").setPort(port).setURI("/graphql");
+    if (!token.isEmpty()) {
+      webSocketConnectOptions.addHeader(
+          HttpHeaders.AUTHORIZATION.toString(), String.format("Bearer %s", token));
+    }
+    vertx
+        .createHttpClient()
+        .webSocket(
+            webSocketConnectOptions,
+            websocketRes -> {
+              if (websocketRes.succeeded()) {
+                WebSocket webSocket = websocketRes.result();
 
-            AtomicJsonObject atomicJsonObject = new AtomicJsonObject();
-            webSocket.handler(
-                message -> {
-                  System.out.println(message);
-                  if (atomicJsonObject.checkIfSameAsLastObjectAndUpdate(message.toJsonObject())) {
-                    return;
-                  }
-                  int currentResponse = currentResponseAtomic.getAndIncrement();
-                  if (currentResponse < expectedResponses.size()) {
-                    context.verify(
-                        () ->
-                            assertEquals(
-                                expectedResponses.get(currentResponse), message.toJsonObject()));
-                  }
-                  checkpoints.flag();
-                });
+                AtomicJsonObject atomicJsonObject = new AtomicJsonObject();
+                webSocket.handler(
+                    message -> {
+                      System.out.println(message);
+                      if (atomicJsonObject.checkIfSameAsLastObjectAndUpdate(
+                          message.toJsonObject())) {
+                        return;
+                      }
+                      int currentResponse = currentResponseAtomic.getAndIncrement();
+                      if (currentResponse < expectedResponses.size()) {
+                        context.verify(
+                            () ->
+                                Assertions.assertEquals(
+                                    expectedResponses.get(currentResponse),
+                                    message.toJsonObject()));
+                      }
+                      checkpoints.flag();
+                    });
 
-            JsonObject request =
-                new JsonObject()
-                    .put("id", "1")
-                    .put("type", ApolloWSMessageType.START.getText())
-                    .put("payload", new JsonObject().put("query", graphQLQuery));
-            webSocket.write(new Buffer(request.toBuffer()));
-          } else {
-            context.failNow(websocketRes.cause());
-          }
-        });
+                JsonObject request =
+                    new JsonObject()
+                        .put("id", "1")
+                        .put("type", ApolloWSMessageType.START.getText())
+                        .put("payload", new JsonObject().put("query", graphQLQuery));
+                webSocket.write(new Buffer(request.toBuffer()));
+              } else {
+                context.failNow(websocketRes.cause());
+              }
+            });
   }
 
   /**
@@ -191,7 +221,7 @@ public class GraphQLTestUtils {
    * @param vertx Vert.x instance
    * @param context Vert.x test context
    */
-  public static void verifyUnauthorized(int port, Vertx vertx, VertxTestContext context) {
+  public static void verifyUnauthorizedQuery(int port, Vertx vertx, VertxTestContext context) {
     WebClient.create(vertx)
         .post(port, "localhost", "/graphql")
         .expect(ResponsePredicate.SC_UNAUTHORIZED)
@@ -200,9 +230,30 @@ public class GraphQLTestUtils {
             response ->
                 context.verify(
                     () -> {
-                      assertEquals(401, response.statusCode());
+                      Assertions.assertEquals(401, response.statusCode());
                       context.completeNow();
                     }),
             context::failNow);
+  }
+
+  /**
+   * Verify that the websocket will be unauthorized if the token is not provided.
+   *
+   * @param port port on which FastGQL is running
+   * @param vertx Vert.x instance
+   * @param context Vert.x test context
+   */
+  public static void verifyUnauthorizedSubscription(
+      int port, Vertx vertx, VertxTestContext context) {
+    WebSocketConnectOptions wsOptions =
+        new WebSocketConnectOptions().setHost("localhost").setPort(port).setURI("/graphql");
+    vertx
+        .createHttpClient()
+        .webSocket(
+            wsOptions,
+            websocketRes -> {
+              Assertions.assertTrue(websocketRes.failed());
+              context.completeNow();
+            });
   }
 }
