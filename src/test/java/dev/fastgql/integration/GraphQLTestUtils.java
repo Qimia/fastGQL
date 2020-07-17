@@ -101,7 +101,7 @@ public class GraphQLTestUtils {
     JsonObject request = new JsonObject().put("query", graphQLQuery);
 
     HttpRequest<Buffer> bufferHttpRequest =
-        WebClient.create(vertx).post(port, "localhost", "/graphql");
+        WebClient.create(vertx).post(port, "localhost", "/v1/graphql");
     if (!token.isEmpty()) {
       bufferHttpRequest.bearerTokenAuthentication(token);
     }
@@ -169,7 +169,7 @@ public class GraphQLTestUtils {
             .collect(Collectors.toList());
 
     WebSocketConnectOptions webSocketConnectOptions =
-        new WebSocketConnectOptions().setHost("localhost").setPort(port).setURI("/graphql");
+        new WebSocketConnectOptions().setHost("localhost").setPort(port).setURI("/v1/graphql");
     if (!token.isEmpty()) {
       webSocketConnectOptions.addHeader(
           HttpHeaders.AUTHORIZATION.toString(), String.format("Bearer %s", token));
@@ -223,7 +223,7 @@ public class GraphQLTestUtils {
    */
   public static void verifyUnauthorizedQuery(int port, Vertx vertx, VertxTestContext context) {
     WebClient.create(vertx)
-        .post(port, "localhost", "/graphql")
+        .post(port, "localhost", "/v1/graphql")
         .expect(ResponsePredicate.SC_UNAUTHORIZED)
         .rxSend()
         .subscribe(
@@ -246,7 +246,7 @@ public class GraphQLTestUtils {
   public static void verifyUnauthorizedSubscription(
       int port, Vertx vertx, VertxTestContext context) {
     WebSocketConnectOptions wsOptions =
-        new WebSocketConnectOptions().setHost("localhost").setPort(port).setURI("/graphql");
+        new WebSocketConnectOptions().setHost("localhost").setPort(port).setURI("/v1/graphql");
     vertx
         .createHttpClient()
         .webSocket(

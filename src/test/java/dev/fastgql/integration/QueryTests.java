@@ -35,7 +35,7 @@ public interface QueryTests extends SetupTearDownForAll {
 
     WebClient client = WebClient.create(vertx);
     client
-        .get(getDeploymentPort(), "localhost", "/update")
+        .get(getDeploymentPort(), "localhost", "/v1/update")
         .rxSend()
         .subscribe(
             response ->

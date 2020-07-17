@@ -62,16 +62,16 @@ public class RouterUpdatable {
     router = Router.router(vertx);
     secureRouter(vertx, config);
     if (withSubscription) {
-      router.route("/graphql").handler(apolloWSHandlerUpdatable);
+      router.route("/v1/graphql").handler(apolloWSHandlerUpdatable);
     }
     if (withQuery) {
-      router.route("/graphql").handler(graphQLHandlerUpdatable);
+      router.route("/v1/graphql").handler(graphQLHandlerUpdatable);
     }
     router
         .route("/graphiql/*")
         .handler(GraphiQLHandler.create(new GraphiQLHandlerOptions().setEnabled(true)));
     router
-        .route("/update")
+        .route("/v1/update")
         .handler(
             context -> {
               GraphQL graphQL = null;
@@ -113,10 +113,10 @@ public class RouterUpdatable {
         JWTAuthOptions jwtAuthOptions =
             new JWTAuthOptions().addPubSecKey(new PubSecKeyOptions(optionsJson));
         JWTAuth jwt = JWTAuth.create(vertx, jwtAuthOptions);
-        router.route("/graphql").handler(JWTAuthHandler.create(jwt));
-        log.debug("Succeeded in securing /graphql.");
+        router.route("/v1/*").handler(JWTAuthHandler.create(jwt));
+        log.debug("Succeeded in securing /v1/*.");
       } else {
-        log.warn("Failed to secured /graphql: algorithm or publicKey is missing.");
+        log.warn("Failed to secured /v1/*: algorithm or publicKey is missing.");
       }
     }
   }
