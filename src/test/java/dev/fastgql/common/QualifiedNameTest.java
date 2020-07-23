@@ -12,23 +12,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 
 public class QualifiedNameTest {
-  private QualifiedName qualifiedName;
 
   @Test
-  public void shouldGenerateQualifiedName() {
+  public void generate() {
     assertEquals("tableName/keyName", QualifiedName.generate("tableName", "keyName"));
   }
 
   @Test
-  public void shouldConstructFromQualifiedName() {
-    qualifiedName = new QualifiedName("tableName/keyName");
+  public void constructor_oneArg() {
+    QualifiedName qualifiedName = new QualifiedName("tableName/keyName");
     assertEquals("tableName", qualifiedName.getTableName());
     assertEquals("keyName", qualifiedName.getKeyName());
     assertEquals("tableName/keyName", qualifiedName.getQualifiedName());
   }
 
   @Test
-  public void shouldThrowIllegalArgumentWhenConstructFromQualifiedName() {
+  public void constructor_invalidOneArg() {
     assertThrows(
         IllegalArgumentException.class,
         () -> new QualifiedName("tableName"),
@@ -36,15 +35,15 @@ public class QualifiedNameTest {
   }
 
   @Test
-  public void shouldConstructFromTableNameKeyName() {
-    qualifiedName = new QualifiedName("tableName", "keyName");
+  public void constructor_twoArg() {
+    QualifiedName qualifiedName = new QualifiedName("tableName", "keyName");
     assertEquals("tableName", qualifiedName.getTableName());
     assertEquals("keyName", qualifiedName.getKeyName());
     assertEquals("tableName/keyName", qualifiedName.getQualifiedName());
   }
 
   @Test
-  public void shouldThrowIllegalArgumentWhenConstructFromTableNameKeyNameWithTableNameEmpty() {
+  public void constructor_twoArgEmptyFirstArg() {
     assertThrows(
         IllegalArgumentException.class,
         () -> new QualifiedName("", "keyName"),
@@ -52,7 +51,7 @@ public class QualifiedNameTest {
   }
 
   @Test
-  public void shouldThrowIllegalArgumentWhenConstructFromTableNameKeyNameWithKeyNameEmpty() {
+  public void constructor_twoArgEmptySecondArg() {
     assertThrows(
         IllegalArgumentException.class,
         () -> new QualifiedName("tableName", ""),

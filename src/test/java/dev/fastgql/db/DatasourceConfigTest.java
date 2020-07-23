@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 public class DatasourceConfigTest {
 
   @Test
-  void shouldParsePostgres() {
+  void create_postgres() {
     DatasourceConfig datasourceConfig =
         DatasourceConfig.createDatasourceConfig(
             "jdbc:postgresql://localhost:5432/db", "user", "pswd", "public");
@@ -18,7 +18,7 @@ public class DatasourceConfigTest {
   }
 
   @Test
-  void shouldParseWithOptionalArguments() {
+  void create_postgresWithOptionalArgs() {
     DatasourceConfig datasourceConfig =
         DatasourceConfig.createDatasourceConfig(
             "jdbc:postgresql://localhost:5432/db?optional=true", "user", "pswd", "public");
@@ -28,7 +28,7 @@ public class DatasourceConfigTest {
   }
 
   @Test
-  void shouldParseMysql() {
+  void create_mysql() {
     DatasourceConfig datasourceConfig =
         DatasourceConfig.createDatasourceConfig("jdbc:mysql://localhost:5432/db", "user", "pswd");
     assertEquals("localhost", datasourceConfig.getHost());
@@ -38,7 +38,7 @@ public class DatasourceConfigTest {
   }
 
   @Test
-  void shouldThrowPortTooShort() {
+  void create_tooShortUrl() {
     assertThrows(
         IllegalArgumentException.class,
         () ->
@@ -48,7 +48,7 @@ public class DatasourceConfigTest {
   }
 
   @Test
-  void shouldThrowPortTooLong() {
+  void create_tooLongUrl() {
     assertThrows(
         IllegalArgumentException.class,
         () ->
@@ -58,7 +58,7 @@ public class DatasourceConfigTest {
   }
 
   @Test
-  void shouldThrowNoDb() {
+  void create_noDb() {
     assertThrows(
         IllegalArgumentException.class,
         () ->
@@ -68,7 +68,7 @@ public class DatasourceConfigTest {
   }
 
   @Test
-  void shouldThrowUnsupportedDb() {
+  void create_unsupportedDb() {
     assertThrows(
         IllegalArgumentException.class,
         () ->

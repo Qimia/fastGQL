@@ -36,7 +36,7 @@ public class KeyDefinitionTest {
   }
 
   @Test
-  public void shouldMergeEqualKeyDefinitions() {
+  public void merge_equal() {
     Set<QualifiedName> thisReferences = keyDefinition.getReferencedBy();
     keyDefinition.merge(keyDefinition);
 
@@ -44,13 +44,11 @@ public class KeyDefinitionTest {
   }
 
   @Test
-  public void throwsRuntimeExceptionWhileMergingWithNull() {
+  public void merge_nullKey() {
     Exception exception =
         assertThrows(
             RuntimeException.class,
-            () -> {
-              keyDefinition.merge(null);
-            });
+            () -> keyDefinition.merge(null));
 
     String expectedMessage = "cannot merge with null key";
     String actualMessage = exception.getMessage();
@@ -59,7 +57,7 @@ public class KeyDefinitionTest {
   }
 
   @Test
-  public void throwsRuntimeExceptionForIncompatibleKeys() {
+  public void merge_incompatibleKeys() {
     KeyDefinition otherKeyDefinition =
         new KeyDefinition(
             new QualifiedName("tableName1x", "keyName1x"),
@@ -73,7 +71,7 @@ public class KeyDefinitionTest {
   }
 
   @Test
-  public void throwsRuntimeExceptionForDifferentReferencings() {
+  public void merge_alreadyReferenced() {
     KeyDefinition otherKeyDefinition =
         new KeyDefinition(
             new QualifiedName("tableName1", "keyName1"),
@@ -87,7 +85,7 @@ public class KeyDefinitionTest {
   }
 
   @Test
-  public void shouldMergeKeyDefinitionsWithDifferentReferences() {
+  public void merge_differentReferencedBy() {
     KeyDefinition otherKeyDefinition =
         new KeyDefinition(
             new QualifiedName("tableName1", "keyName1"),
@@ -107,7 +105,7 @@ public class KeyDefinitionTest {
   }
 
   @Test
-  public void shouldMergeKeyDefinitionsWithNullOtherReferences() {
+  public void merge_nullReferencedBy() {
     KeyDefinition otherKeyDefinition =
         new KeyDefinition(
             new QualifiedName("tableName1", "keyName1"),

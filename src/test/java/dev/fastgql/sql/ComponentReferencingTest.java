@@ -6,153 +6,64 @@
 
 package dev.fastgql.sql;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import dev.fastgql.TestUtils;
 import io.reactivex.Single;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ComponentReferencingTest {
 
-  static final String fieldName = "testFieldName";
-  static final String keyName = "testKeyName";
-  static final String foreignTableName = "testForeignTableName";
-  static final String foreignTableAlias = "testForeignTableAlias";
-  static final String foreignKeyName = "testForeignKeyName";
-  static final String parentTableAlias = "testParentTableAlias";
-  ComponentReferencing componentReferencing;
-
-  static Stream<Arguments> getTestExtractValues() {
-    return Stream.of(Arguments.of(Map.of(), 0, null));
-  }
-
-  @BeforeEach
-  public void setUp() {
-    componentReferencing =
-        new ComponentReferencing(
-            fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
-  }
+  private static final String fieldName = "testFieldName";
+  private static final String keyName = "testKeyName";
+  private static final String keyValue = "testKeyValue";
+  private static final String foreignTableName = "testForeignTableName";
+  private static final String foreignTableAlias = "testForeignTableAlias";
+  private static final String tableName = "testTableName";
+  private static final String tableAlias = "testTableAlias";
+  private static final String foreignKeyName = "testForeignKeyName";
+  private static final String foreignKeyValue = "testForeignKeyValue";
+  private static final String parentTableAlias = "testParentTableAlias";
 
   @Test
-  public void testConstructor() throws NoSuchFieldException, IllegalAccessException {
-    assertEquals(fieldName, TestUtils.getFieldByReflection(componentReferencing, "fieldName"));
-    assertEquals(keyName, TestUtils.getFieldByReflection(componentReferencing, "keyName"));
-    assertEquals(
-        foreignTableName, TestUtils.getFieldByReflection(componentReferencing, "foreignTableName"));
-    assertEquals(
-        foreignTableAlias,
-        TestUtils.getFieldByReflection(componentReferencing, "foreignTableAlias"));
-    assertEquals(
-        foreignKeyName, TestUtils.getFieldByReflection(componentReferencing, "foreignKeyName"));
-    assertTrue(
-        ((List<?>) TestUtils.getFieldByReflection(componentReferencing, "components")).isEmpty());
-    assertEquals(
-        1, ((Set<?>) TestUtils.getFieldByReflection(componentReferencing, "queriedTables")).size());
-    assertTrue(
-        ((Set<?>) TestUtils.getFieldByReflection(componentReferencing, "queriedTables"))
-            .contains(foreignTableName));
-  }
-
-  @Test
-  public void testAddComponent() throws NoSuchFieldException, IllegalAccessException {
-    // given
-    Component component = Mockito.mock(Component.class);
-    Set<String> expectedAddedQueriedTables = Set.of("testTable1", "testTable2");
-    Mockito.when(component.getQueriedTables()).thenReturn(expectedAddedQueriedTables);
-
-    // when
-    componentReferencing.addComponent(component);
-
-    // then
-    Component mockComponentVerifierOneTime = Mockito.verify(component, Mockito.times(1));
-    mockComponentVerifierOneTime.setParentTableAlias(foreignTableAlias);
-    mockComponentVerifierOneTime.setSqlExecutor(null);
-    mockComponentVerifierOneTime.getQueriedTables();
-
-    assertEquals(
-        1, ((List<?>) TestUtils.getFieldByReflection(componentReferencing, "components")).size());
-    assertEquals(
-        component,
-        ((List<?>) TestUtils.getFieldByReflection(componentReferencing, "components")).get(0));
-    assertEquals(
-        3, ((Set<?>) TestUtils.getFieldByReflection(componentReferencing, "queriedTables")).size());
-    assertTrue(
-        ((Set<?>) TestUtils.getFieldByReflection(componentReferencing, "queriedTables"))
-            .containsAll(expectedAddedQueriedTables));
-  }
-
-  @Test
-  public void testTableNameWhenParent() {
-    assertEquals(foreignTableName, componentReferencing.tableNameWhenParent());
-  }
-
-  @Test
-  public void testUpdateQuery() {
-    // given
-    SQLQuery sqlQuery = Mockito.mock(SQLQuery.class);
-    Component component = Mockito.mock(Component.class);
-    componentReferencing.addComponent(component);
-
-    // when
-    componentReferencing.updateQuery(sqlQuery);
-
-    // then
-    SQLQuery mockSqlQueryVerifierOneTime = Mockito.verify(sqlQuery, Mockito.times(1));
-    mockSqlQueryVerifierOneTime.addKey(null, keyName);
-    mockSqlQueryVerifierOneTime.addJoin(
-        null, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
-    mockSqlQueryVerifierOneTime.addFieldToAlias(fieldName, foreignTableAlias);
-    Mockito.verify(component, Mockito.times(1)).updateQuery(sqlQuery);
-  }
-
-  @Test
-  public void testSetParentTableAlias() throws NoSuchFieldException, IllegalAccessException {
+  public void updateQuery() {
+    ComponentReferencing componentReferencing =
+      new ComponentReferencing(
+        fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
     componentReferencing.setParentTableAlias(parentTableAlias);
-    assertEquals(
-        parentTableAlias, TestUtils.getFieldByReflection(componentReferencing, "parentTableAlias"));
+    SQLQuery query = new SQLQuery(tableName, tableAlias, null);
+    componentReferencing.updateQuery(query);
+    assertEquals(String.format("SELECT %s.%s AS %s_%s FROM %s %s LEFT JOIN %s %s ON %s.%s = %s.%s ", parentTableAlias, keyName, parentTableAlias, keyName, tableName, tableAlias, foreignTableName, foreignTableAlias, parentTableAlias, keyName, foreignTableAlias, foreignKeyName), query.build());
   }
 
   @Test
-  public void testSetSqlExecutor() throws NoSuchFieldException, IllegalAccessException {
-    // given
-    SQLExecutor sqlExecutor = Mockito.mock(SQLExecutor.class);
-    Component component = Mockito.mock(Component.class);
-    componentReferencing.addComponent(component);
-
-    // when
-    componentReferencing.setSqlExecutor(sqlExecutor);
-
-    // then
-    assertEquals(sqlExecutor, TestUtils.getFieldByReflection(componentReferencing, "sqlExecutor"));
-    Mockito.verify(component, Mockito.times(1)).setSqlExecutor(sqlExecutor);
-  }
-
-  @ParameterizedTest(name = "testExtractValues {index} => Test: [arguments]")
-  @MethodSource("getTestExtractValues")
-  public void testExtractValues(Map<String, Object> row, int size, Object testValue) {
-    // TODO: add parameters that give non-trivial return
+  public void extractValues_emptyRow() {
+    ComponentReferencing componentReferencing =
+      new ComponentReferencing(
+        fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
     componentReferencing.setParentTableAlias(parentTableAlias);
+    Map<String, Object> row = Map.of();
     Single<Map<String, Object>> values = componentReferencing.extractValues(row);
     values
         .test()
         .assertNoErrors()
-        .assertValue(v -> v.size() == size)
-        .assertValue(v -> v.get(keyName) == testValue);
+        .assertValue(Map::isEmpty);
   }
 
   @Test
-  public void testGetQueriedTables() {
-    assertEquals(1, componentReferencing.getQueriedTables().size());
-    assertTrue(componentReferencing.getQueriedTables().contains(foreignTableName));
+  public void extractValues_singeRow() {
+    ComponentReferencing componentReferencing =
+      new ComponentReferencing(
+        fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
+    ComponentRow componentRow = new ComponentRow(foreignKeyName);
+    componentReferencing.addComponent(componentRow);
+    componentReferencing.setParentTableAlias(parentTableAlias);
+    Map<String, Object> row = Map.of(String.format("%s_%s", parentTableAlias, keyName), keyValue,
+      String.format("%s_%s", foreignTableAlias, foreignKeyName), foreignKeyValue);
+    Single<Map<String, Object>> values = componentReferencing.extractValues(row);
+    values
+      .test()
+      .assertNoErrors()
+      .assertValue(Map.of(fieldName, Map.of(foreignKeyName, foreignKeyValue)));
   }
 }

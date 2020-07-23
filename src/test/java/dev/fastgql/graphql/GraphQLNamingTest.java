@@ -14,24 +14,24 @@ import org.junit.jupiter.api.Test;
 public class GraphQLNamingTest {
 
   @Test
-  public void shouldGetNameOrderByType() {
+  public void getNameOrderByType() {
     assertEquals("name_order_by", GraphQLNaming.getNameOrderByType("name"));
   }
 
   @Test
-  public void shouldGetNameBoolType() {
+  public void getNameBoolType() {
     assertEquals("name_bool_exp", GraphQLNaming.getNameBoolType("name"));
   }
 
   @Test
-  public void shouldGetNameForReferencingField() {
+  public void getNameForReferencingField() {
     String actualName =
         GraphQLNaming.getNameForReferencingField(new QualifiedName("tableName/keyName"));
     assertEquals("keyName_ref", actualName);
   }
 
   @Test
-  public void shouldGetNameForReferencedByField() {
+  public void getNameForReferencedByField() {
     String actualName =
         GraphQLNaming.getNameForReferencedByField(new QualifiedName("tableName/keyName"));
     assertEquals("tableName_on_keyName", actualName);

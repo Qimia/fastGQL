@@ -8,72 +8,56 @@ package dev.fastgql.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import dev.fastgql.TestUtils;
 import io.reactivex.Single;
 import java.util.Map;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 public class ComponentRowTest {
 
-  static final String keyName = "testKeyName";
-  static final String parentTableAlias = "testParentTableAlias";
-  ComponentRow componentRow;
-
-  static Stream<Arguments> getTestExtractValues() {
-    return Stream.of(
-        Arguments.of(Map.of(), 0, null),
-        Arguments.of(
-            Map.of(String.format("%s_%s", parentTableAlias, keyName), "testValue"),
-            1,
-            "testValue"));
-  }
-
-  @BeforeEach
-  public void setUp() {
-    componentRow = new ComponentRow(keyName);
-  }
+  private static final String tableName = "testTableName";
+  private static final String tableAlias = "testTableAlias";
+  private static final String keyName = "testKeyName";
+  private static final String keyValue = "testKeyValue";
+  private static final String parentTableAlias = "testParentTableAlias";
 
   @Test
-  public void testUpdateQuery() {
-    SQLQuery sqlQuery = Mockito.mock(SQLQuery.class);
+  public void updateQuery() {
+    ComponentRow componentRow = new ComponentRow(keyName);
+    componentRow.setParentTableAlias(parentTableAlias);
+    SQLQuery sqlQuery = new SQLQuery(tableName, tableAlias, null);
     componentRow.updateQuery(sqlQuery);
-    Mockito.verify(sqlQuery, Mockito.times(1)).addKey(null, keyName);
+    assertEquals(String.format("SELECT %s.%s AS %s_%s FROM %s %s ", parentTableAlias, keyName, parentTableAlias, keyName, tableName, tableAlias), sqlQuery.build());
   }
 
   @Test
-  public void testSetParentTableAlias() throws NoSuchFieldException, IllegalAccessException {
+  public void extractValues_emptyRow() {
+    ComponentRow componentRow = new ComponentRow(keyName);
     componentRow.setParentTableAlias(parentTableAlias);
-    assertEquals(
-        parentTableAlias, TestUtils.getFieldByReflection(componentRow, "parentTableAlias"));
-  }
-
-  @ParameterizedTest(name = "testExtractValues {index} => Test: [arguments]")
-  @MethodSource("getTestExtractValues")
-  public void testExtractValues(Map<String, Object> row, int size, Object testValue) {
-    componentRow.setParentTableAlias(parentTableAlias);
+    Map<String, Object> row = Map.of();
     Single<Map<String, Object>> values = componentRow.extractValues(row);
     values
         .test()
         .assertNoErrors()
-        .assertValue(v -> v.size() == size)
-        .assertValue(v -> v.get(keyName) == testValue);
+        .assertValue(Map::isEmpty);
   }
 
   @Test
-  public void testGetQueriedTables() {
-    assertTrue(componentRow.getQueriedTables().isEmpty());
+  public void extractValues_singleRow() {
+    ComponentRow componentRow = new ComponentRow(keyName);
+    componentRow.setParentTableAlias(parentTableAlias);
+    Map<String, Object> row = Map.of(String.format("%s_%s", parentTableAlias, keyName), keyValue);
+    Single<Map<String, Object>> values = componentRow.extractValues(row);
+    values
+      .test()
+      .assertNoErrors()
+      .assertValue(Map.of(keyName, keyValue));
   }
 
   @Test
-  public void testAddComponent() {
+  public void addComponent() {
+    ComponentRow componentRow = new ComponentRow(keyName);
     Component component = Mockito.mock(Component.class);
     assertThrows(
         RuntimeException.class,
@@ -82,10 +66,11 @@ public class ComponentRowTest {
   }
 
   @Test
-  public void testTableNameWhenParent() {
+  public void tableNameWhenParent() {
+    ComponentRow componentRow = new ComponentRow(keyName);
     assertThrows(
         RuntimeException.class,
-        () -> componentRow.tableNameWhenParent(),
+        componentRow::tableNameWhenParent,
         "ComponentRow cannot have any child components");
   }
 }

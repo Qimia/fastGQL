@@ -103,7 +103,7 @@ public class SQLQuery {
   }
 
   private String buildOrderByQuery() {
-    if (args.getOrderBy() == null || !args.getOrderBy().isJsonArray()) {
+    if (args == null || args.getOrderBy() == null || !args.getOrderBy().isJsonArray()) {
       return "";
     }
     return String.format(
@@ -112,21 +112,21 @@ public class SQLQuery {
   }
 
   private String buildLimitQuery() {
-    if (args.getLimit() == null) {
+    if (args == null || args.getLimit() == null) {
       return "";
     }
     return String.format("LIMIT %d", args.getLimit());
   }
 
   private String buildOffsetQuery() {
-    if (args.getOffset() == null) {
+    if (args == null || args.getOffset() == null) {
       return "";
     }
     return String.format("OFFSET %d", args.getOffset());
   }
 
   private String buildWhereQuery() {
-    if (args.getWhere() != null && args.getWhere().isJsonObject()) {
+    if (args != null && args.getWhere() != null && args.getWhere().isJsonObject()) {
       String whereQuery =
           SQLUtils.createBoolQuery(args.getWhere().getAsJsonObject(), alias, fieldToAlias);
       addWhereConditions(String.format("(%s)", whereQuery));

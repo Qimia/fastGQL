@@ -17,11 +17,9 @@ import org.junit.jupiter.api.Test;
 
 public class DatabaseSchemaTest {
 
-  private DatabaseSchema databaseSchema;
-
   @Test
-  public void shouldAddKeyWithQualifiedNameAndTypeAndQualifiedReferencingName() {
-    databaseSchema =
+  public void build_withReferencing() {
+    DatabaseSchema databaseSchema =
         DatabaseSchema.newSchema()
             .addKey("tableName/keyName", KeyType.INT, "referencingTableName/referencingKeyName")
             .build();
@@ -49,8 +47,8 @@ public class DatabaseSchemaTest {
   }
 
   @Test
-  public void shouldAddKeyWithQualifiedNameAndType() {
-    databaseSchema = DatabaseSchema.newSchema().addKey("tableName/keyName", KeyType.INT).build();
+  public void build_withoutReferencing() {
+    DatabaseSchema databaseSchema = DatabaseSchema.newSchema().addKey("tableName/keyName", KeyType.INT).build();
     KeyDefinition expectedKeyDefinition =
         new KeyDefinition(new QualifiedName("tableName/keyName"), KeyType.INT, null, null);
     assertTrue(databaseSchema.getTableNames().contains("tableName"));

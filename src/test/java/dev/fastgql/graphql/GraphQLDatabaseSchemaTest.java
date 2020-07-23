@@ -16,7 +16,6 @@ import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLObjectType.Builder;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +36,7 @@ public class GraphQLDatabaseSchemaTest {
   }
 
   @Test
-  public void shouldApplyToGraphQLObjectTypes() {
+  public void applyToGraphQLObjectTypes() {
     List<Builder> builders = new ArrayList<>();
     GraphQLObjectType.Builder testBuilder = GraphQLObjectType.newObject().name("test");
     builders.add(testBuilder);
@@ -49,21 +48,12 @@ public class GraphQLDatabaseSchemaTest {
     GraphQLObjectType customersObjectType =
         (GraphQLObjectType)
             graphQLSchemaObject.getFieldDefinition("customers").getType().getChildren().get(0);
-    assertContainsAllFieldDefinition(customersObjectType, List.of("id", "address_ref", "address"));
+    List.of("id", "address_ref", "address").forEach(name -> assertNotNull(customersObjectType.getFieldDefinition(name)));
     GraphQLObjectType addressesObjectType =
         (GraphQLObjectType)
             graphQLSchemaObject.getFieldDefinition("addresses").getType().getChildren().get(0);
-    assertContainsFieldDefinition(addressesObjectType, "id");
+    assertNotNull(addressesObjectType.getFieldDefinition("id"));
     assertArgumentsInFieldDefinition(addressesObjectType, "customers_on_address", "customers");
-  }
-
-  private void assertContainsFieldDefinition(GraphQLObjectType graphQLObjectType, String name) {
-    assertNotNull(graphQLObjectType.getFieldDefinition(name));
-  }
-
-  private void assertContainsAllFieldDefinition(
-      GraphQLObjectType graphQLObjectType, Collection<String> names) {
-    names.forEach(name -> assertNotNull(graphQLObjectType.getFieldDefinition(name)));
   }
 
   private void assertArgumentsInFieldDefinition(

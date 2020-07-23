@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 public class AliasGeneratorTest {
 
   @Test
-  public void testGetAlias() {
+  public void getAlias() {
     AliasGenerator aliasGenerator = new AliasGenerator();
     assertEquals("a0", aliasGenerator.getAlias());
     assertEquals("a1", aliasGenerator.getAlias());

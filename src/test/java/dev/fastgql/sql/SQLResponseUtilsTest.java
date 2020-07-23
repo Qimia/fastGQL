@@ -23,7 +23,7 @@ public class SQLResponseUtilsTest {
 
   @ParameterizedTest(name = "testGetValue {index} => Test: [{arguments}]")
   @MethodSource("getTestGetValueParameters")
-  void testGetValue(
+  void getValue(
       Map<String, Object> row, String tableAlias, String tableKeyName, Object expected) {
     assertEquals(expected, SQLResponseUtils.getValue(row, tableAlias, tableKeyName));
   }
@@ -36,7 +36,7 @@ public class SQLResponseUtilsTest {
   }
 
   @Test
-  void shouldConstructResponse() {
+  void constructResponse() {
     Map<String, Integer> expected = new HashMap<>();
     for (int i = 0; i < 10; i++) {
       expected.put(String.format("k%d", i), i);

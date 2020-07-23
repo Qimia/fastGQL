@@ -7,6 +7,7 @@
 package dev.fastgql.graphql;
 
 import static graphql.Scalars.GraphQLFloat;
+import static graphql.Scalars.GraphQLInt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -18,17 +19,17 @@ import org.junit.jupiter.api.Test;
 public class GraphQLFieldDefinitionTest {
 
   @Test
-  public void shouldCreateLeaf() {
+  public void createLeaf() {
     QualifiedName qualifiedName = new QualifiedName("tableName/keyName");
     GraphQLFieldDefinition actual = GraphQLFieldDefinition.createLeaf(qualifiedName, KeyType.INT);
     assertEquals(qualifiedName, actual.getQualifiedName());
-    assertEquals(GraphQLFloat, actual.getGraphQLType());
+    assertEquals(GraphQLInt, actual.getGraphQLType());
     assertNull(actual.getForeignName());
     assertEquals(ReferenceType.NONE, actual.getReferenceType());
   }
 
   @Test
-  public void shouldCreateReferencing() {
+  public void createReferencing() {
     QualifiedName qualifiedName = new QualifiedName("tableName/keyName");
     QualifiedName foreignName = new QualifiedName("foreignTableName/foreignKeyName");
     GraphQLFieldDefinition actual =
@@ -40,7 +41,7 @@ public class GraphQLFieldDefinitionTest {
   }
 
   @Test
-  public void shouldCreateReferencedBy() {
+  public void createReferencedBy() {
     QualifiedName qualifiedName = new QualifiedName("tableName/keyName");
     QualifiedName foreignName = new QualifiedName("foreignTableName/foreignKeyName");
     GraphQLFieldDefinition actual =

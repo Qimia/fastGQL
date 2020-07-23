@@ -43,7 +43,7 @@ public class MetadataUtilsTest {
   }
 
   @Test
-  public void shouldCreateDatabaseSchema() throws SQLException {
+  public void createDatabaseSchema() throws SQLException {
     Connection connection = datasourceConfig.getConnection();
     DatabaseSchema databaseSchema = MetadataUtils.createDatabaseSchema(connection);
     KeyDefinition expectedAddressesIdKeyDefinition =

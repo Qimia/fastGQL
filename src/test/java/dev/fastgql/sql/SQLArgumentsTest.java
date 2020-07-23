@@ -46,7 +46,7 @@ public class SQLArgumentsTest {
 
   @ParameterizedTest(name = "testSQLArguments {index} => Test: [{arguments}]")
   @MethodSource("getTestSQLArgumentsParameters")
-  void testSQLArguments(Map<String, Object> input, Map<String, Object> expected) {
+  void getters(Map<String, Object> input, Map<String, Object> expected) {
     SQLArguments sqlArguments = new SQLArguments(input);
     assertEquals(expected.get("limit"), sqlArguments.getLimit());
     assertEquals(expected.get("offset"), sqlArguments.getOffset());
