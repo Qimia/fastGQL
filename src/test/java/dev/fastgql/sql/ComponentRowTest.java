@@ -28,7 +28,11 @@ public class ComponentRowTest {
     componentRow.setParentTableAlias(parentTableAlias);
     SQLQuery sqlQuery = new SQLQuery(tableName, tableAlias, null);
     componentRow.updateQuery(sqlQuery);
-    assertEquals(String.format("SELECT %s.%s AS %s_%s FROM %s %s ", parentTableAlias, keyName, parentTableAlias, keyName, tableName, tableAlias), sqlQuery.build());
+    assertEquals(
+        String.format(
+            "SELECT %s.%s AS %s_%s FROM %s %s ",
+            parentTableAlias, keyName, parentTableAlias, keyName, tableName, tableAlias),
+        sqlQuery.build());
   }
 
   @Test
@@ -37,10 +41,7 @@ public class ComponentRowTest {
     componentRow.setParentTableAlias(parentTableAlias);
     Map<String, Object> row = Map.of();
     Single<Map<String, Object>> values = componentRow.extractValues(row);
-    values
-        .test()
-        .assertNoErrors()
-        .assertValue(Map::isEmpty);
+    values.test().assertNoErrors().assertValue(Map::isEmpty);
   }
 
   @Test
@@ -49,10 +50,7 @@ public class ComponentRowTest {
     componentRow.setParentTableAlias(parentTableAlias);
     Map<String, Object> row = Map.of(String.format("%s_%s", parentTableAlias, keyName), keyValue);
     Single<Map<String, Object>> values = componentRow.extractValues(row);
-    values
-      .test()
-      .assertNoErrors()
-      .assertValue(Map.of(keyName, keyValue));
+    values.test().assertNoErrors().assertValue(Map.of(keyName, keyValue));
   }
 
   @Test

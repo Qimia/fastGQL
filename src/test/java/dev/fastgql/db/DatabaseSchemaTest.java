@@ -48,7 +48,8 @@ public class DatabaseSchemaTest {
 
   @Test
   public void build_withoutReferencing() {
-    DatabaseSchema databaseSchema = DatabaseSchema.newSchema().addKey("tableName/keyName", KeyType.INT).build();
+    DatabaseSchema databaseSchema =
+        DatabaseSchema.newSchema().addKey("tableName/keyName", KeyType.INT).build();
     KeyDefinition expectedKeyDefinition =
         new KeyDefinition(new QualifiedName("tableName/keyName"), KeyType.INT, null, null);
     assertTrue(databaseSchema.getTableNames().contains("tableName"));

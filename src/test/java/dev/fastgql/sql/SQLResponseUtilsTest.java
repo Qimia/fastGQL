@@ -23,8 +23,7 @@ public class SQLResponseUtilsTest {
 
   @ParameterizedTest(name = "testGetValue {index} => Test: [{arguments}]")
   @MethodSource("getTestGetValueParameters")
-  void getValue(
-      Map<String, Object> row, String tableAlias, String tableKeyName, Object expected) {
+  void getValue(Map<String, Object> row, String tableAlias, String tableKeyName, Object expected) {
     assertEquals(expected, SQLResponseUtils.getValue(row, tableAlias, tableKeyName));
   }
 

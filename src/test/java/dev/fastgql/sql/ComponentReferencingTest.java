@@ -6,11 +6,11 @@
 
 package dev.fastgql.sql;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import io.reactivex.Single;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ComponentReferencingTest {
 
@@ -28,42 +28,58 @@ public class ComponentReferencingTest {
   @Test
   public void updateQuery() {
     ComponentReferencing componentReferencing =
-      new ComponentReferencing(
-        fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
+        new ComponentReferencing(
+            fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
     componentReferencing.setParentTableAlias(parentTableAlias);
     SQLQuery query = new SQLQuery(tableName, tableAlias, null);
     componentReferencing.updateQuery(query);
-    assertEquals(String.format("SELECT %s.%s AS %s_%s FROM %s %s LEFT JOIN %s %s ON %s.%s = %s.%s ", parentTableAlias, keyName, parentTableAlias, keyName, tableName, tableAlias, foreignTableName, foreignTableAlias, parentTableAlias, keyName, foreignTableAlias, foreignKeyName), query.build());
+    assertEquals(
+        String.format(
+            "SELECT %s.%s AS %s_%s FROM %s %s LEFT JOIN %s %s ON %s.%s = %s.%s ",
+            parentTableAlias,
+            keyName,
+            parentTableAlias,
+            keyName,
+            tableName,
+            tableAlias,
+            foreignTableName,
+            foreignTableAlias,
+            parentTableAlias,
+            keyName,
+            foreignTableAlias,
+            foreignKeyName),
+        query.build());
   }
 
   @Test
   public void extractValues_emptyRow() {
     ComponentReferencing componentReferencing =
-      new ComponentReferencing(
-        fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
+        new ComponentReferencing(
+            fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
     componentReferencing.setParentTableAlias(parentTableAlias);
     Map<String, Object> row = Map.of();
     Single<Map<String, Object>> values = componentReferencing.extractValues(row);
-    values
-        .test()
-        .assertNoErrors()
-        .assertValue(Map::isEmpty);
+    values.test().assertNoErrors().assertValue(Map::isEmpty);
   }
 
   @Test
   public void extractValues_singeRow() {
     ComponentReferencing componentReferencing =
-      new ComponentReferencing(
-        fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
+        new ComponentReferencing(
+            fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
     ComponentRow componentRow = new ComponentRow(foreignKeyName);
     componentReferencing.addComponent(componentRow);
     componentReferencing.setParentTableAlias(parentTableAlias);
-    Map<String, Object> row = Map.of(String.format("%s_%s", parentTableAlias, keyName), keyValue,
-      String.format("%s_%s", foreignTableAlias, foreignKeyName), foreignKeyValue);
+    Map<String, Object> row =
+        Map.of(
+            String.format("%s_%s", parentTableAlias, keyName),
+            keyValue,
+            String.format("%s_%s", foreignTableAlias, foreignKeyName),
+            foreignKeyValue);
     Single<Map<String, Object>> values = componentReferencing.extractValues(row);
     values
-      .test()
-      .assertNoErrors()
-      .assertValue(Map.of(fieldName, Map.of(foreignKeyName, foreignKeyValue)));
+        .test()
+        .assertNoErrors()
+        .assertValue(Map.of(fieldName, Map.of(foreignKeyName, foreignKeyValue)));
   }
 }

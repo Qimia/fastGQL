@@ -48,7 +48,8 @@ public class GraphQLDatabaseSchemaTest {
     GraphQLObjectType customersObjectType =
         (GraphQLObjectType)
             graphQLSchemaObject.getFieldDefinition("customers").getType().getChildren().get(0);
-    List.of("id", "address_ref", "address").forEach(name -> assertNotNull(customersObjectType.getFieldDefinition(name)));
+    List.of("id", "address_ref", "address")
+        .forEach(name -> assertNotNull(customersObjectType.getFieldDefinition(name)));
     GraphQLObjectType addressesObjectType =
         (GraphQLObjectType)
             graphQLSchemaObject.getFieldDefinition("addresses").getType().getChildren().get(0);

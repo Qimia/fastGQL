@@ -45,10 +45,7 @@ public class KeyDefinitionTest {
 
   @Test
   public void merge_nullKey() {
-    Exception exception =
-        assertThrows(
-            RuntimeException.class,
-            () -> keyDefinition.merge(null));
+    Exception exception = assertThrows(RuntimeException.class, () -> keyDefinition.merge(null));
 
     String expectedMessage = "cannot merge with null key";
     String actualMessage = exception.getMessage();

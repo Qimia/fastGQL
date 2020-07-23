@@ -8,10 +8,9 @@ package dev.fastgql.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.reactivex.Single;
 import java.util.List;
 import java.util.Map;
-
-import io.reactivex.Single;
 import org.junit.jupiter.api.Test;
 
 public class ComponentReferencedTest {
@@ -29,19 +28,23 @@ public class ComponentReferencedTest {
   @Test
   public void updateQuery() {
     ComponentReferenced componentReferenced =
-      new ComponentReferenced(
-        fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null);
+        new ComponentReferenced(
+            fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null);
     componentReferenced.setParentTableAlias(parentTableAlias);
     SQLQuery query = new SQLQuery(tableName, tableAlias, null);
     componentReferenced.updateQuery(query);
-    assertEquals(String.format("SELECT %s.%s AS %s_%s FROM %s %s ", parentTableAlias, keyName, parentTableAlias, keyName, tableName, tableAlias), query.build());
+    assertEquals(
+        String.format(
+            "SELECT %s.%s AS %s_%s FROM %s %s ",
+            parentTableAlias, keyName, parentTableAlias, keyName, tableName, tableAlias),
+        query.build());
   }
 
   @Test
   public void extractValues_emptyRow() {
     ComponentReferenced componentReferenced =
-      new ComponentReferenced(
-        fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null);
+        new ComponentReferenced(
+            fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null);
     componentReferenced.setParentTableAlias(parentTableAlias);
     Map<String, Object> row = Map.of();
     componentReferenced.extractValues(row).test().assertNoErrors().assertValue(Map::isEmpty);
@@ -50,14 +53,23 @@ public class ComponentReferencedTest {
   @Test
   public void extractValues_singleRow() {
     ComponentReferenced componentReferenced =
-      new ComponentReferenced(
-        fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null);
+        new ComponentReferenced(
+            fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null);
     componentReferenced.setParentTableAlias(parentTableAlias);
-    componentReferenced.setSqlExecutor(sqlQuery -> {
-      assertEquals(String.format("SELECT FROM %s %s WHERE (%s.%s = %s) ", foreignTable, foreignTableAlias, foreignTableAlias, foreignKeyName, keyValue), sqlQuery);
-      return Single.just(List.of());
-    });
+    componentReferenced.setSqlExecutor(
+        sqlQuery -> {
+          assertEquals(
+              String.format(
+                  "SELECT FROM %s %s WHERE (%s.%s = %s) ",
+                  foreignTable, foreignTableAlias, foreignTableAlias, foreignKeyName, keyValue),
+              sqlQuery);
+          return Single.just(List.of());
+        });
     Map<String, Object> row = Map.of(String.format("%s_%s", parentTableAlias, keyName), keyValue);
-    componentReferenced.extractValues(row).test().assertNoErrors().assertValue(Map.of(fieldName, List.of()));
+    componentReferenced
+        .extractValues(row)
+        .test()
+        .assertNoErrors()
+        .assertValue(Map.of(fieldName, List.of()));
   }
 }
