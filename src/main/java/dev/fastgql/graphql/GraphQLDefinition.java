@@ -33,7 +33,7 @@ import io.reactivex.Single;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.reactivex.sqlclient.SqlConnection;
+import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,8 +80,8 @@ public class GraphQLDefinition {
     }
 
     private static Single<List<Map<String, Object>>> executeQuery(
-        String query, SqlConnection connection) {
-      return connection
+        String query, Transaction transaction) {
+      return transaction
           .rxQuery(query)
           .map(
               rowSet -> {
@@ -167,10 +167,16 @@ public class GraphQLDefinition {
     }
 
     private Single<List<Map<String, Object>>> getResponse(
-        DataFetchingEnvironment env, SqlConnection connection) {
+        DataFetchingEnvironment env, Transaction transaction) {
       ComponentExecutable executionRoot = getExecutionRoot(env);
-      executionRoot.setSqlExecutor(queryString -> executeQuery(queryString, connection));
+      executionRoot.setSqlExecutor(queryString -> executeQuery(queryString, transaction));
       return executionRoot.execute();
+    }
+
+    private void commitTransaction(Transaction transaction) {
+      transaction
+          .rxCommit()
+          .subscribe(() -> log.debug("transaction committed"), err -> log.error(err.getMessage()));
     }
 
     /**
@@ -187,16 +193,12 @@ public class GraphQLDefinition {
           new VertxDataFetcher<>(
               (env, listPromise) ->
                   sqlConnectionPool
-                      .rxGetConnection()
-                      .doOnSuccess(
-                          connection ->
-                              getResponse(env, connection)
-                                  .doOnSuccess(listPromise::complete)
-                                  .doOnError(listPromise::fail)
-                                  .doFinally(connection::close)
-                                  .subscribe())
-                      .doOnError(listPromise::fail)
-                      .subscribe());
+                      .rxBegin()
+                      .flatMap(
+                          transaction ->
+                              getResponse(env, transaction)
+                                  .doFinally(() -> commitTransaction(transaction)))
+                      .subscribe(listPromise::complete, listPromise::fail));
       databaseSchema
           .getTableNames()
           .forEach(
@@ -239,11 +241,14 @@ public class GraphQLDefinition {
             ComponentExecutable executionRoot = getExecutionRoot(env);
             return EventFlowableFactory.create(
                     executionRoot, vertx, datasourceConfig, debeziumConfig)
-                .flatMap(record -> sqlConnectionPool.rxGetConnection().toFlowable())
+                .flatMap(record -> sqlConnectionPool.rxBegin().toFlowable())
                 .flatMap(
-                    connection -> {
-                      executionRoot.setSqlExecutor(query -> executeQuery(query, connection));
-                      return executionRoot.execute().doFinally(connection::close).toFlowable();
+                    transaction -> {
+                      executionRoot.setSqlExecutor(query -> executeQuery(query, transaction));
+                      return executionRoot
+                          .execute()
+                          .doFinally(() -> commitTransaction(transaction))
+                          .toFlowable();
                     });
           };
       databaseSchema
