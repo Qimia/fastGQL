@@ -93,26 +93,24 @@ public abstract class AbstractContainerEnvImpl implements AbstractContainerEnv {
     DeploymentOptions options = new DeploymentOptions().setConfig(config);
     vertx
         .rxDeployVerticle(new FastGQL(), options)
-        .doOnSuccess(
+        .subscribe(
             deploymentID -> {
               this.deploymentID = deploymentID;
               context.completeNow();
-            })
-        .subscribe();
+            });
   }
 
   @Override
   public void tearDown(Vertx vertx, VertxTestContext context) {
     vertx
         .rxUndeploy(deploymentID)
-        .doOnComplete(
+        .subscribe(
             () -> {
               debeziumContainer.close();
               kafkaContainer.close();
               jdbcDatabaseContainer.close();
               network.close();
               context.completeNow();
-            })
-        .subscribe();
+            });
   }
 }
