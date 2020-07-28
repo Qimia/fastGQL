@@ -1,0 +1,1 @@
+docker run -it --rm --name mysql_test -p 3306:3306 -v /home/kamil/projects/fastGQL/initdb/mysql:/docker-entrypoint-initdb.d -e MYSQL_ROOT_PASSWORD=mysql_test -e MYSQL_USER=mysql_test -e MYSQL_PASSWORD=mysql_test fastgql/mysql-testcontainers

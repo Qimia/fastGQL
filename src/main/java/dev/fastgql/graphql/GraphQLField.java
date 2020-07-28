@@ -25,7 +25,7 @@ import java.util.Map;
  *
  * @author Kamil Bobrowski
  */
-public class GraphQLFieldDefinition {
+public class GraphQLField {
   public static final Map<KeyType, GraphQLScalarType> keyTypeToGraphQLType =
       Map.of(
           KeyType.INT, GraphQLInt,
@@ -37,7 +37,7 @@ public class GraphQLFieldDefinition {
   private final QualifiedName foreignName;
   private final ReferenceType referenceType;
 
-  private GraphQLFieldDefinition(
+  private GraphQLField(
       QualifiedName qualifiedName,
       GraphQLOutputType graphQLType,
       QualifiedName foreignName,
@@ -56,8 +56,8 @@ public class GraphQLFieldDefinition {
    * @param type type of the key
    * @return new field definition
    */
-  public static GraphQLFieldDefinition createLeaf(QualifiedName qualifiedName, KeyType type) {
-    return new GraphQLFieldDefinition(
+  public static GraphQLField createLeaf(QualifiedName qualifiedName, KeyType type) {
+    return new GraphQLField(
         qualifiedName, keyTypeToGraphQLType.get(type), null, ReferenceType.NONE);
   }
 
@@ -69,9 +69,9 @@ public class GraphQLFieldDefinition {
    * @param foreignName qualified name of the key being referenced
    * @return new field definition
    */
-  public static GraphQLFieldDefinition createReferencing(
+  public static GraphQLField createReferencing(
       QualifiedName qualifiedName, QualifiedName foreignName) {
-    return new GraphQLFieldDefinition(
+    return new GraphQLField(
         qualifiedName,
         GraphQLTypeReference.typeRef(foreignName.getTableName()),
         foreignName,
@@ -86,9 +86,9 @@ public class GraphQLFieldDefinition {
    * @param foreignName qualified name of foreign key which references this key
    * @return new field definition
    */
-  public static GraphQLFieldDefinition createReferencedBy(
+  public static GraphQLField createReferencedBy(
       QualifiedName qualifiedName, QualifiedName foreignName) {
-    return new GraphQLFieldDefinition(
+    return new GraphQLField(
         qualifiedName,
         GraphQLList.list(GraphQLTypeReference.typeRef(foreignName.getTableName())),
         foreignName,

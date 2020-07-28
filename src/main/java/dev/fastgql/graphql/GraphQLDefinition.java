@@ -6,6 +6,8 @@
 
 package dev.fastgql.graphql;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
@@ -19,24 +21,19 @@ import dev.fastgql.sql.ComponentReferenced;
 import dev.fastgql.sql.ComponentReferencing;
 import dev.fastgql.sql.ComponentRow;
 import dev.fastgql.sql.ExecutionRoot;
+import dev.fastgql.sql.MutationExecution;
 import dev.fastgql.sql.SQLArguments;
+import dev.fastgql.sql.SQLUtils;
 import graphql.GraphQL;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.DataFetchingFieldSelectionSet;
-import graphql.schema.FieldCoordinates;
-import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLSchema;
+import graphql.schema.*;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.reactivex.sqlclient.SqlConnection;
+import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -52,8 +49,9 @@ public class GraphQLDefinition {
 
   private static final Logger log = LoggerFactory.getLogger(GraphQLDefinition.class);
 
-  public static Builder newGraphQL(DatabaseSchema databaseSchema, Pool client) {
-    return new Builder(databaseSchema, client);
+  public static Builder newGraphQL(
+      DatabaseSchema databaseSchema, Pool client, DatasourceConfig.DBType dbType) {
+    return new Builder(databaseSchema, client, dbType);
   }
 
   public static class Builder {
@@ -63,7 +61,9 @@ public class GraphQLDefinition {
     private final GraphQLSchema.Builder graphQLSchemaBuilder;
     private final GraphQLCodeRegistry.Builder graphQLCodeRegistryBuilder;
     private boolean queryEnabled = false;
+    private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
+    private boolean returningStatementEnabled = false;
 
     /**
      * Class builder, has to be initialized with database schema and SQL connection pool.
@@ -71,31 +71,21 @@ public class GraphQLDefinition {
      * @param databaseSchema input database schema
      * @param sqlConnectionPool SQL connection pool
      */
-    public Builder(DatabaseSchema databaseSchema, Pool sqlConnectionPool) {
+    public Builder(
+        DatabaseSchema databaseSchema, Pool sqlConnectionPool, DatasourceConfig.DBType dbType) {
       this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
       this.sqlConnectionPool = sqlConnectionPool;
       this.graphQLSchemaBuilder = GraphQLSchema.newSchema();
       this.graphQLCodeRegistryBuilder = GraphQLCodeRegistry.newCodeRegistry();
+      if (dbType.equals(DatasourceConfig.DBType.postgresql)) {
+        returningStatementEnabled = true;
+      }
     }
 
     private static Single<List<Map<String, Object>>> executeQuery(
-        String query, SqlConnection connection) {
-      return connection
-          .rxQuery(query)
-          .map(
-              rowSet -> {
-                List<String> columnNames = rowSet.columnsNames();
-                List<Map<String, Object>> retList = new ArrayList<>();
-                rowSet.forEach(
-                    row -> {
-                      Map<String, Object> r = new HashMap<>();
-                      columnNames.forEach(
-                          columnName -> r.put(columnName, row.getValue(columnName)));
-                      retList.add(r);
-                    });
-                return retList;
-              });
+        String query, Transaction transaction) {
+      return transaction.rxQuery(query).map(SQLUtils::rowSetToList);
     }
 
     private static void traverseSelectionSet(
@@ -110,22 +100,22 @@ public class GraphQLDefinition {
                 if (selectedField.getQualifiedName().contains("/")) {
                   return;
                 }
-                GraphQLFieldDefinition graphQLFieldDefinition =
+                GraphQLField graphQLField =
                     graphQLDatabaseSchema.fieldAt(
                         parent.tableNameWhenParent(), selectedField.getName());
-                switch (graphQLFieldDefinition.getReferenceType()) {
+                switch (graphQLField.getReferenceType()) {
                   case NONE:
                     parent.addComponent(
-                        new ComponentRow(graphQLFieldDefinition.getQualifiedName().getKeyName()));
+                        new ComponentRow(graphQLField.getQualifiedName().getKeyName()));
                     break;
                   case REFERENCING:
                     Component componentReferencing =
                         new ComponentReferencing(
                             selectedField.getName(),
-                            graphQLFieldDefinition.getQualifiedName().getKeyName(),
-                            graphQLFieldDefinition.getForeignName().getTableName(),
+                            graphQLField.getQualifiedName().getKeyName(),
+                            graphQLField.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
-                            graphQLFieldDefinition.getForeignName().getKeyName());
+                            graphQLField.getForeignName().getKeyName());
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
                         componentReferencing,
@@ -137,10 +127,10 @@ public class GraphQLDefinition {
                     Component componentReferenced =
                         new ComponentReferenced(
                             selectedField.getName(),
-                            graphQLFieldDefinition.getQualifiedName().getKeyName(),
-                            graphQLFieldDefinition.getForeignName().getTableName(),
+                            graphQLField.getQualifiedName().getKeyName(),
+                            graphQLField.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
-                            graphQLFieldDefinition.getForeignName().getKeyName(),
+                            graphQLField.getForeignName().getKeyName(),
                             new SQLArguments(selectedField.getArguments()));
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
@@ -160,22 +150,50 @@ public class GraphQLDefinition {
       SQLArguments sqlArguments = new SQLArguments(env.getArguments());
       ComponentExecutable executionRoot =
           new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), sqlArguments);
-      // executionRoot.setSqlExecutor(sqlExecutor);
       traverseSelectionSet(
           graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
       return executionRoot;
     }
 
     private Single<List<Map<String, Object>>> getResponse(
-        DataFetchingEnvironment env, SqlConnection connection) {
+        DataFetchingEnvironment env, Transaction transaction) {
       ComponentExecutable executionRoot = getExecutionRoot(env);
-      executionRoot.setSqlExecutor(queryString -> executeQuery(queryString, connection));
+      executionRoot.setSqlExecutor(queryString -> executeQuery(queryString, transaction));
       return executionRoot.execute();
     }
 
+    private Single<Map<String, Object>> getResponseMutation(
+        DataFetchingEnvironment env, Transaction transaction) {
+      String fieldName = env.getField().getName();
+      Gson gson = new Gson();
+      JsonArray rows = gson.toJsonTree(env.getArgument("objects")).getAsJsonArray();
+      SelectedField returning = env.getSelectionSet().getField("returning");
+      List<String> returningColumns = new ArrayList<>();
+      if (returning != null) {
+        returning
+            .getSelectionSet()
+            .getFields()
+            .forEach(selectedField -> returningColumns.add(selectedField.getName()));
+      }
+      return MutationExecution.createResponse(
+          transaction, databaseSchema, fieldName, rows, returningColumns);
+    }
+
+    private void commitTransaction(Transaction transaction) {
+      transaction
+          .rxCommit()
+          .subscribe(() -> log.debug("transaction committed"), err -> log.error(err.getMessage()));
+    }
+
+    private void rollbackTransaction(Transaction transaction) {
+      transaction
+          .rxRollback()
+          .subscribe(() -> log.debug("transaction rollback"), err -> log.error(err.getMessage()));
+    }
+
     /**
-     * Enables query by defining query data fetcher using {@link VertxDataFetcher} and adding it to
-     * {@link GraphQLCodeRegistry}.
+     * Enables query by defining data fetcher using {@link VertxDataFetcher} and adding it to {@link
+     * GraphQLCodeRegistry}.
      *
      * @return this
      */
@@ -185,18 +203,14 @@ public class GraphQLDefinition {
       }
       VertxDataFetcher<List<Map<String, Object>>> queryDataFetcher =
           new VertxDataFetcher<>(
-              (env, listPromise) ->
+              (env, promise) ->
                   sqlConnectionPool
-                      .rxGetConnection()
-                      .doOnSuccess(
-                          connection ->
-                              getResponse(env, connection)
-                                  .doOnSuccess(listPromise::complete)
-                                  .doOnError(listPromise::fail)
-                                  .doFinally(connection::close)
-                                  .subscribe())
-                      .doOnError(listPromise::fail)
-                      .subscribe());
+                      .rxBegin()
+                      .flatMap(
+                          transaction ->
+                              getResponse(env, transaction)
+                                  .doFinally(() -> commitTransaction(transaction)))
+                      .subscribe(promise::complete, promise::fail));
       databaseSchema
           .getTableNames()
           .forEach(
@@ -204,6 +218,42 @@ public class GraphQLDefinition {
                   graphQLCodeRegistryBuilder.dataFetcher(
                       FieldCoordinates.coordinates("Query", tableName), queryDataFetcher));
       queryEnabled = true;
+      return this;
+    }
+
+    /**
+     * Enables mutation by defining data fetcher using {@link VertxDataFetcher} and adding it to
+     * {@link GraphQLCodeRegistry}.
+     *
+     * @return this
+     */
+    public Builder enableMutation() {
+      if (mutationEnabled) {
+        return this;
+      }
+
+      VertxDataFetcher<Map<String, Object>> mutationDataFetcher =
+          new VertxDataFetcher<>(
+              (env, promise) ->
+                  sqlConnectionPool
+                      .rxBegin()
+                      .flatMap(
+                          transaction ->
+                              getResponseMutation(env, transaction)
+                                  .doOnSuccess(result -> commitTransaction(transaction))
+                                  .doOnError(error -> rollbackTransaction(transaction)))
+                      .subscribe(promise::complete, promise::fail));
+
+      databaseSchema
+          .getTableNames()
+          .forEach(
+              tableName ->
+                  graphQLCodeRegistryBuilder.dataFetcher(
+                      FieldCoordinates.coordinates(
+                          "Mutation", String.format("insert_%s", tableName)),
+                      mutationDataFetcher));
+
+      mutationEnabled = true;
       return this;
     }
 
@@ -239,11 +289,14 @@ public class GraphQLDefinition {
             ComponentExecutable executionRoot = getExecutionRoot(env);
             return EventFlowableFactory.create(
                     executionRoot, vertx, datasourceConfig, debeziumConfig)
-                .flatMap(record -> sqlConnectionPool.rxGetConnection().toFlowable())
+                .flatMap(record -> sqlConnectionPool.rxBegin().toFlowable())
                 .flatMap(
-                    connection -> {
-                      executionRoot.setSqlExecutor(query -> executeQuery(query, connection));
-                      return executionRoot.execute().doFinally(connection::close).toFlowable();
+                    transaction -> {
+                      executionRoot.setSqlExecutor(query -> executeQuery(query, transaction));
+                      return executionRoot
+                          .execute()
+                          .doFinally(() -> commitTransaction(transaction))
+                          .toFlowable();
                     });
           };
       databaseSchema
@@ -270,6 +323,7 @@ public class GraphQLDefinition {
       GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject().name("Query");
       GraphQLObjectType.Builder subscriptionBuilder =
           GraphQLObjectType.newObject().name("Subscription");
+      GraphQLObjectType.Builder mutationBuilder = GraphQLObjectType.newObject().name("Mutation");
       List<GraphQLObjectType.Builder> builders = new ArrayList<>();
       if (queryEnabled) {
         builders.add(queryBuilder);
@@ -283,6 +337,10 @@ public class GraphQLDefinition {
       }
       if (subscriptionEnabled) {
         graphQLSchemaBuilder.subscription(subscriptionBuilder);
+      }
+      if (mutationEnabled) {
+        graphQLDatabaseSchema.applyMutation(mutationBuilder, returningStatementEnabled);
+        graphQLSchemaBuilder.mutation(mutationBuilder);
       }
       GraphQLSchema graphQLSchema =
           graphQLSchemaBuilder.codeRegistry(graphQLCodeRegistryBuilder.build()).build();

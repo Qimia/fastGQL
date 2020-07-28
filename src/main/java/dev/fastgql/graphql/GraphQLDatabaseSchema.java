@@ -11,7 +11,9 @@ import static graphql.Scalars.GraphQLInt;
 import dev.fastgql.common.QualifiedName;
 import dev.fastgql.common.ReferenceType;
 import dev.fastgql.db.DatabaseSchema;
+import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.GraphQLArgument;
+import graphql.schema.GraphQLFieldDefinition;
 import graphql.schema.GraphQLInputObjectField;
 import graphql.schema.GraphQLInputObjectType;
 import graphql.schema.GraphQLInputType;
@@ -29,18 +31,19 @@ import java.util.Set;
  * Data structure defining GraphQL schema, including standard fields as well as one-to-one and
  * one-to-many relationships between tables which are inferred from foreign keys. This class is
  * constructed from {@link DatabaseSchema} and is used it two ways: as a helper in building {@link
- * graphql.GraphQL} or as a helper in parsing {@link graphql.schema.DataFetchingEnvironment}
+ * graphql.GraphQL} or as a helper in parsing {@link DataFetchingEnvironment}
  *
  * @author Kamil Bobrowski
  */
 public class GraphQLDatabaseSchema {
-  private final Map<String, Map<String, GraphQLFieldDefinition>> graph;
+  private final Map<String, Map<String, GraphQLField>> graph;
+  private final DatabaseSchema databaseSchema;
   private final GraphQLArgument limit;
   private final GraphQLArgument offset;
   private final Map<String, GraphQLArgument> orderByMap;
   private final Map<String, GraphQLArgument> whereMap;
 
-  public GraphQLFieldDefinition fieldAt(String table, String field) {
+  public GraphQLField fieldAt(String table, String field) {
     return graph.get(table).get(field);
   }
 
@@ -51,6 +54,7 @@ public class GraphQLDatabaseSchema {
    */
   public GraphQLDatabaseSchema(DatabaseSchema databaseSchema) {
     this.graph = createGraph(databaseSchema);
+    this.databaseSchema = databaseSchema;
     this.limit = createArgument("limit", GraphQLInt);
     this.offset = createArgument("offset", GraphQLInt);
     this.orderByMap = createOrderByMap(databaseSchema);
@@ -58,25 +62,88 @@ public class GraphQLDatabaseSchema {
   }
 
   /**
+   * Applies this schema to given {@link GraphQLObjectType} Mutation object builder.
+   *
+   * @param builder builder to which this schema will be applied
+   */
+  public void applyMutation(GraphQLObjectType.Builder builder, boolean returningStatementEnabled) {
+    Objects.requireNonNull(builder);
+    databaseSchema
+        .getGraph()
+        .forEach(
+            (tableName, keyNameToKeyDefinition) -> {
+              GraphQLObjectType.Builder rowObjectBuilder =
+                  GraphQLObjectType.newObject().name(String.format("%s_row", tableName));
+
+              GraphQLInputObjectType.Builder rowInputBuilder =
+                  GraphQLInputObjectType.newInputObject()
+                      .name(String.format("%s_input", tableName));
+
+              keyNameToKeyDefinition.forEach(
+                  (keyName, keyDefinition) -> {
+                    rowObjectBuilder.field(
+                        GraphQLFieldDefinition.newFieldDefinition()
+                            .name(keyName)
+                            .type(GraphQLField.keyTypeToGraphQLType.get(keyDefinition.getKeyType()))
+                            .build());
+                    rowInputBuilder.field(
+                        GraphQLInputObjectField.newInputObjectField()
+                            .name(keyName)
+                            .type(GraphQLField.keyTypeToGraphQLType.get(keyDefinition.getKeyType()))
+                            .build());
+                  });
+
+              GraphQLObjectType rowObject = rowObjectBuilder.build();
+              GraphQLInputObjectType rowInput = rowInputBuilder.build();
+
+              GraphQLObjectType.Builder outputObjectBuilder =
+                  GraphQLObjectType.newObject()
+                      .name(String.format("%s_output", tableName))
+                      .field(
+                          GraphQLFieldDefinition.newFieldDefinition()
+                              .name("affected_rows")
+                              .type(GraphQLInt)
+                              .build());
+              if (returningStatementEnabled) {
+                outputObjectBuilder.field(
+                    GraphQLFieldDefinition.newFieldDefinition()
+                        .name("returning")
+                        .type(GraphQLList.list(rowObject))
+                        .build());
+              }
+
+              builder.field(
+                  GraphQLFieldDefinition.newFieldDefinition()
+                      .name(String.format("insert_%s", tableName))
+                      .type(outputObjectBuilder)
+                      .argument(
+                          GraphQLArgument.newArgument()
+                              .name("objects")
+                              .type(GraphQLList.list(rowInput))
+                              .build())
+                      .build());
+            });
+  }
+
+  /**
    * Applies this schema to given {@link GraphQLObjectType} builders (e.g. Query or Subscription
-   * object builders). Has to be done this way since internally it constructs other {@link
-   * GraphQLObjectType}, which should be constructed only once with the same name.
+   * object builders).
    *
    * @param builders builders to which this schema will be applied
    */
   public void applyToGraphQLObjectTypes(List<GraphQLObjectType.Builder> builders) {
     Objects.requireNonNull(builders);
     graph.forEach(
-        (tableName, fieldNameToGraphQLFieldDefinition) -> {
+        (tableName, fieldNameToGraphQLField) -> {
           GraphQLObjectType.Builder objectBuilder = GraphQLObjectType.newObject().name(tableName);
-          fieldNameToGraphQLFieldDefinition.forEach(
-              (fieldName, graphQLFieldDefinition) -> {
-                graphql.schema.GraphQLFieldDefinition.Builder fieldBuilder =
-                    graphql.schema.GraphQLFieldDefinition.newFieldDefinition()
+          fieldNameToGraphQLField.forEach(
+              (fieldName, graphQLField) -> {
+                GraphQLFieldDefinition.Builder fieldBuilder =
+                    GraphQLFieldDefinition.newFieldDefinition()
                         .name(fieldName)
-                        .type(graphQLFieldDefinition.getGraphQLType());
-                if (graphQLFieldDefinition.getReferenceType() == ReferenceType.REFERENCED) {
-                  String foreignTableName = graphQLFieldDefinition.getForeignName().getTableName();
+                        .type(graphQLField.getGraphQLType());
+                if (graphQLField.getReferenceType() == ReferenceType.REFERENCED) {
+                  String foreignTableName = graphQLField.getForeignName().getTableName();
                   fieldBuilder
                       .argument(limit)
                       .argument(offset)
@@ -90,7 +157,7 @@ public class GraphQLDatabaseSchema {
           builders.forEach(
               builder ->
                   builder.field(
-                      graphql.schema.GraphQLFieldDefinition.newFieldDefinition()
+                      GraphQLFieldDefinition.newFieldDefinition()
                           .name(tableName)
                           .type(GraphQLList.list(object))
                           .argument(limit)
@@ -105,17 +172,33 @@ public class GraphQLDatabaseSchema {
     return GraphQLArgument.newArgument().name(name).type(type).build();
   }
 
-  private static Map<String, Map<String, GraphQLFieldDefinition>> createGraph(
-      DatabaseSchema databaseSchema) {
+  // private static Map<String, Map<String, GraphQLFieldDefinition>> createGraphMutation(
+  //  DatabaseSchema databaseSchema
+  // ) {
+  //  Objects.requireNonNull(databaseSchema);
+  //  Map<String, Map<String, GraphQLFieldDefinition>> graph = new HashMap<>();
+  //  databaseSchema
+  //    .getGraph()
+  //    .forEach(
+  //      (tableName, keyNameToKeyDefinition) -> {
+  //        graph.put(tableName, new HashMap<>());
+  //        Map<String, GraphQLFieldDefinition> fieldNameToGraphQLFieldDefinition =
+  //          graph.get(tableName);
+
+  //      }
+  //    );
+  //  return graph;
+  // }
+
+  private static Map<String, Map<String, GraphQLField>> createGraph(DatabaseSchema databaseSchema) {
     Objects.requireNonNull(databaseSchema);
-    Map<String, Map<String, GraphQLFieldDefinition>> graph = new HashMap<>();
+    Map<String, Map<String, GraphQLField>> graph = new HashMap<>();
     databaseSchema
         .getGraph()
         .forEach(
             (tableName, keyNameToKeyDefinition) -> {
               graph.put(tableName, new HashMap<>());
-              Map<String, GraphQLFieldDefinition> fieldNameToGraphQLFieldDefinition =
-                  graph.get(tableName);
+              Map<String, GraphQLField> fieldNameToGraphQLFieldDefinition = graph.get(tableName);
               keyNameToKeyDefinition.forEach(
                   (keyName, keyDefinition) -> {
                     QualifiedName qualifiedName = keyDefinition.getQualifiedName();
@@ -123,14 +206,13 @@ public class GraphQLDatabaseSchema {
                     Set<QualifiedName> referencedBySet = keyDefinition.getReferencedBy();
                     fieldNameToGraphQLFieldDefinition.put(
                         keyName,
-                        GraphQLFieldDefinition.createLeaf(
-                            qualifiedName, keyDefinition.getKeyType()));
+                        GraphQLField.createLeaf(qualifiedName, keyDefinition.getKeyType()));
                     if (referencing != null) {
                       String referencingName =
                           GraphQLNaming.getNameForReferencingField(qualifiedName);
                       fieldNameToGraphQLFieldDefinition.put(
                           referencingName,
-                          GraphQLFieldDefinition.createReferencing(qualifiedName, referencing));
+                          GraphQLField.createReferencing(qualifiedName, referencing));
                     }
                     referencedBySet.forEach(
                         referencedBy -> {
@@ -138,8 +220,7 @@ public class GraphQLDatabaseSchema {
                               GraphQLNaming.getNameForReferencedByField(referencedBy);
                           fieldNameToGraphQLFieldDefinition.put(
                               referencedByName,
-                              GraphQLFieldDefinition.createReferencedBy(
-                                  qualifiedName, referencedBy));
+                              GraphQLField.createReferencedBy(qualifiedName, referencedBy));
                         });
                   });
             });
@@ -218,7 +299,7 @@ public class GraphQLDatabaseSchema {
                   (name, node) -> {
                     GraphQLInputType nodeType =
                         ConditionalOperatorTypes.scalarTypeToComparisonExpMap.get(
-                            GraphQLFieldDefinition.keyTypeToGraphQLType.get(node.getKeyType()));
+                            GraphQLField.keyTypeToGraphQLType.get(node.getKeyType()));
                     builder.field(
                         GraphQLInputObjectField.newInputObjectField()
                             .name(name)
