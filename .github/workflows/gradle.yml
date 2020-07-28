@@ -22,7 +22,7 @@ jobs:
         java-version: 11
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Build MySQL container for tests
-      run: cd docker/mysql-testcontainers && chmod +x docker-build.sh && ./docker-build.sh && cd ../..
+    - name: Build MySQL containers for tests
+      run: cd docker/mysql && chmod +x build.sh && ./build.sh && cd ../..
     - name: Build with Gradle
       run: ./gradlew build
