@@ -8,12 +8,9 @@ package dev.fastgql.graphql;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import dev.fastgql.common.KeyType;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
-import dev.fastgql.db.KeyDefinition;
 import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.events.EventFlowableFactory;
 import dev.fastgql.sql.AliasGenerator;
@@ -24,15 +21,11 @@ import dev.fastgql.sql.ComponentReferenced;
 import dev.fastgql.sql.ComponentReferencing;
 import dev.fastgql.sql.ComponentRow;
 import dev.fastgql.sql.ExecutionRoot;
+import dev.fastgql.sql.MutationExecution;
 import dev.fastgql.sql.SQLArguments;
+import dev.fastgql.sql.SQLUtils;
 import graphql.GraphQL;
-import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.DataFetchingFieldSelectionSet;
-import graphql.schema.FieldCoordinates;
-import graphql.schema.GraphQLCodeRegistry;
-import graphql.schema.GraphQLObjectType;
-import graphql.schema.GraphQLSchema;
+import graphql.schema.*;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
@@ -41,9 +34,9 @@ import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,8 +50,8 @@ public class GraphQLDefinition {
 
   private static final Logger log = LoggerFactory.getLogger(GraphQLDefinition.class);
 
-  public static Builder newGraphQL(DatabaseSchema databaseSchema, Pool client) {
-    return new Builder(databaseSchema, client);
+  public static Builder newGraphQL(DatabaseSchema databaseSchema, Pool client, DatasourceConfig.DBType dbType) {
+    return new Builder(databaseSchema, client, dbType);
   }
 
   public static class Builder {
@@ -70,6 +63,7 @@ public class GraphQLDefinition {
     private boolean queryEnabled = false;
     private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
+    private boolean returningStatementEnabled = false;
 
     /**
      * Class builder, has to be initialized with database schema and SQL connection pool.
@@ -77,31 +71,22 @@ public class GraphQLDefinition {
      * @param databaseSchema input database schema
      * @param sqlConnectionPool SQL connection pool
      */
-    public Builder(DatabaseSchema databaseSchema, Pool sqlConnectionPool) {
+    public Builder(DatabaseSchema databaseSchema, Pool sqlConnectionPool, DatasourceConfig.DBType dbType) {
       this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
       this.sqlConnectionPool = sqlConnectionPool;
       this.graphQLSchemaBuilder = GraphQLSchema.newSchema();
       this.graphQLCodeRegistryBuilder = GraphQLCodeRegistry.newCodeRegistry();
+      if (dbType.equals(DatasourceConfig.DBType.postgresql)) {
+        returningStatementEnabled = true;
+      }
     }
 
     private static Single<List<Map<String, Object>>> executeQuery(
-        String query, Transaction transaction) {
+      String query, Transaction transaction) {
       return transaction
           .rxQuery(query)
-          .map(
-              rowSet -> {
-                List<String> columnNames = rowSet.columnsNames();
-                List<Map<String, Object>> retList = new ArrayList<>();
-                rowSet.forEach(
-                    row -> {
-                      Map<String, Object> r = new HashMap<>();
-                      columnNames.forEach(
-                          columnName -> r.put(columnName, row.getValue(columnName)));
-                      retList.add(r);
-                    });
-                return retList;
-              });
+          .map(SQLUtils::rowSetToList);
     }
 
     private static void traverseSelectionSet(
@@ -166,7 +151,6 @@ public class GraphQLDefinition {
       SQLArguments sqlArguments = new SQLArguments(env.getArguments());
       ComponentExecutable executionRoot =
           new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), sqlArguments);
-      // executionRoot.setSqlExecutor(sqlExecutor);
       traverseSelectionSet(
           graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
       return executionRoot;
@@ -180,49 +164,17 @@ public class GraphQLDefinition {
     }
 
     private Single<Map<String, Object>> getResponseMutation(
-        DataFetchingEnvironment env, Transaction transaction) {
-      String fieldName = env.getField().getName();
-      String insertPrefix = "insert_";
-      if (fieldName.startsWith(insertPrefix)) {
-        String tableName = fieldName.substring(insertPrefix.length());
-        System.out.println(tableName);
+      DataFetchingEnvironment env, Transaction transaction) {
+        String fieldName = env.getField().getName();
         Gson gson = new Gson();
         JsonArray rows = gson.toJsonTree(env.getArgument("objects")).getAsJsonArray();
-        List<String> queries = new ArrayList<>();
-        rows.forEach(
-            row -> {
-              JsonObject rowObject = row.getAsJsonObject();
-              List<String> columns = new ArrayList<>();
-              List<String> values = new ArrayList<>();
-              rowObject
-                  .entrySet()
-                  .forEach(
-                      entry -> {
-                        KeyDefinition keyDefinition =
-                            databaseSchema.getGraph().get(tableName).get(entry.getKey());
-                        String value;
-                        if (keyDefinition.getKeyType().equals(KeyType.STRING)) {
-                          value = String.format("'%s'", entry.getValue().getAsString());
-                        } else {
-                          value = entry.getValue().toString();
-                        }
-                        columns.add(entry.getKey());
-                        values.add(value);
-                      });
-              String query =
-                  String.format(
-                      "INSERT INTO %s (%s) VALUES (%s)",
-                      tableName, String.join(", ", columns), String.join(", ", values));
-              queries.add(query);
-            });
-        return Flowable.fromIterable(queries)
-            .flatMap(query -> transaction.rxQuery(query).toFlowable())
-            .reduce(
-                Map.of("affected_rows", 0),
-                (map, rowSet) ->
-                    Map.of("affected_rows", (int) map.get("affected_rows") + rowSet.rowCount()));
-      }
-      return Single.just(Map.of());
+        SelectedField returning = env.getSelectionSet()
+          .getField("returning");
+        List<String> returningColumns = new ArrayList<>();
+        if (returning != null) {
+          returning.getSelectionSet().getFields().forEach(selectedField -> returningColumns.add(selectedField.getName()));
+        }
+        return MutationExecution.createResponse(transaction, databaseSchema, fieldName, rows, returningColumns);
     }
 
     private void commitTransaction(Transaction transaction) {
@@ -385,7 +337,7 @@ public class GraphQLDefinition {
         graphQLSchemaBuilder.subscription(subscriptionBuilder);
       }
       if (mutationEnabled) {
-        graphQLDatabaseSchema.applyMutation(mutationBuilder);
+        graphQLDatabaseSchema.applyMutation(mutationBuilder, returningStatementEnabled);
         graphQLSchemaBuilder.mutation(mutationBuilder);
       }
       GraphQLSchema graphQLSchema =

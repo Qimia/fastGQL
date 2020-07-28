@@ -11,7 +11,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import dev.fastgql.graphql.ConditionalOperatorTypes;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.RowSet;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -155,4 +159,18 @@ public class SQLUtils {
       return String.format("'%s'", json.getAsString());
     }
   }
+
+  public static List<Map<String, Object>> rowSetToList(RowSet<Row> rowSet) {
+    List<String> columnNames = rowSet.columnsNames();
+    List<Map<String, Object>> retList = new ArrayList<>();
+    rowSet.forEach(
+      row -> {
+        Map<String, Object> r = new HashMap<>();
+        columnNames.forEach(
+          columnName -> r.put(columnName, row.getValue(columnName)));
+        retList.add(r);
+      });
+    return retList;
+  }
+
 }

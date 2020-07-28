@@ -66,7 +66,7 @@ public class GraphQLDatabaseSchema {
    *
    * @param builder builder to which this schema will be applied
    */
-  public void applyMutation(GraphQLObjectType.Builder builder) {
+  public void applyMutation(GraphQLObjectType.Builder builder, boolean returningStatementEnabled) {
     Objects.requireNonNull(builder);
     databaseSchema
         .getGraph()
@@ -96,25 +96,26 @@ public class GraphQLDatabaseSchema {
               GraphQLObjectType rowObject = rowObjectBuilder.build();
               GraphQLInputObjectType rowInput = rowInputBuilder.build();
 
-              GraphQLObjectType outputObject =
+              GraphQLObjectType.Builder outputObjectBuilder =
                   GraphQLObjectType.newObject()
                       .name(String.format("%s_output", tableName))
                       .field(
                           GraphQLFieldDefinition.newFieldDefinition()
                               .name("affected_rows")
                               .type(GraphQLInt)
-                              .build())
-                      .field(
-                          GraphQLFieldDefinition.newFieldDefinition()
-                              .name("returning")
-                              .type(GraphQLList.list(rowObject))
-                              .build())
-                      .build();
+                              .build());
+              if (returningStatementEnabled) {
+                outputObjectBuilder.field(
+                  GraphQLFieldDefinition.newFieldDefinition()
+                    .name("returning")
+                    .type(GraphQLList.list(rowObject))
+                    .build());
+              }
 
               builder.field(
                   GraphQLFieldDefinition.newFieldDefinition()
                       .name(String.format("insert_%s", tableName))
-                      .type(outputObject)
+                      .type(outputObjectBuilder)
                       .argument(
                           GraphQLArgument.newArgument()
                               .name("objects")

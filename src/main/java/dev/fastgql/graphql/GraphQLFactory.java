@@ -25,7 +25,7 @@ public class GraphQLFactory {
 
     Pool client = datasourceConfig.getPool(vertx);
 
-    return GraphQLDefinition.newGraphQL(database, client)
+    return GraphQLDefinition.newGraphQL(database, client, datasourceConfig.getDbType())
         .enableQuery()
         .enableSubscription(vertx, datasourceConfig, debeziumConfig)
         .enableMutation()
