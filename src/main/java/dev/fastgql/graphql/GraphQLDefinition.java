@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +49,8 @@ public class GraphQLDefinition {
 
   private static final Logger log = LoggerFactory.getLogger(GraphQLDefinition.class);
 
-  public static Builder newGraphQL(DatabaseSchema databaseSchema, Pool client, DatasourceConfig.DBType dbType) {
+  public static Builder newGraphQL(
+      DatabaseSchema databaseSchema, Pool client, DatasourceConfig.DBType dbType) {
     return new Builder(databaseSchema, client, dbType);
   }
 
@@ -71,7 +71,8 @@ public class GraphQLDefinition {
      * @param databaseSchema input database schema
      * @param sqlConnectionPool SQL connection pool
      */
-    public Builder(DatabaseSchema databaseSchema, Pool sqlConnectionPool, DatasourceConfig.DBType dbType) {
+    public Builder(
+        DatabaseSchema databaseSchema, Pool sqlConnectionPool, DatasourceConfig.DBType dbType) {
       this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
       this.sqlConnectionPool = sqlConnectionPool;
@@ -83,10 +84,8 @@ public class GraphQLDefinition {
     }
 
     private static Single<List<Map<String, Object>>> executeQuery(
-      String query, Transaction transaction) {
-      return transaction
-          .rxQuery(query)
-          .map(SQLUtils::rowSetToList);
+        String query, Transaction transaction) {
+      return transaction.rxQuery(query).map(SQLUtils::rowSetToList);
     }
 
     private static void traverseSelectionSet(
@@ -164,17 +163,20 @@ public class GraphQLDefinition {
     }
 
     private Single<Map<String, Object>> getResponseMutation(
-      DataFetchingEnvironment env, Transaction transaction) {
-        String fieldName = env.getField().getName();
-        Gson gson = new Gson();
-        JsonArray rows = gson.toJsonTree(env.getArgument("objects")).getAsJsonArray();
-        SelectedField returning = env.getSelectionSet()
-          .getField("returning");
-        List<String> returningColumns = new ArrayList<>();
-        if (returning != null) {
-          returning.getSelectionSet().getFields().forEach(selectedField -> returningColumns.add(selectedField.getName()));
-        }
-        return MutationExecution.createResponse(transaction, databaseSchema, fieldName, rows, returningColumns);
+        DataFetchingEnvironment env, Transaction transaction) {
+      String fieldName = env.getField().getName();
+      Gson gson = new Gson();
+      JsonArray rows = gson.toJsonTree(env.getArgument("objects")).getAsJsonArray();
+      SelectedField returning = env.getSelectionSet().getField("returning");
+      List<String> returningColumns = new ArrayList<>();
+      if (returning != null) {
+        returning
+            .getSelectionSet()
+            .getFields()
+            .forEach(selectedField -> returningColumns.add(selectedField.getName()));
+      }
+      return MutationExecution.createResponse(
+          transaction, databaseSchema, fieldName, rows, returningColumns);
     }
 
     private void commitTransaction(Transaction transaction) {

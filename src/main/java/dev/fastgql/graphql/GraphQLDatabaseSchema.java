@@ -106,10 +106,10 @@ public class GraphQLDatabaseSchema {
                               .build());
               if (returningStatementEnabled) {
                 outputObjectBuilder.field(
-                  GraphQLFieldDefinition.newFieldDefinition()
-                    .name("returning")
-                    .type(GraphQLList.list(rowObject))
-                    .build());
+                    GraphQLFieldDefinition.newFieldDefinition()
+                        .name("returning")
+                        .type(GraphQLList.list(rowObject))
+                        .build());
               }
 
               builder.field(

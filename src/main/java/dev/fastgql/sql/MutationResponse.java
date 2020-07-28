@@ -2,7 +2,6 @@ package dev.fastgql.sql;
 
 import io.vertx.reactivex.sqlclient.Row;
 import io.vertx.reactivex.sqlclient.RowSet;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -28,7 +27,9 @@ public class MutationResponse {
 
   public static MutationResponse compose(MutationResponse other, RowSet<Row> rowSet) {
     List<Map<String, Object>> rows = SQLUtils.rowSetToList(rowSet);
-    return new MutationResponse(other.affectedRows + rowSet.rowCount(), Stream.concat(other.returning.stream(), rows.stream()).collect(Collectors.toList()));
+    return new MutationResponse(
+        other.affectedRows + rowSet.rowCount(),
+        Stream.concat(other.returning.stream(), rows.stream()).collect(Collectors.toList()));
   }
 
   public Map<String, Object> build() {

@@ -13,7 +13,6 @@ import com.google.gson.JsonPrimitive;
 import dev.fastgql.graphql.ConditionalOperatorTypes;
 import io.vertx.reactivex.sqlclient.Row;
 import io.vertx.reactivex.sqlclient.RowSet;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -164,13 +163,11 @@ public class SQLUtils {
     List<String> columnNames = rowSet.columnsNames();
     List<Map<String, Object>> retList = new ArrayList<>();
     rowSet.forEach(
-      row -> {
-        Map<String, Object> r = new HashMap<>();
-        columnNames.forEach(
-          columnName -> r.put(columnName, row.getValue(columnName)));
-        retList.add(r);
-      });
+        row -> {
+          Map<String, Object> r = new HashMap<>();
+          columnNames.forEach(columnName -> r.put(columnName, row.getValue(columnName)));
+          retList.add(r);
+        });
     return retList;
   }
-
 }
