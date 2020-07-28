@@ -15,12 +15,12 @@ import dev.fastgql.common.QualifiedName;
 import dev.fastgql.common.ReferenceType;
 import org.junit.jupiter.api.Test;
 
-public class GraphQLFieldDefinitionTest {
+public class GraphQLFieldTest {
 
   @Test
   public void createLeaf() {
     QualifiedName qualifiedName = new QualifiedName("tableName/keyName");
-    GraphQLFieldDefinition actual = GraphQLFieldDefinition.createLeaf(qualifiedName, KeyType.INT);
+    GraphQLField actual = GraphQLField.createLeaf(qualifiedName, KeyType.INT);
     assertEquals(qualifiedName, actual.getQualifiedName());
     assertEquals(GraphQLInt, actual.getGraphQLType());
     assertNull(actual.getForeignName());
@@ -31,8 +31,7 @@ public class GraphQLFieldDefinitionTest {
   public void createReferencing() {
     QualifiedName qualifiedName = new QualifiedName("tableName/keyName");
     QualifiedName foreignName = new QualifiedName("foreignTableName/foreignKeyName");
-    GraphQLFieldDefinition actual =
-        GraphQLFieldDefinition.createReferencing(qualifiedName, foreignName);
+    GraphQLField actual = GraphQLField.createReferencing(qualifiedName, foreignName);
     assertEquals(qualifiedName, actual.getQualifiedName());
     assertEquals(foreignName, actual.getForeignName());
     assertEquals(ReferenceType.REFERENCING, actual.getReferenceType());
@@ -43,8 +42,7 @@ public class GraphQLFieldDefinitionTest {
   public void createReferencedBy() {
     QualifiedName qualifiedName = new QualifiedName("tableName/keyName");
     QualifiedName foreignName = new QualifiedName("foreignTableName/foreignKeyName");
-    GraphQLFieldDefinition actual =
-        GraphQLFieldDefinition.createReferencedBy(qualifiedName, foreignName);
+    GraphQLField actual = GraphQLField.createReferencedBy(qualifiedName, foreignName);
     assertEquals(qualifiedName, actual.getQualifiedName());
     assertEquals(foreignName, actual.getForeignName());
     assertEquals(ReferenceType.REFERENCED, actual.getReferenceType());

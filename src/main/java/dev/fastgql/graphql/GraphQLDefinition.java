@@ -6,9 +6,14 @@
 
 package dev.fastgql.graphql;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import dev.fastgql.common.KeyType;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
+import dev.fastgql.db.KeyDefinition;
 import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.events.EventFlowableFactory;
 import dev.fastgql.sql.AliasGenerator;
@@ -63,6 +68,7 @@ public class GraphQLDefinition {
     private final GraphQLSchema.Builder graphQLSchemaBuilder;
     private final GraphQLCodeRegistry.Builder graphQLCodeRegistryBuilder;
     private boolean queryEnabled = false;
+    private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
 
     /**
@@ -110,22 +116,22 @@ public class GraphQLDefinition {
                 if (selectedField.getQualifiedName().contains("/")) {
                   return;
                 }
-                GraphQLFieldDefinition graphQLFieldDefinition =
+                GraphQLField graphQLField =
                     graphQLDatabaseSchema.fieldAt(
                         parent.tableNameWhenParent(), selectedField.getName());
-                switch (graphQLFieldDefinition.getReferenceType()) {
+                switch (graphQLField.getReferenceType()) {
                   case NONE:
                     parent.addComponent(
-                        new ComponentRow(graphQLFieldDefinition.getQualifiedName().getKeyName()));
+                        new ComponentRow(graphQLField.getQualifiedName().getKeyName()));
                     break;
                   case REFERENCING:
                     Component componentReferencing =
                         new ComponentReferencing(
                             selectedField.getName(),
-                            graphQLFieldDefinition.getQualifiedName().getKeyName(),
-                            graphQLFieldDefinition.getForeignName().getTableName(),
+                            graphQLField.getQualifiedName().getKeyName(),
+                            graphQLField.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
-                            graphQLFieldDefinition.getForeignName().getKeyName());
+                            graphQLField.getForeignName().getKeyName());
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
                         componentReferencing,
@@ -137,10 +143,10 @@ public class GraphQLDefinition {
                     Component componentReferenced =
                         new ComponentReferenced(
                             selectedField.getName(),
-                            graphQLFieldDefinition.getQualifiedName().getKeyName(),
-                            graphQLFieldDefinition.getForeignName().getTableName(),
+                            graphQLField.getQualifiedName().getKeyName(),
+                            graphQLField.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
-                            graphQLFieldDefinition.getForeignName().getKeyName(),
+                            graphQLField.getForeignName().getKeyName(),
                             new SQLArguments(selectedField.getArguments()));
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
@@ -173,15 +179,68 @@ public class GraphQLDefinition {
       return executionRoot.execute();
     }
 
+    private Single<Map<String, Object>> getResponseMutation(
+        DataFetchingEnvironment env, Transaction transaction) {
+      String fieldName = env.getField().getName();
+      String insertPrefix = "insert_";
+      if (fieldName.startsWith(insertPrefix)) {
+        String tableName = fieldName.substring(insertPrefix.length());
+        System.out.println(tableName);
+        Gson gson = new Gson();
+        JsonArray rows = gson.toJsonTree(env.getArgument("objects")).getAsJsonArray();
+        List<String> queries = new ArrayList<>();
+        rows.forEach(
+            row -> {
+              JsonObject rowObject = row.getAsJsonObject();
+              List<String> columns = new ArrayList<>();
+              List<String> values = new ArrayList<>();
+              rowObject
+                  .entrySet()
+                  .forEach(
+                      entry -> {
+                        KeyDefinition keyDefinition =
+                            databaseSchema.getGraph().get(tableName).get(entry.getKey());
+                        String value;
+                        if (keyDefinition.getKeyType().equals(KeyType.STRING)) {
+                          value = String.format("'%s'", entry.getValue().getAsString());
+                        } else {
+                          value = entry.getValue().toString();
+                        }
+                        columns.add(entry.getKey());
+                        values.add(value);
+                      });
+              String query =
+                  String.format(
+                      "INSERT INTO %s (%s) VALUES (%s)",
+                      tableName, String.join(", ", columns), String.join(", ", values));
+              queries.add(query);
+            });
+        return Flowable.fromIterable(queries)
+            .flatMap(query -> transaction.rxQuery(query).toFlowable())
+            .reduce(
+                Map.of("affected_rows", 0),
+                (map, rowSet) ->
+                    Map.of(
+                        "affected_rows", (int) map.get("affected_rows") + rowSet.rowCount()));
+      }
+      return Single.just(Map.of());
+    }
+
     private void commitTransaction(Transaction transaction) {
       transaction
           .rxCommit()
           .subscribe(() -> log.debug("transaction committed"), err -> log.error(err.getMessage()));
     }
 
+    private void rollbackTransaction(Transaction transaction) {
+      transaction
+        .rxRollback()
+        .subscribe(() -> log.debug("transaction rollback"), err -> log.error(err.getMessage()));
+    }
+
     /**
-     * Enables query by defining query data fetcher using {@link VertxDataFetcher} and adding it to
-     * {@link GraphQLCodeRegistry}.
+     * Enables query by defining data fetcher using {@link VertxDataFetcher} and adding it to {@link
+     * GraphQLCodeRegistry}.
      *
      * @return this
      */
@@ -191,14 +250,14 @@ public class GraphQLDefinition {
       }
       VertxDataFetcher<List<Map<String, Object>>> queryDataFetcher =
           new VertxDataFetcher<>(
-              (env, listPromise) ->
+              (env, promise) ->
                   sqlConnectionPool
                       .rxBegin()
                       .flatMap(
                           transaction ->
                               getResponse(env, transaction)
                                   .doFinally(() -> commitTransaction(transaction)))
-                      .subscribe(listPromise::complete, listPromise::fail));
+                      .subscribe(promise::complete, promise::fail));
       databaseSchema
           .getTableNames()
           .forEach(
@@ -206,6 +265,42 @@ public class GraphQLDefinition {
                   graphQLCodeRegistryBuilder.dataFetcher(
                       FieldCoordinates.coordinates("Query", tableName), queryDataFetcher));
       queryEnabled = true;
+      return this;
+    }
+
+    /**
+     * Enables mutation by defining data fetcher using {@link VertxDataFetcher} and adding it to
+     * {@link GraphQLCodeRegistry}.
+     *
+     * @return this
+     */
+    public Builder enableMutation() {
+      if (mutationEnabled) {
+        return this;
+      }
+
+      VertxDataFetcher<Map<String, Object>> mutationDataFetcher =
+          new VertxDataFetcher<>(
+              (env, promise) ->
+                  sqlConnectionPool
+                      .rxBegin()
+                      .flatMap(
+                          transaction ->
+                              getResponseMutation(env, transaction)
+                                  .doOnSuccess(result -> commitTransaction(transaction))
+                                  .doOnError(error -> rollbackTransaction(transaction)))
+                      .subscribe(promise::complete, promise::fail));
+
+      databaseSchema
+          .getTableNames()
+          .forEach(
+              tableName ->
+                  graphQLCodeRegistryBuilder.dataFetcher(
+                      FieldCoordinates.coordinates(
+                          "Mutation", String.format("insert_%s", tableName)),
+                      mutationDataFetcher));
+
+      mutationEnabled = true;
       return this;
     }
 
@@ -275,6 +370,7 @@ public class GraphQLDefinition {
       GraphQLObjectType.Builder queryBuilder = GraphQLObjectType.newObject().name("Query");
       GraphQLObjectType.Builder subscriptionBuilder =
           GraphQLObjectType.newObject().name("Subscription");
+      GraphQLObjectType.Builder mutationBuilder = GraphQLObjectType.newObject().name("Mutation");
       List<GraphQLObjectType.Builder> builders = new ArrayList<>();
       if (queryEnabled) {
         builders.add(queryBuilder);
@@ -288,6 +384,10 @@ public class GraphQLDefinition {
       }
       if (subscriptionEnabled) {
         graphQLSchemaBuilder.subscription(subscriptionBuilder);
+      }
+      if (mutationEnabled) {
+        graphQLDatabaseSchema.applyMutation(mutationBuilder);
+        graphQLSchemaBuilder.mutation(mutationBuilder);
       }
       GraphQLSchema graphQLSchema =
           graphQLSchemaBuilder.codeRegistry(graphQLCodeRegistryBuilder.build()).build();

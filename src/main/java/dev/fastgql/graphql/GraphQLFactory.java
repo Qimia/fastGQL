@@ -28,6 +28,7 @@ public class GraphQLFactory {
     return GraphQLDefinition.newGraphQL(database, client)
         .enableQuery()
         .enableSubscription(vertx, datasourceConfig, debeziumConfig)
+        .enableMutation()
         .build();
   }
 }
