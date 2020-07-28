@@ -220,8 +220,7 @@ public class GraphQLDefinition {
             .reduce(
                 Map.of("affected_rows", 0),
                 (map, rowSet) ->
-                    Map.of(
-                        "affected_rows", (int) map.get("affected_rows") + rowSet.rowCount()));
+                    Map.of("affected_rows", (int) map.get("affected_rows") + rowSet.rowCount()));
       }
       return Single.just(Map.of());
     }
@@ -234,8 +233,8 @@ public class GraphQLDefinition {
 
     private void rollbackTransaction(Transaction transaction) {
       transaction
-        .rxRollback()
-        .subscribe(() -> log.debug("transaction rollback"), err -> log.error(err.getMessage()));
+          .rxRollback()
+          .subscribe(() -> log.debug("transaction rollback"), err -> log.error(err.getMessage()));
     }
 
     /**
