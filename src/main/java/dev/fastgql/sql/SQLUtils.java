@@ -6,11 +6,9 @@
 
 package dev.fastgql.sql;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import dev.fastgql.graphql.ConditionalOperatorTypes;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.sqlclient.Row;
 import io.vertx.reactivex.sqlclient.RowSet;
 import java.util.ArrayList;
@@ -34,7 +32,7 @@ public class SQLUtils {
       JsonArray array, String aliasName, Map<String, String> tableFieldToAlias) {
     List<String> orderByQueryList = new ArrayList<>();
     for (int i = 0; i < array.size(); i++) {
-      JsonObject object = array.get(i).getAsJsonObject();
+      JsonObject object = array.getJsonObject(i);
       addOrderByQueryList(orderByQueryList, object, aliasName, tableFieldToAlias);
     }
     return String.join(", ", orderByQueryList);
@@ -45,15 +43,15 @@ public class SQLUtils {
       JsonObject object,
       String aliasName,
       Map<String, String> tableFieldToAlias) {
-    for (String key : object.keySet()) {
-      JsonElement value = object.get(key);
-      if (value.isJsonObject()) {
+    for (String key : object.fieldNames()) {
+      Object value = object.getValue(key);
+      if (value instanceof JsonObject) {
         if (tableFieldToAlias.containsKey(key)) {
           addOrderByQueryList(
-              queryList, value.getAsJsonObject(), tableFieldToAlias.get(key), tableFieldToAlias);
+              queryList, JsonObject.mapFrom(value), tableFieldToAlias.get(key), tableFieldToAlias);
         }
       } else {
-        queryList.add(String.format("%s.%s %s", aliasName, key, value.getAsString()));
+        queryList.add(String.format("%s.%s %s", aliasName, key, value));
       }
     }
   }
@@ -64,33 +62,30 @@ public class SQLUtils {
       return "TRUE";
     }
     List<String> queryList =
-        obj.keySet().stream()
+        obj.fieldNames().stream()
             .map(
                 key -> {
                   String query;
                   if (key.equals("_and")) {
                     query =
-                        getArrayQuery(
-                            obj.get(key).getAsJsonArray(), " AND ", aliasName, tableFieldToAlias);
+                        getArrayQuery(obj.getJsonArray(key), " AND ", aliasName, tableFieldToAlias);
                   } else if (key.equals("_or")) {
                     query =
-                        getArrayQuery(
-                            obj.get(key).getAsJsonArray(), " OR ", aliasName, tableFieldToAlias);
+                        getArrayQuery(obj.getJsonArray(key), " OR ", aliasName, tableFieldToAlias);
                   } else if (key.equals("_not")) {
-                    query =
-                        getNotQuery(obj.get(key).getAsJsonObject(), aliasName, tableFieldToAlias);
+                    query = getNotQuery(obj.getJsonObject(key), aliasName, tableFieldToAlias);
                   } else if (isReferencingName(key)) {
                     if (tableFieldToAlias.containsKey(key)) {
                       query =
                           createBoolQuery(
-                              obj.get(key).getAsJsonObject(),
+                              obj.getJsonObject(key),
                               tableFieldToAlias.get(key),
                               tableFieldToAlias);
                     } else {
                       query = "";
                     }
                   } else {
-                    query = getComparisonQuery(obj.get(key).getAsJsonObject(), aliasName, key);
+                    query = getComparisonQuery(obj.getJsonObject(key), aliasName, key);
                   }
                   return String.format("(%s)", query);
                 })
@@ -104,8 +99,7 @@ public class SQLUtils {
     for (int i = 0; i < array.size(); i++) {
       queryList.add(
           String.format(
-              "(%s)",
-              createBoolQuery(array.get(i).getAsJsonObject(), aliasName, tableFieldToAlias)));
+              "(%s)", createBoolQuery(array.getJsonObject(i), aliasName, tableFieldToAlias)));
     }
     return String.join(delimiter, queryList);
   }
@@ -120,29 +114,28 @@ public class SQLUtils {
       return "TRUE";
     }
     List<String> queryList =
-        object.keySet().stream()
+        object.fieldNames().stream()
             .map(
                 opName -> {
                   String operator =
                       ConditionalOperatorTypes.getOperatorNameToValueMap().get(opName);
-                  String compareValue = getCompareValue(object.get(opName));
+                  String compareValue = getCompareValue(object.getValue(opName));
                   return String.format("(%s.%s %s %s)", aliasName, key, operator, compareValue);
                 })
             .collect(Collectors.toList());
     return String.join(" AND ", queryList);
   }
 
-  private static String getCompareValue(JsonElement element) {
-    if (element.isJsonPrimitive()) {
-      return getPrimitiveString(element.getAsJsonPrimitive());
-    } else if (element.isJsonArray()) {
+  private static String getCompareValue(Object object) {
+    if (isPrimitive(object)) {
+      return getPrimitiveString(object);
+    } else if (object instanceof JsonArray) {
       List<String> queryList = new ArrayList<>();
-      element
-          .getAsJsonArray()
+      ((JsonArray) object)
           .forEach(
               e -> {
-                if (e.isJsonPrimitive()) {
-                  queryList.add(getPrimitiveString(e.getAsJsonPrimitive()));
+                if (isPrimitive(e)) {
+                  queryList.add(getPrimitiveString(e));
                 }
               });
       return String.format("(%s)", String.join(", ", queryList));
@@ -151,11 +144,18 @@ public class SQLUtils {
     }
   }
 
-  private static String getPrimitiveString(JsonPrimitive json) {
-    if (json.isNumber()) {
-      return json.getAsString();
+  private static boolean isPrimitive(Object object) {
+    return object instanceof Boolean
+        || object instanceof Number
+        || object instanceof String
+        || object instanceof Character;
+  }
+
+  private static String getPrimitiveString(Object object) {
+    if (object instanceof String) {
+      return String.format("'%s'", object);
     } else {
-      return String.format("'%s'", json.getAsString());
+      return String.valueOf(object);
     }
   }
 
