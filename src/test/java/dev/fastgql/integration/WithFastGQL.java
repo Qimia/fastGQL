@@ -39,6 +39,10 @@ public interface WithFastGQL {
     return false;
   }
 
+  default boolean isSecurityActive() {
+    return false;
+  }
+
   default JdbcDatabaseContainer<?> createJdbcDatabaseContainer() {
     if (getNetwork() != null) {
       return createJdbcDatabaseContainerWithoutNetwork().withNetwork(getNetwork());
@@ -48,6 +52,10 @@ public interface WithFastGQL {
   }
 
   default Map<String, Object> createDebeziumConfigEntry() {
+    return Map.of();
+  }
+
+  default Map<String, Object> createSecurityConfigEntry() {
     return Map.of();
   }
 
@@ -74,6 +82,10 @@ public interface WithFastGQL {
 
     if (isDebeziumActive()) {
       config.put("debezium", createDebeziumConfigEntry());
+    }
+
+    if (isSecurityActive()) {
+      config.put("auth", createSecurityConfigEntry());
     }
 
     return config;
