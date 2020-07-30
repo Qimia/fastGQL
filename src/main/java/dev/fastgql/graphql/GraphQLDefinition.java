@@ -6,8 +6,6 @@
 
 package dev.fastgql.graphql;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
@@ -28,6 +26,7 @@ import graphql.GraphQL;
 import graphql.schema.*;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
+import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.sqlclient.Pool;
@@ -165,8 +164,9 @@ public class GraphQLDefinition {
     private Single<Map<String, Object>> getResponseMutation(
         DataFetchingEnvironment env, Transaction transaction) {
       String fieldName = env.getField().getName();
-      Gson gson = new Gson();
-      JsonArray rows = gson.toJsonTree(env.getArgument("objects")).getAsJsonArray();
+      Object rowsObject = env.getArgument("objects");
+      System.out.println(rowsObject);
+      JsonArray rows = rowsObject == null ? null : new JsonArray((List<?>) rowsObject);
       SelectedField returning = env.getSelectionSet().getField("returning");
       List<String> returningColumns = new ArrayList<>();
       if (returning != null) {
