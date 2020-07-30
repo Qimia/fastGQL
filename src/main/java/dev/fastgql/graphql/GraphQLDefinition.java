@@ -165,7 +165,6 @@ public class GraphQLDefinition {
         DataFetchingEnvironment env, Transaction transaction) {
       String fieldName = env.getField().getName();
       Object rowsObject = env.getArgument("objects");
-      System.out.println(rowsObject);
       JsonArray rows = rowsObject == null ? null : new JsonArray((List<?>) rowsObject);
       SelectedField returning = env.getSelectionSet().getField("returning");
       List<String> returningColumns = new ArrayList<>();
