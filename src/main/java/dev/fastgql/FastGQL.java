@@ -6,11 +6,17 @@
 
 package dev.fastgql;
 
-import dev.fastgql.router.RouterUpdatable;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import dev.fastgql.modules.GraphQLModule;
+import dev.fastgql.modules.ServerModule;
+import dev.fastgql.modules.VertxModule;
+import io.reactivex.Single;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
-import io.vertx.core.http.HttpServerOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
+import io.vertx.reactivex.core.http.HttpServer;
 import org.apache.log4j.Logger;
 
 public class FastGQL extends AbstractVerticle {
@@ -24,19 +30,17 @@ public class FastGQL extends AbstractVerticle {
 
   @Override
   public void start(Promise<Void> future) {
+    Injector injector = Guice.createInjector(
+      new VertxModule(vertx, config()),
+      new ServerModule(),
+      new GraphQLModule()
+    );
 
-    RouterUpdatable routerUpdatable =
-        RouterUpdatable.createWithQueryAndSubscription(vertx, config());
-
-    vertx
-        .createHttpServer(new HttpServerOptions().setWebsocketSubProtocols("graphql-ws"))
-        .requestHandler(routerUpdatable.getRouter())
-        .rxListen(config().getInteger("http.port", 8080))
-        .subscribe(
-            server -> {
-              log.debug("deployed server");
-              future.complete();
-            },
-            server -> future.fail(server.getCause()));
+    injector.getInstance(new Key<Single<HttpServer>>(){}).subscribe(
+      server -> {
+        log.debug("deployed server");
+        future.complete();
+      },
+      future::fail);
   }
 }
