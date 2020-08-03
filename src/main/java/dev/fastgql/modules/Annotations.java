@@ -1,9 +1,9 @@
 package dev.fastgql.modules;
 
-import javax.inject.Qualifier;
-import java.lang.annotation.Retention;
-
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+import java.lang.annotation.Retention;
+import javax.inject.Qualifier;
 
 class Annotations {
   @Qualifier
