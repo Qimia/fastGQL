@@ -72,12 +72,16 @@ public class ServerModule extends AbstractModule {
       GraphQLHandlerUpdatable graphQLHandlerUpdatable,
       ApolloWSHandlerUpdatable apolloWSHandlerUpdatable,
       GraphiQLHandler graphiQLHandler,
-      @UpdateHandler Handler<RoutingContext> updateHandler) {
+      @UpdateHandler Handler<RoutingContext> updateHandler,
+      Supplier<GraphQL> graphQLSupplier) {
     Router router = Router.router(vertx);
+    GraphQL graphQL = graphQLSupplier.get();
     if (apolloWSHandlerUpdatable != null) {
+      apolloWSHandlerUpdatable.updateGraphQL(graphQL);
       router.route("/graphql").handler(apolloWSHandlerUpdatable);
     }
     if (graphQLHandlerUpdatable != null) {
+      graphQLHandlerUpdatable.updateGraphQL(graphQL);
       router.route("/graphql").handler(graphQLHandlerUpdatable);
     }
     if (graphiQLHandler != null) {
