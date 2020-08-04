@@ -22,7 +22,7 @@ Start FastGQL in dev mode with hot reload:
 ./gradlew vertxRun
 ````
 
-Go to [localhost:8080/graphiql](http://localhost:8080/graphiql) or query ```localhost:8080/graphql```
+Go to [localhost:8080/graphiql/](http://localhost:8080/graphiql/) or query ```localhost:8080/graphql```
 
 #### Production
 
@@ -35,5 +35,5 @@ Build production bundle:
 Execute production version:
 
 ```shell script
-build/install/fastgql/bin/fastgql run --conf src/main/conf.json dev.fastgql.FastGQL
+build/install/fastgql/bin/fastgql run --conf src/main/resources/conf.json dev.fastgql.FastGQL
 ```
