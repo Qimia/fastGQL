@@ -12,16 +12,30 @@ import io.vertx.reactivex.kafka.client.consumer.KafkaConsumer;
 import io.vertx.reactivex.kafka.client.consumer.KafkaConsumerRecord;
 import java.util.*;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 
 /** Utils for creating Kafka consumer. */
 public class EventFlowableFactory {
 
-  public static Flowable<ChangeEvent<String, String>> create(
-      ComponentExecutable executionRoot,
+  private final Vertx vertx;
+  private final DatasourceConfig datasourceConfig;
+  private final DebeziumConfig debeziumConfig;
+  private final DebeziumEngineSingleton debeziumEngineSingleton;
+
+  @Inject
+  public EventFlowableFactory(
       Vertx vertx,
       DatasourceConfig datasourceConfig,
-      DebeziumConfig debeziumConfig) {
+      DebeziumConfig debeziumConfig,
+      DebeziumEngineSingleton debeziumEngineSingleton) {
+    this.vertx = vertx;
+    this.datasourceConfig = datasourceConfig;
+    this.debeziumConfig = debeziumConfig;
+    this.debeziumEngineSingleton = debeziumEngineSingleton;
+  }
+
+  public Flowable<ChangeEvent<String, String>> create(ComponentExecutable executionRoot) {
     Set<String> topics =
         executionRoot.getQueriedTables().stream()
             .map(
@@ -33,17 +47,17 @@ public class EventFlowableFactory {
     if (debeziumConfig.isEmbedded()) {
       return createForEmbedded(topics);
     } else {
-      return createForKafka(topics, debeziumConfig, vertx);
+      return createForKafka(topics);
     }
   }
 
-  private static Flowable<ChangeEvent<String, String>> createForEmbedded(Set<String> topics) {
-    return DebeziumEngineSingleton.getChangeEventFlowable()
+  private Flowable<ChangeEvent<String, String>> createForEmbedded(Set<String> topics) {
+    return debeziumEngineSingleton
+        .getChangeEventFlowable()
         .filter(changeEvent -> topics.contains(changeEvent.destination()));
   }
 
-  private static Flowable<ChangeEvent<String, String>> createForKafka(
-      Set<String> topics, DebeziumConfig debeziumConfig, Vertx vertx) {
+  private Flowable<ChangeEvent<String, String>> createForKafka(Set<String> topics) {
     Map<String, String> kafkaConfig = new HashMap<>();
     kafkaConfig.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, debeziumConfig.getBootstrapServers());
     kafkaConfig.put(
