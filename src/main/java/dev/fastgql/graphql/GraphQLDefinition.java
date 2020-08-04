@@ -57,13 +57,14 @@ public class GraphQLDefinition {
   }
 
   public static class DefaultBuilder implements Builder {
-    private final DatasourceConfig datasourceConfig;
     private final DatabaseSchema databaseSchema;
     private final GraphQLDatabaseSchema graphQLDatabaseSchema;
     private final Pool sqlConnectionPool;
     private final GraphQLSchema.Builder graphQLSchemaBuilder;
     private final GraphQLCodeRegistry.Builder graphQLCodeRegistryBuilder;
     private final Function<Transaction, SQLExecutor> transactionSQLExecutorFunction;
+    private final DebeziumEngineSingleton debeziumEngineSingleton;
+    private final EventFlowableFactory eventFlowableFactory;
     private boolean queryEnabled = false;
     private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
@@ -80,8 +81,9 @@ public class GraphQLDefinition {
         @Assisted DatabaseSchema databaseSchema,
         Pool sqlConnectionPool,
         DatasourceConfig datasourceConfig,
-        Function<Transaction, SQLExecutor> transactionSQLExecutorFunction) {
-      this.datasourceConfig = datasourceConfig;
+        Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
+        DebeziumEngineSingleton debeziumEngineSingleton,
+        EventFlowableFactory eventFlowableFactory) {
       this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
       this.sqlConnectionPool = sqlConnectionPool;
@@ -91,6 +93,8 @@ public class GraphQLDefinition {
         returningStatementEnabled = true;
       }
       this.transactionSQLExecutorFunction = transactionSQLExecutorFunction;
+      this.debeziumEngineSingleton = debeziumEngineSingleton;
+      this.eventFlowableFactory = eventFlowableFactory;
     }
 
     private static void traverseSelectionSet(
@@ -279,7 +283,7 @@ public class GraphQLDefinition {
 
       if (debeziumConfig.isEmbedded()) {
         try {
-          DebeziumEngineSingleton.startNewEngine(datasourceConfig, debeziumConfig);
+          debeziumEngineSingleton.startNewEngine();
         } catch (IOException e) {
           log.error("subscription not enabled: debezium engine could not start");
           return this;
@@ -290,8 +294,8 @@ public class GraphQLDefinition {
           env -> {
             log.info("new subscription");
             ComponentExecutable executionRoot = getExecutionRoot(env);
-            return EventFlowableFactory.create(
-                    executionRoot, vertx, datasourceConfig, debeziumConfig)
+            return eventFlowableFactory
+                .create(executionRoot)
                 .flatMap(record -> sqlConnectionPool.rxBegin().toFlowable())
                 .flatMap(
                     transaction -> {
