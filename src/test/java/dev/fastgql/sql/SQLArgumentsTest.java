@@ -24,38 +24,17 @@ public class SQLArgumentsTest {
     return Stream.of(
         Arguments.of(
             Map.of("limit", 1),
-            new HashMap<>() {
-              {
-                put("limit", 1);
-                put("order_by", null);
-                put("where", null);
-              }
-            }),
+            Map.of("limit",1)),
         Arguments.of(
             Map.of("offset", 1),
-            new HashMap<>() {
-              {
-                put("offset", 1);
-                put("order_by", null);
-                put("where", null);
-              }
-            }),
+            Map.of("offset", 1)),
         Arguments.of(
             Map.of("order_by", List.of(Map.of("id1", "ASC"), Map.of("id2", "DESC"))),
-            new HashMap<>() {
-              {
-                put("order_by", new JsonArray("[{\"id1\": \"ASC\"}, {\"id2\": \"DESC\"}]"));
-                put("where", null);
-              }
-            }),
+            Map.of("order_by", new JsonArray("[{\"id1\": \"ASC\"}, {\"id2\": \"DESC\"}]"))),
         Arguments.of(
             Map.of("where", Map.of("id", Map.of("_eq", 1))),
-            new HashMap<>() {
-              {
-                put("order_by", null);
-                put("where", new JsonObject("{\"id\": {\"_eq\": 1}}"));
-              }
-            }));
+            Map.of("where", new JsonObject("{\"id\": {\"_eq\": 1}}")))
+    );
   }
 
   @ParameterizedTest(name = "testSQLArguments {index} => Test: [{arguments}]")
