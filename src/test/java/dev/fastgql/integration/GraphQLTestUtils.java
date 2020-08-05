@@ -8,18 +8,19 @@ package dev.fastgql.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.vertx.core.http.HttpClientOptions;
+import io.reactivex.Completable;
+import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.handler.graphql.ApolloWSMessageType;
 import io.vertx.junit5.Checkpoint;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.core.http.HttpClient;
 import io.vertx.reactivex.core.http.WebSocket;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import io.vertx.reactivex.ext.web.client.predicate.ResponsePredicate;
 import io.vertx.reactivex.ext.web.codec.BodyCodec;
+import io.vertx.reactivex.impl.AsyncResultCompletable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -99,41 +100,49 @@ public class GraphQLTestUtils {
   }
 
   /**
-   * Verify that GraphQL subscription stored in {@param inputResource} resulted in a series of
-   * responses stored in {@param outputResources}. Repeating responses are ignored.
+   * Start GraphQL subscription
    *
-   * @param port port on which FastGQL is running
-   * @param inputResource resource which stores input query as GraphQL query
-   * @param outputResources list of resources which store expected responses as JSONs
-   * @param vertx vertx instance
+   * @param inputResource resource which stores subscription query
    * @param context vertx test context
+   * @param webSocket web socket
+   * @return completable which completes when data is written to web socket
    */
-  public static void verifySubscription(
-      int port,
-      String inputResource,
-      List<String> outputResources,
-      Vertx vertx,
-      VertxTestContext context) {
+  public static Completable startSubscription(
+      String inputResource, VertxTestContext context, WebSocket webSocket) {
+    String graphQLQuery = ResourcesTestUtils.readResource(inputResource, context);
+    JsonObject request =
+        new JsonObject()
+            .put("id", "1")
+            .put("type", ApolloWSMessageType.START.getText())
+            .put("payload", new JsonObject().put("query", graphQLQuery));
+    return webSocket.rxWrite(new Buffer(request.toBuffer()));
+  }
+
+  /**
+   * Verify that GraphQL subscription resulted in a series of responses stored in {@param
+   * outputResources}. Repeating responses are ignored.
+   *
+   * @param outputResources list of resources which store expected responses as JSONs
+   * @param context vertx test context
+   * @param webSocket web socket
+   * @return completable which completes after first message is received
+   */
+  public static Completable verifySubscription(
+      List<String> outputResources, VertxTestContext context, WebSocket webSocket) {
     Checkpoint checkpoints = context.checkpoint(outputResources.size());
     AtomicInteger currentResponseAtomic = new AtomicInteger(0);
-
-    String graphQLQuery = ResourcesTestUtils.readResource(inputResource, context);
     List<JsonObject> expectedResponses =
         outputResources.stream()
             .map(name -> ResourcesTestUtils.readResource(name, context))
             .map(JsonObject::new)
             .collect(Collectors.toList());
+    AtomicJsonObject atomicJsonObject = new AtomicJsonObject();
 
-    HttpClient httpClient = vertx.createHttpClient(new HttpClientOptions().setDefaultPort(port));
-    httpClient.webSocket(
-        "/graphql",
-        websocketRes -> {
-          if (websocketRes.succeeded()) {
-            WebSocket webSocket = websocketRes.result();
-
-            AtomicJsonObject atomicJsonObject = new AtomicJsonObject();
+    return AsyncResultCompletable.toCompletable(
+        handler ->
             webSocket.handler(
                 message -> {
+                  handler.handle(Future.succeededFuture());
                   System.out.println(message);
                   if (atomicJsonObject.checkIfSameAsLastObjectAndUpdate(message.toJsonObject())) {
                     return;
@@ -146,17 +155,6 @@ public class GraphQLTestUtils {
                                 expectedResponses.get(currentResponse), message.toJsonObject()));
                   }
                   checkpoints.flag();
-                });
-
-            JsonObject request =
-                new JsonObject()
-                    .put("id", "1")
-                    .put("type", ApolloWSMessageType.START.getText())
-                    .put("payload", new JsonObject().put("query", graphQLQuery));
-            webSocket.write(new Buffer(request.toBuffer()));
-          } else {
-            context.failNow(websocketRes.cause());
-          }
-        });
+                }));
   }
 }
