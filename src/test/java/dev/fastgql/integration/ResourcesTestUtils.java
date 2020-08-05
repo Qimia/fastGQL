@@ -41,6 +41,10 @@ public class ResourcesTestUtils {
     return getResourceDirectories("queries");
   }
 
+  public static Stream<String> mutationDirectories() throws IOException {
+    return getResourceDirectories("mutations");
+  }
+
   public static Stream<String> subscriptionDirectories() throws IOException {
     return getResourceDirectories("subscriptions");
   }

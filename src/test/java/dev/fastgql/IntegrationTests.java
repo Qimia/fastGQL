@@ -17,6 +17,11 @@ public class IntegrationTests {
     class PostgresQuery extends ContainerEnvWithDatabase implements WithPostgres, QueryTests {}
 
     @Nested
+    @DisplayName("PostgreSQL Mutation Tests")
+    class PostgresMutation extends ContainerEnvWithDatabase
+        implements WithPostgres, MutationTests {}
+
+    @Nested
     @DisplayName("PostgreSQL Subscription Tests with external Debezium")
     class PostgresSubscriptionExternalDebezium extends ContainerEnvWithDatabaseAndDebezium
         implements WithPostgres, WithPostgresConnector, SubscriptionTests {}
@@ -33,6 +38,10 @@ public class IntegrationTests {
     @Nested
     @DisplayName("MySQL Query Tests")
     class MySQLQuery extends ContainerEnvWithDatabase implements WithMySQL, QueryTests {}
+
+    @Nested
+    @DisplayName("MySQL Mutation Tests")
+    class MySQLMutation extends ContainerEnvWithDatabase implements WithMySQL, MutationTests {}
 
     @Nested
     @DisplayName("MySQL Subscription Tests with external Debezium")
