@@ -1,0 +1,5 @@
+mutation {
+  insert_addresses(objects:{id:1}) {
+    affected_rows
+  }
+}

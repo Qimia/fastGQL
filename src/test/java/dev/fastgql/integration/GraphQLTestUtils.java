@@ -99,6 +99,36 @@ public class GraphQLTestUtils {
     verifyQuery(port, query, expected, vertx, context);
   }
 
+  public static void verifyMutation(
+      String directory, int port, Vertx vertx, VertxTestContext context) {
+    String query = String.format("%s/query.graphql", directory);
+    String mutation = String.format("%s/mutation.graphql", directory);
+    String expectedMutation = String.format("%s/expected-mutation.json", directory);
+    String expected = String.format("%s/expected.json", directory);
+    String graphQLMutation = ResourcesTestUtils.readResource(mutation, context);
+    String expectedMutationResponseString =
+        ResourcesTestUtils.readResource(expectedMutation, context);
+
+    JsonObject expectedMutationResponse = new JsonObject(expectedMutationResponseString);
+    JsonObject requestMutation = new JsonObject().put("query", graphQLMutation);
+
+    WebClient webClient = WebClient.create(vertx);
+    webClient
+        .post(port, "localhost", "/graphql")
+        .expect(ResponsePredicate.SC_OK)
+        .expect(ResponsePredicate.JSON)
+        .as(BodyCodec.jsonObject())
+        .rxSendJsonObject(requestMutation)
+        .subscribe(
+            response ->
+                context.verify(
+                    () -> {
+                      assertEquals(expectedMutationResponse, response.body());
+                      verifyQuery(port, query, expected, vertx, context);
+                    }),
+            context::failNow);
+  }
+
   /**
    * Start GraphQL subscription
    *
