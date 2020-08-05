@@ -6,8 +6,9 @@
 
 package dev.fastgql.sql;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -19,15 +20,15 @@ public class SQLArguments {
 
   private final Integer limit;
   private final Integer offset;
-  private final JsonElement orderBy;
-  private final JsonElement where;
+  private final JsonArray orderBy;
+  private final JsonObject where;
 
   public SQLArguments(Map<String, Object> args) {
     this.limit = (Integer) args.get("limit");
     this.offset = (Integer) args.get("offset");
-    Gson gson = new Gson();
-    this.orderBy = gson.toJsonTree(args.get("order_by"));
-    this.where = gson.toJsonTree(args.get("where"));
+    this.orderBy =
+        args.get("order_by") == null ? null : new JsonArray((List<?>) args.get("order_by"));
+    this.where = JsonObject.mapFrom(args.get("where"));
   }
 
   public Integer getLimit() {
@@ -38,11 +39,11 @@ public class SQLArguments {
     return offset;
   }
 
-  public JsonElement getWhere() {
-    return where;
+  public JsonArray getOrderBy() {
+    return orderBy;
   }
 
-  public JsonElement getOrderBy() {
-    return orderBy;
+  public JsonObject getWhere() {
+    return where;
   }
 }
