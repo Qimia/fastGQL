@@ -6,6 +6,7 @@
 
 package dev.fastgql.graphql;
 
+import com.google.inject.assistedinject.Assisted;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
@@ -21,7 +22,7 @@ import dev.fastgql.sql.ComponentRow;
 import dev.fastgql.sql.ExecutionRoot;
 import dev.fastgql.sql.MutationExecution;
 import dev.fastgql.sql.SQLArguments;
-import dev.fastgql.sql.SQLUtils;
+import dev.fastgql.sql.SQLExecutor;
 import graphql.GraphQL;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -42,6 +43,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,17 +58,29 @@ public class GraphQLDefinition {
 
   private static final Logger log = LoggerFactory.getLogger(GraphQLDefinition.class);
 
-  public static Builder newGraphQL(
-      DatabaseSchema databaseSchema, Pool client, DatasourceConfig.DBType dbType) {
-    return new Builder(databaseSchema, client, dbType);
+  public interface BuilderFactory {
+    Builder create(DatabaseSchema databaseSchema);
   }
 
-  public static class Builder {
+  public interface Builder {
+    Builder enableQuery();
+
+    Builder enableSubscription(Vertx vertx, DebeziumConfig debeziumConfig);
+
+    Builder enableMutation();
+
+    GraphQL build();
+  }
+
+  public static class DefaultBuilder implements Builder {
     private final DatabaseSchema databaseSchema;
     private final GraphQLDatabaseSchema graphQLDatabaseSchema;
     private final Pool sqlConnectionPool;
     private final GraphQLSchema.Builder graphQLSchemaBuilder;
     private final GraphQLCodeRegistry.Builder graphQLCodeRegistryBuilder;
+    private final Function<Transaction, SQLExecutor> transactionSQLExecutorFunction;
+    private final DebeziumEngineSingleton debeziumEngineSingleton;
+    private final EventFlowableFactory eventFlowableFactory;
     private boolean queryEnabled = false;
     private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
@@ -77,21 +92,25 @@ public class GraphQLDefinition {
      * @param databaseSchema input database schema
      * @param sqlConnectionPool SQL connection pool
      */
-    public Builder(
-        DatabaseSchema databaseSchema, Pool sqlConnectionPool, DatasourceConfig.DBType dbType) {
+    @Inject
+    public DefaultBuilder(
+        @Assisted DatabaseSchema databaseSchema,
+        Pool sqlConnectionPool,
+        DatasourceConfig datasourceConfig,
+        Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
+        DebeziumEngineSingleton debeziumEngineSingleton,
+        EventFlowableFactory eventFlowableFactory) {
       this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
       this.sqlConnectionPool = sqlConnectionPool;
       this.graphQLSchemaBuilder = GraphQLSchema.newSchema();
       this.graphQLCodeRegistryBuilder = GraphQLCodeRegistry.newCodeRegistry();
-      if (dbType.equals(DatasourceConfig.DBType.postgresql)) {
+      if (datasourceConfig.getDbType().equals(DatasourceConfig.DBType.postgresql)) {
         returningStatementEnabled = true;
       }
-    }
-
-    private static Single<List<Map<String, Object>>> executeQuery(
-        String query, Transaction transaction) {
-      return transaction.rxQuery(query).map(SQLUtils::rowSetToList);
+      this.transactionSQLExecutorFunction = transactionSQLExecutorFunction;
+      this.debeziumEngineSingleton = debeziumEngineSingleton;
+      this.eventFlowableFactory = eventFlowableFactory;
     }
 
     private static void traverseSelectionSet(
@@ -164,7 +183,7 @@ public class GraphQLDefinition {
     private Single<List<Map<String, Object>>> getResponse(
         DataFetchingEnvironment env, Transaction transaction) {
       ComponentExecutable executionRoot = getExecutionRoot(env);
-      executionRoot.setSqlExecutor(queryString -> executeQuery(queryString, transaction));
+      executionRoot.setSqlExecutor(transactionSQLExecutorFunction.apply(transaction));
       return executionRoot.execute();
     }
 
@@ -268,12 +287,10 @@ public class GraphQLDefinition {
      * GraphQLCodeRegistry}.
      *
      * @param vertx vertx instance
-     * @param datasourceConfig datasource config
      * @param debeziumConfig debezium config
      * @return this
      */
-    public Builder enableSubscription(
-        Vertx vertx, DatasourceConfig datasourceConfig, DebeziumConfig debeziumConfig) {
+    public Builder enableSubscription(Vertx vertx, DebeziumConfig debeziumConfig) {
 
       if (subscriptionEnabled || !debeziumConfig.isActive()) {
         log.debug("Subscription already enabled or debezium is not configured");
@@ -282,7 +299,7 @@ public class GraphQLDefinition {
 
       if (debeziumConfig.isEmbedded()) {
         try {
-          DebeziumEngineSingleton.startNewEngine(datasourceConfig, debeziumConfig);
+          debeziumEngineSingleton.startNewEngine();
         } catch (IOException e) {
           log.error("subscription not enabled: debezium engine could not start");
           return this;
@@ -293,12 +310,13 @@ public class GraphQLDefinition {
           env -> {
             log.info("new subscription");
             ComponentExecutable executionRoot = getExecutionRoot(env);
-            return EventFlowableFactory.create(
-                    executionRoot, vertx, datasourceConfig, debeziumConfig)
+            return eventFlowableFactory
+                .create(executionRoot)
                 .flatMap(record -> sqlConnectionPool.rxBegin().toFlowable())
                 .flatMap(
                     transaction -> {
-                      executionRoot.setSqlExecutor(query -> executeQuery(query, transaction));
+                      executionRoot.setSqlExecutor(
+                          transactionSQLExecutorFunction.apply(transaction));
                       return executionRoot
                           .execute()
                           .doFinally(() -> commitTransaction(transaction))
