@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -22,19 +21,14 @@ public class SQLArgumentsTest {
 
   static Stream<Arguments> getTestSQLArgumentsParameters() {
     return Stream.of(
-        Arguments.of(
-            Map.of("limit", 1),
-            Map.of("limit",1)),
-        Arguments.of(
-            Map.of("offset", 1),
-            Map.of("offset", 1)),
+        Arguments.of(Map.of("limit", 1), Map.of("limit", 1)),
+        Arguments.of(Map.of("offset", 1), Map.of("offset", 1)),
         Arguments.of(
             Map.of("order_by", List.of(Map.of("id1", "ASC"), Map.of("id2", "DESC"))),
             Map.of("order_by", new JsonArray("[{\"id1\": \"ASC\"}, {\"id2\": \"DESC\"}]"))),
         Arguments.of(
             Map.of("where", Map.of("id", Map.of("_eq", 1))),
-            Map.of("where", new JsonObject("{\"id\": {\"_eq\": 1}}")))
-    );
+            Map.of("where", new JsonObject("{\"id\": {\"_eq\": 1}}"))));
   }
 
   @ParameterizedTest(name = "testSQLArguments {index} => Test: [{arguments}]")
