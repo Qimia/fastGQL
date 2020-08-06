@@ -6,7 +6,6 @@
 
 package dev.fastgql.graphql;
 
-import com.google.inject.assistedinject.Assisted;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
@@ -44,7 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import javax.inject.Inject;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,21 +57,7 @@ public class GraphQLDefinition {
 
   private static final Logger log = LoggerFactory.getLogger(GraphQLDefinition.class);
 
-  public interface BuilderFactory {
-    Builder create(DatabaseSchema databaseSchema);
-  }
-
-  public interface Builder {
-    Builder enableQuery();
-
-    Builder enableSubscription(Vertx vertx, DebeziumConfig debeziumConfig);
-
-    Builder enableMutation();
-
-    GraphQL build();
-  }
-
-  public static class DefaultBuilder implements Builder {
+  public static class Builder {
     private final DatabaseSchema databaseSchema;
     private final GraphQLDatabaseSchema graphQLDatabaseSchema;
     private final Pool sqlConnectionPool;
@@ -89,18 +74,21 @@ public class GraphQLDefinition {
     /**
      * Class builder, has to be initialized with database schema and SQL connection pool.
      *
-     * @param databaseSchema input database schema
      * @param sqlConnectionPool SQL connection pool
+     * @param datasourceConfig Datasource config
+     * @param databaseSchemaSupplier Database schema supplier
+     * @param transactionSQLExecutorFunction
+     * @param debeziumEngineSingleton Debezium engine
+     * @param eventFlowableFactory Event flow factory
      */
-    @Inject
-    public DefaultBuilder(
-        @Assisted DatabaseSchema databaseSchema,
+    public Builder(
         Pool sqlConnectionPool,
         DatasourceConfig datasourceConfig,
+        Supplier<DatabaseSchema> databaseSchemaSupplier,
         Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
         DebeziumEngineSingleton debeziumEngineSingleton,
         EventFlowableFactory eventFlowableFactory) {
-      this.databaseSchema = databaseSchema;
+      this.databaseSchema = databaseSchemaSupplier.get();
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
       this.sqlConnectionPool = sqlConnectionPool;
       this.graphQLSchemaBuilder = GraphQLSchema.newSchema();
@@ -223,6 +211,10 @@ public class GraphQLDefinition {
      * @return this
      */
     public Builder enableQuery() {
+      if (databaseSchema == null) {
+        log.debug("Database schema is null.");
+        return this;
+      }
       if (queryEnabled) {
         return this;
       }
@@ -253,6 +245,10 @@ public class GraphQLDefinition {
      * @return this
      */
     public Builder enableMutation() {
+      if (databaseSchema == null) {
+        log.debug("Database schema is null.");
+        return this;
+      }
       if (mutationEnabled) {
         return this;
       }
@@ -291,7 +287,10 @@ public class GraphQLDefinition {
      * @return this
      */
     public Builder enableSubscription(Vertx vertx, DebeziumConfig debeziumConfig) {
-
+      if (databaseSchema == null) {
+        log.debug("Database schema is null.");
+        return this;
+      }
       if (subscriptionEnabled || !debeziumConfig.isActive()) {
         log.debug("Subscription already enabled or debezium is not configured");
         return this;
@@ -341,6 +340,9 @@ public class GraphQLDefinition {
      * @return constructed GraphQL object
      */
     public GraphQL build() {
+      if (databaseSchema == null) {
+        return null;
+      }
       if (!(queryEnabled || subscriptionEnabled)) {
         throw new RuntimeException("query or subscription has to be enabled");
       }

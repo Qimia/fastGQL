@@ -15,6 +15,8 @@ import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSMessage;
 import java.util.function.Function;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.dataloader.DataLoaderRegistry;
 
 /**
@@ -23,6 +25,7 @@ import org.dataloader.DataLoaderRegistry;
  *
  * @author Kamil Bobrowski
  */
+@Singleton
 public class ApolloWSHandlerUpdatable implements Handler<RoutingContext> {
   private final Subject<ApolloWSHandler> apolloWSHandlerSubject =
       BehaviorSubject.<ApolloWSHandler>create().toSerialized();
@@ -33,6 +36,11 @@ public class ApolloWSHandlerUpdatable implements Handler<RoutingContext> {
   private Function<ApolloWSMessage, Object> queryContextFactory = DEFAULT_QUERY_CONTEXT_FACTORY;
   private Function<ApolloWSMessage, DataLoaderRegistry> dataLoaderRegistryFactory =
       DEFAULT_DATA_LOADER_REGISTRY_FACTORY;
+
+  @Inject
+  public ApolloWSHandlerUpdatable() {
+    this.options = new ApolloWSOptions();
+  }
 
   private ApolloWSHandlerUpdatable(ApolloWSOptions options) {
     this.options = options;

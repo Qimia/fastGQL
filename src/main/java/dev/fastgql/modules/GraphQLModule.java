@@ -1,52 +1,47 @@
 package dev.fastgql.modules;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.assistedinject.FactoryModuleBuilder;
+import dagger.Module;
+import dagger.Provides;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
+import dev.fastgql.events.DebeziumEngineSingleton;
+import dev.fastgql.events.EventFlowableFactory;
 import dev.fastgql.graphql.GraphQLDefinition;
+import dev.fastgql.sql.SQLExecutor;
 import graphql.GraphQL;
 import io.vertx.reactivex.core.Vertx;
-import java.sql.Connection;
-import java.sql.SQLException;
+import io.vertx.reactivex.sqlclient.Pool;
+import io.vertx.reactivex.sqlclient.Transaction;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import javax.inject.Singleton;
 
-public class GraphQLModule extends AbstractModule {
-
-  @Override
-  protected void configure() {
-    install(
-        new FactoryModuleBuilder()
-            .implement(GraphQLDefinition.Builder.class, GraphQLDefinition.DefaultBuilder.class)
-            .build(GraphQLDefinition.BuilderFactory.class));
-  }
+@Module
+public abstract class GraphQLModule {
 
   @Provides
-  Supplier<GraphQL> provideGraphQLSupplier(
+  @Singleton
+  static Supplier<GraphQL> provideGraphQLSupplier(
       Vertx vertx,
-      DatasourceConfig datasourceConfig,
       DebeziumConfig debeziumConfig,
-      Function<Connection, DatabaseSchema> connectionDatabaseSchemaFunction,
-      GraphQLDefinition.BuilderFactory graphQLDefinitionBuilderFactory) {
-    return () -> {
-      DatabaseSchema databaseSchema;
-      try {
-        Connection connection = datasourceConfig.getConnection();
-        databaseSchema = connectionDatabaseSchemaFunction.apply(connection);
-        connection.close();
-      } catch (SQLException e) {
-        e.printStackTrace();
-        return null;
-      }
-      return graphQLDefinitionBuilderFactory
-          .create(databaseSchema)
-          .enableQuery()
-          .enableSubscription(vertx, debeziumConfig)
-          .enableMutation()
-          .build();
-    };
+      Pool sqlConnectionPool,
+      DatasourceConfig datasourceConfig,
+      Supplier<DatabaseSchema> databaseSchemaSupplier,
+      Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
+      DebeziumEngineSingleton debeziumEngineSingleton,
+      EventFlowableFactory eventFlowableFactory) {
+    return () ->
+        new GraphQLDefinition.Builder(
+                sqlConnectionPool,
+                datasourceConfig,
+                databaseSchemaSupplier,
+                transactionSQLExecutorFunction,
+                debeziumEngineSingleton,
+                eventFlowableFactory)
+            .enableQuery()
+            .enableSubscription(vertx, debeziumConfig)
+            .enableMutation()
+            .build();
   }
 }

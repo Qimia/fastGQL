@@ -1,14 +1,17 @@
 package dev.fastgql.modules;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
+import dagger.Module;
+import dagger.Provides;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.modules.Annotations.ServerPort;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.Vertx;
+import javax.inject.Singleton;
 
-public class VertxModule extends AbstractModule {
+@Module
+public class VertxModule {
+
   private final Vertx vertx;
   private final JsonObject config;
 
@@ -18,22 +21,26 @@ public class VertxModule extends AbstractModule {
   }
 
   @Provides
-  public Vertx provideVertx() {
+  @Singleton
+  Vertx provideVertx() {
     return vertx;
   }
 
   @Provides
+  @Singleton
   DatasourceConfig provideDatasourceConfig() {
     return DatasourceConfig.createWithJsonConfig(config.getJsonObject("datasource"));
   }
 
   @Provides
+  @Singleton
   DebeziumConfig provideDebeziumConfig() {
     return DebeziumConfig.createWithJsonConfig(config.getJsonObject("debezium"));
   }
 
   @Provides
   @ServerPort
+  @Singleton
   int port() {
     return config.getInteger("http.port", 8080);
   }

@@ -1,7 +1,7 @@
 package dev.fastgql.modules;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
+import dagger.Module;
+import dagger.Provides;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.MetadataUtils;
@@ -13,29 +13,34 @@ import io.vertx.reactivex.sqlclient.Transaction;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import javax.inject.Singleton;
 
-public class DatabaseModule extends AbstractModule {
+@Module
+public abstract class DatabaseModule {
+
   @Provides
-  Function<Connection, DatabaseSchema> provideConnectionDatabaseSchemaFunction() {
-    return connection -> {
-      DatabaseSchema databaseSchema;
-      try {
-        databaseSchema = MetadataUtils.createDatabaseSchema(connection);
+  @Singleton
+  static Supplier<DatabaseSchema> provideDatabaseSchemaSupplier(DatasourceConfig datasourceConfig) {
+    return () -> {
+      try (Connection connection = datasourceConfig.getConnection()) {
+        return MetadataUtils.createDatabaseSchema(connection);
       } catch (SQLException e) {
         e.printStackTrace();
         return null;
       }
-      return databaseSchema;
     };
   }
 
   @Provides
-  Pool providePool(DatasourceConfig datasourceConfig, Vertx vertx) {
+  @Singleton
+  static Pool providePool(Vertx vertx, DatasourceConfig datasourceConfig) {
     return datasourceConfig.getPool(vertx);
   }
 
   @Provides
-  Function<Transaction, SQLExecutor> provideTransactionSQLExecutorFunction() {
+  @Singleton
+  static Function<Transaction, SQLExecutor> provideTransactionSQLExecutorFunction() {
     return transaction -> query -> transaction.rxQuery(query).map(SQLUtils::rowSetToList);
   }
 }

@@ -1,7 +1,7 @@
 package dev.fastgql.modules;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
+import dagger.Module;
+import dagger.Provides;
 import dev.fastgql.modules.Annotations.ServerPort;
 import dev.fastgql.modules.Annotations.UpdateHandler;
 import dev.fastgql.router.ApolloWSHandlerUpdatable;
@@ -20,36 +20,25 @@ import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
-public class ServerModule extends AbstractModule {
+@Module
+public abstract class ServerModule {
 
   @Provides
   @Singleton
-  HttpServerOptions provideHttpServerOptions() {
+  static HttpServerOptions provideHttpServerOptions() {
     return new HttpServerOptions().setWebsocketSubProtocols("graphql-ws");
   }
 
   @Provides
   @Singleton
-  GraphQLHandlerUpdatable provideGraphQLHandlerUpdatable() {
-    return GraphQLHandlerUpdatable.create();
-  }
-
-  @Provides
-  @Singleton
-  ApolloWSHandlerUpdatable provideApolloWSHandlerUpdatable() {
-    return ApolloWSHandlerUpdatable.create();
-  }
-
-  @Provides
-  @Singleton
-  GraphiQLHandler provideGraphiQLHandler() {
+  static GraphiQLHandler provideGraphiQLHandler() {
     return GraphiQLHandler.create(new GraphiQLHandlerOptions().setEnabled(true));
   }
 
   @Provides
   @Singleton
   @UpdateHandler
-  Handler<RoutingContext> provideUpdateHandler(
+  static Handler<RoutingContext> provideUpdateHandler(
       GraphQLHandlerUpdatable graphQLHandlerUpdatable,
       ApolloWSHandlerUpdatable apolloWSHandlerUpdatable,
       Supplier<GraphQL> graphQLSupplier) {
@@ -67,7 +56,8 @@ public class ServerModule extends AbstractModule {
   }
 
   @Provides
-  Router provideRouter(
+  @Singleton
+  static Router provideRouter(
       Vertx vertx,
       GraphQLHandlerUpdatable graphQLHandlerUpdatable,
       ApolloWSHandlerUpdatable apolloWSHandlerUpdatable,
@@ -94,7 +84,8 @@ public class ServerModule extends AbstractModule {
   }
 
   @Provides
-  Single<HttpServer> provideHttpServer(
+  @Singleton
+  static Single<HttpServer> provideHttpServer(
       Vertx vertx, HttpServerOptions httpServerOptions, Router router, @ServerPort int port) {
     return vertx.createHttpServer(httpServerOptions).requestHandler(router).rxListen(port);
   }

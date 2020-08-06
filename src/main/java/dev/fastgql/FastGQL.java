@@ -6,18 +6,10 @@
 
 package dev.fastgql;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import dev.fastgql.modules.DatabaseModule;
-import dev.fastgql.modules.GraphQLModule;
-import dev.fastgql.modules.ServerModule;
 import dev.fastgql.modules.VertxModule;
-import io.reactivex.Single;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.core.http.HttpServer;
 import org.apache.log4j.Logger;
 
 public class FastGQL extends AbstractVerticle {
@@ -31,20 +23,15 @@ public class FastGQL extends AbstractVerticle {
 
   @Override
   public void start(Promise<Void> future) {
-    Injector injector =
-        Guice.createInjector(
-            new VertxModule(vertx, config()),
-            new ServerModule(),
-            new GraphQLModule(),
-            new DatabaseModule());
 
-    injector
-        .getInstance(new Key<Single<HttpServer>>() {})
+    DaggerServerComponent.factory()
+        .create(new VertxModule(vertx, config()))
+        .getHttpServer()
         .subscribe(
             server -> {
               log.debug("deployed server");
               future.complete();
             },
-            future::fail);
+            server -> future.fail(server.getCause()));
   }
 }
