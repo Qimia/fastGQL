@@ -6,14 +6,12 @@
 
 package dev.fastgql.integration;
 
-import io.reactivex.Observable;
 import io.vertx.junit5.VertxTestContext;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.concurrent.TimeUnit;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
 /**
@@ -64,26 +62,17 @@ public class DBTestUtils {
    * Execute SQL queries stored in a resource with specified delay.
    *
    * @param sqlResource name of resource
-   * @param delay delay between execution of this function and query execution
-   * @param unit unit of delay
    * @param jdbcDatabaseContainer database testcontainer
    * @param context vertx test context
    */
-  public static void executeSQLQueryFromResourceWithDelay(
+  public static void executeSQLQueryFromResourceWithContext(
       String sqlResource,
-      long delay,
-      TimeUnit unit,
       JdbcDatabaseContainer<?> jdbcDatabaseContainer,
       VertxTestContext context) {
-    Observable.timer(delay, unit)
-        .subscribe(
-            result -> {
-              try {
-                DBTestUtils.executeSQLQueryFromResource(sqlResource, jdbcDatabaseContainer);
-              } catch (SQLException e) {
-                context.failNow(e);
-              }
-            },
-            context::failNow);
+    try {
+      DBTestUtils.executeSQLQueryFromResource(sqlResource, jdbcDatabaseContainer);
+    } catch (SQLException | IOException e) {
+      context.failNow(e);
+    }
   }
 }
