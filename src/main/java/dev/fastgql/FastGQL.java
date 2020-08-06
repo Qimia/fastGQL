@@ -7,10 +7,8 @@
 package dev.fastgql;
 
 import dev.fastgql.modules.VertxModule;
-import dev.fastgql.router.RouterUpdatable;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
-import io.vertx.core.http.HttpServerOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
 import org.apache.log4j.Logger;
 
@@ -26,16 +24,9 @@ public class FastGQL extends AbstractVerticle {
   @Override
   public void start(Promise<Void> future) {
 
-    DaggerServerComponent.factory().create(new VertxModule(vertx, config())).getHttpServer()
-
-//    RouterUpdatable routerUpdatable =
-//        RouterUpdatable.createWithQueryAndSubscription(vertx, config());
-//
-//    vertx
-//        .createHttpServer(new HttpServerOptions().setWebsocketSubProtocols("graphql-ws"))
-//        .requestHandler(routerUpdatable.getRouter())
-//        .rxListen(config().getInteger("http.port", 8080))
-
+    DaggerServerComponent.factory()
+        .create(new VertxModule(vertx, config()))
+        .getHttpServer()
         .subscribe(
             server -> {
               log.debug("deployed server");

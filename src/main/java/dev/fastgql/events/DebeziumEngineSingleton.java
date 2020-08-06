@@ -17,21 +17,28 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.log4j.Logger;
 
+@Singleton
 public class DebeziumEngineSingleton {
 
-  private static final Logger log = Logger.getLogger(DebeziumEngineSingleton.class);
-
-  private DebeziumEngineSingleton() {}
-
-  private static final Subject<ChangeEvent<String, String>> changeEventSubject =
+  private final Logger log = Logger.getLogger(DebeziumEngineSingleton.class);
+  private final DatasourceConfig datasourceConfig;
+  private final DebeziumConfig debeziumConfig;
+  private final Subject<ChangeEvent<String, String>> changeEventSubject =
       BehaviorSubject.<ChangeEvent<String, String>>create().toSerialized();
-  private static DebeziumEngine<ChangeEvent<String, String>> debeziumEngine;
-  private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
+  private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+  private DebeziumEngine<ChangeEvent<String, String>> debeziumEngine;
 
-  public static synchronized void startNewEngine(
-      DatasourceConfig datasourceConfig, DebeziumConfig debeziumConfig) throws IOException {
+  @Inject
+  public DebeziumEngineSingleton(DatasourceConfig datasourceConfig, DebeziumConfig debeziumConfig) {
+    this.datasourceConfig = datasourceConfig;
+    this.debeziumConfig = debeziumConfig;
+  }
+
+  public synchronized void startNewEngine() throws IOException {
     stopEngine();
 
     Random random = new Random();
@@ -79,7 +86,7 @@ public class DebeziumEngineSingleton {
     executorService.execute(debeziumEngine);
   }
 
-  public static synchronized void stopEngine() throws IOException {
+  public synchronized void stopEngine() throws IOException {
     if (debeziumEngine != null) {
       log.debug("closing debezium engine");
       debeziumEngine.close();
@@ -87,7 +94,7 @@ public class DebeziumEngineSingleton {
     }
   }
 
-  public static Flowable<ChangeEvent<String, String>> getChangeEventFlowable() {
+  public Flowable<ChangeEvent<String, String>> getChangeEventFlowable() {
     return changeEventSubject.toFlowable(BackpressureStrategy.BUFFER);
   }
 }

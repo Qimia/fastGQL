@@ -10,7 +10,7 @@ class Annotations {
   @Retention(RUNTIME)
   @interface ServerPort {}
 
-  //  @Qualifier
-  //  @Retention(RUNTIME)
-  //  @interface UpdateHandler {}
+  @Qualifier
+  @Retention(RUNTIME)
+  @interface UpdateHandler {}
 }

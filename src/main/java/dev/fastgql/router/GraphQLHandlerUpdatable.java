@@ -14,6 +14,8 @@ import io.vertx.ext.web.handler.graphql.GraphQLHandlerOptions;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphQLHandler;
 import java.util.function.Function;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.dataloader.DataLoaderRegistry;
 
 /**
@@ -22,6 +24,7 @@ import org.dataloader.DataLoaderRegistry;
  *
  * @author Kamil Bobrowski
  */
+@Singleton
 public class GraphQLHandlerUpdatable implements Handler<RoutingContext> {
   private final Subject<GraphQLHandler> graphQLHandlerSubject =
       BehaviorSubject.<GraphQLHandler>create().toSerialized();
@@ -32,6 +35,11 @@ public class GraphQLHandlerUpdatable implements Handler<RoutingContext> {
   private Function<RoutingContext, Object> queryContextFactory = DEFAULT_QUERY_CONTEXT_FACTORY;
   private Function<RoutingContext, DataLoaderRegistry> dataLoaderRegistryFactory =
       DEFAULT_DATA_LOADER_REGISTRY_FACTORY;
+
+  @Inject
+  public GraphQLHandlerUpdatable() {
+    this.options = new GraphQLHandlerOptions();
+  }
 
   private GraphQLHandlerUpdatable(GraphQLHandlerOptions options) {
     this.options = options;

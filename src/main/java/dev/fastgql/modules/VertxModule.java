@@ -2,6 +2,8 @@ package dev.fastgql.modules;
 
 import dagger.Module;
 import dagger.Provides;
+import dev.fastgql.db.DatasourceConfig;
+import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.modules.Annotations.ServerPort;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.Vertx;
@@ -30,17 +32,17 @@ public class VertxModule {
     return config;
   }
 
-  //  @Provides
-  //  @Singleton
-  //  DatasourceConfig provideDatasourceConfig() {
-  //    return DatasourceConfig.createWithJsonConfig(config.getJsonObject("datasource"));
-  //  }
-  //
-  //  @Provides
-  //  @Singleton
-  //  DebeziumConfig provideDebeziumConfig() {
-  //    return DebeziumConfig.createWithJsonConfig(config.getJsonObject("debezium"));
-  //  }
+  @Provides
+  @Singleton
+  DatasourceConfig provideDatasourceConfig() {
+    return DatasourceConfig.createWithJsonConfig(config.getJsonObject("datasource"));
+  }
+
+  @Provides
+  @Singleton
+  DebeziumConfig provideDebeziumConfig() {
+    return DebeziumConfig.createWithJsonConfig(config.getJsonObject("debezium"));
+  }
 
   @Provides
   @ServerPort
