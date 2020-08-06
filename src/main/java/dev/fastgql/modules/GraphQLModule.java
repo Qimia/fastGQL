@@ -31,17 +31,22 @@ public abstract class GraphQLModule {
       Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
       DebeziumEngineSingleton debeziumEngineSingleton,
       EventFlowableFactory eventFlowableFactory) {
-    return () ->
-        new GraphQLDefinition.Builder(
-                sqlConnectionPool,
-                datasourceConfig,
-                databaseSchemaSupplier,
-                transactionSQLExecutorFunction,
-                debeziumEngineSingleton,
-                eventFlowableFactory)
-            .enableQuery()
-            .enableSubscription(vertx, debeziumConfig)
-            .enableMutation()
-            .build();
+    return () -> {
+      DatabaseSchema databaseSchema = databaseSchemaSupplier.get();
+      if (databaseSchema == null) {
+        return null;
+      }
+      return new GraphQLDefinition.Builder(
+              databaseSchema,
+              sqlConnectionPool,
+              datasourceConfig,
+              transactionSQLExecutorFunction,
+              debeziumEngineSingleton,
+              eventFlowableFactory)
+          .enableQuery()
+          .enableSubscription(vertx, debeziumConfig)
+          .enableMutation()
+          .build();
+    };
   }
 }

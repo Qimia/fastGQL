@@ -6,6 +6,8 @@
 
 package dev.fastgql.graphql;
 
+import com.google.auto.factory.AutoFactory;
+import com.google.auto.factory.Provided;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
@@ -43,7 +45,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +58,7 @@ public class GraphQLDefinition {
 
   private static final Logger log = LoggerFactory.getLogger(GraphQLDefinition.class);
 
+  @AutoFactory
   public static class Builder {
     private final DatabaseSchema databaseSchema;
     private final GraphQLDatabaseSchema graphQLDatabaseSchema;
@@ -74,21 +76,21 @@ public class GraphQLDefinition {
     /**
      * Class builder, has to be initialized with database schema and SQL connection pool.
      *
+     * @param databaseSchema Database schema
      * @param sqlConnectionPool SQL connection pool
      * @param datasourceConfig Datasource config
-     * @param databaseSchemaSupplier Database schema supplier
-     * @param transactionSQLExecutorFunction
+     * @param transactionSQLExecutorFunction Function to get SQLExecutor
      * @param debeziumEngineSingleton Debezium engine
      * @param eventFlowableFactory Event flow factory
      */
     public Builder(
-        Pool sqlConnectionPool,
-        DatasourceConfig datasourceConfig,
-        Supplier<DatabaseSchema> databaseSchemaSupplier,
-        Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
-        DebeziumEngineSingleton debeziumEngineSingleton,
-        EventFlowableFactory eventFlowableFactory) {
-      this.databaseSchema = databaseSchemaSupplier.get();
+        DatabaseSchema databaseSchema,
+        @Provided Pool sqlConnectionPool,
+        @Provided DatasourceConfig datasourceConfig,
+        @Provided Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
+        @Provided DebeziumEngineSingleton debeziumEngineSingleton,
+        @Provided EventFlowableFactory eventFlowableFactory) {
+      this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
       this.sqlConnectionPool = sqlConnectionPool;
       this.graphQLSchemaBuilder = GraphQLSchema.newSchema();
@@ -211,10 +213,6 @@ public class GraphQLDefinition {
      * @return this
      */
     public Builder enableQuery() {
-      if (databaseSchema == null) {
-        log.debug("Database schema is null.");
-        return this;
-      }
       if (queryEnabled) {
         return this;
       }
@@ -245,10 +243,6 @@ public class GraphQLDefinition {
      * @return this
      */
     public Builder enableMutation() {
-      if (databaseSchema == null) {
-        log.debug("Database schema is null.");
-        return this;
-      }
       if (mutationEnabled) {
         return this;
       }
@@ -287,10 +281,6 @@ public class GraphQLDefinition {
      * @return this
      */
     public Builder enableSubscription(Vertx vertx, DebeziumConfig debeziumConfig) {
-      if (databaseSchema == null) {
-        log.debug("Database schema is null.");
-        return this;
-      }
       if (subscriptionEnabled || !debeziumConfig.isActive()) {
         log.debug("Subscription already enabled or debezium is not configured");
         return this;
@@ -340,9 +330,6 @@ public class GraphQLDefinition {
      * @return constructed GraphQL object
      */
     public GraphQL build() {
-      if (databaseSchema == null) {
-        return null;
-      }
       if (!(queryEnabled || subscriptionEnabled)) {
         throw new RuntimeException("query or subscription has to be enabled");
       }
