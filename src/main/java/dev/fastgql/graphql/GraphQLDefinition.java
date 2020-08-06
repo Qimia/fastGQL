@@ -57,7 +57,7 @@ public class GraphQLDefinition {
 
   private static final Logger log = LoggerFactory.getLogger(GraphQLDefinition.class);
 
- public static class Builder {
+  public static class Builder {
     private final DatabaseSchema databaseSchema;
     private final GraphQLDatabaseSchema graphQLDatabaseSchema;
     private final Pool sqlConnectionPool;
@@ -74,12 +74,12 @@ public class GraphQLDefinition {
     /**
      * Class builder, has to be initialized with database schema and SQL connection pool.
      *
-     * @param sqlConnectionPool  SQL connection pool
-     * @param datasourceConfig  Datasource config
-     * @param databaseSchemaSupplier  Database schema supplier
+     * @param sqlConnectionPool SQL connection pool
+     * @param datasourceConfig Datasource config
+     * @param databaseSchemaSupplier Database schema supplier
      * @param transactionSQLExecutorFunction
-     * @param debeziumEngineSingleton  Debezium engine
-     * @param eventFlowableFactory  Event flow factory
+     * @param debeziumEngineSingleton Debezium engine
+     * @param eventFlowableFactory Event flow factory
      */
     public Builder(
         Pool sqlConnectionPool,
