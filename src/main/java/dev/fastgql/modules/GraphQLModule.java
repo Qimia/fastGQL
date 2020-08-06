@@ -3,17 +3,10 @@ package dev.fastgql.modules;
 import dagger.Module;
 import dagger.Provides;
 import dev.fastgql.db.DatabaseSchema;
-import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
-import dev.fastgql.events.DebeziumEngineSingleton;
-import dev.fastgql.events.EventFlowableFactory;
-import dev.fastgql.graphql.GraphQLDefinition;
-import dev.fastgql.sql.SQLExecutor;
+import dev.fastgql.graphql.GraphQLDefinition_BuilderFactory;
 import graphql.GraphQL;
 import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.reactivex.sqlclient.Transaction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.inject.Singleton;
 
@@ -25,24 +18,15 @@ public abstract class GraphQLModule {
   static Supplier<GraphQL> provideGraphQLSupplier(
       Vertx vertx,
       DebeziumConfig debeziumConfig,
-      Pool sqlConnectionPool,
-      DatasourceConfig datasourceConfig,
       Supplier<DatabaseSchema> databaseSchemaSupplier,
-      Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
-      DebeziumEngineSingleton debeziumEngineSingleton,
-      EventFlowableFactory eventFlowableFactory) {
+      GraphQLDefinition_BuilderFactory graphQLDefinition_builderFactory) {
     return () -> {
       DatabaseSchema databaseSchema = databaseSchemaSupplier.get();
       if (databaseSchema == null) {
         return null;
       }
-      return new GraphQLDefinition.Builder(
-              databaseSchema,
-              sqlConnectionPool,
-              datasourceConfig,
-              transactionSQLExecutorFunction,
-              debeziumEngineSingleton,
-              eventFlowableFactory)
+      return graphQLDefinition_builderFactory
+          .create(databaseSchema)
           .enableQuery()
           .enableSubscription(vertx, debeziumConfig)
           .enableMutation()
