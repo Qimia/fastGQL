@@ -1,0 +1,1 @@
+INSERT INTO customers VALUES (1, 1);

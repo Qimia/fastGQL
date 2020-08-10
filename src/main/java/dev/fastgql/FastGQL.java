@@ -11,6 +11,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import dev.fastgql.modules.DatabaseModule;
 import dev.fastgql.modules.GraphQLModule;
+import dev.fastgql.modules.SQLExecutorModule;
 import dev.fastgql.modules.ServerModule;
 import dev.fastgql.modules.VertxModule;
 import io.reactivex.Single;
@@ -29,22 +30,24 @@ public class FastGQL extends AbstractVerticle {
         "run", FastGQL.class.getName(), "--conf", "src/main/resources/conf.json");
   }
 
-  @Override
-  public void start(Promise<Void> future) {
-    Injector injector =
-        Guice.createInjector(
-            new VertxModule(vertx, config()),
-            new ServerModule(),
-            new GraphQLModule(),
-            new DatabaseModule());
+  protected Injector createInjector() {
+    return Guice.createInjector(
+        new VertxModule(vertx, config()),
+        new ServerModule(),
+        new GraphQLModule(),
+        new DatabaseModule(),
+        new SQLExecutorModule());
+  }
 
+  protected void startServer(Injector injector, Promise<Void> promise) {
     injector
         .getInstance(new Key<Single<HttpServer>>() {})
-        .subscribe(
-            server -> {
-              log.debug("deployed server");
-              future.complete();
-            },
-            future::fail);
+        .subscribe(server -> promise.complete(), promise::fail);
+  }
+
+  @Override
+  public void start(Promise<Void> promise) {
+    Injector injector = createInjector();
+    startServer(injector, promise);
   }
 }

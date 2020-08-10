@@ -130,7 +130,7 @@ public class GraphQLTestUtils {
   }
 
   /**
-   * Start GraphQL subscription
+   * Start GraphQL subscription.
    *
    * @param inputResource resource which stores subscription query
    * @param context vertx test context

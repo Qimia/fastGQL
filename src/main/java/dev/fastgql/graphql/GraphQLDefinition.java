@@ -184,7 +184,7 @@ public class GraphQLDefinition {
         DataFetchingEnvironment env, Transaction transaction) {
       ComponentExecutable executionRoot = getExecutionRoot(env);
       executionRoot.setSqlExecutor(transactionSQLExecutorFunction.apply(transaction));
-      return executionRoot.execute();
+      return executionRoot.execute(true);
     }
 
     private Single<Map<String, Object>> getResponseMutation(
@@ -318,7 +318,7 @@ public class GraphQLDefinition {
                       executionRoot.setSqlExecutor(
                           transactionSQLExecutorFunction.apply(transaction));
                       return executionRoot
-                          .execute()
+                          .execute(true)
                           .doFinally(() -> commitTransaction(transaction))
                           .toFlowable();
                     });

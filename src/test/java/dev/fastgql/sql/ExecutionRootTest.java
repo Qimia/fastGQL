@@ -33,7 +33,7 @@ public class ExecutionRootTest {
     executionRoot.addComponent(new ComponentRow("id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
 
-    executionRoot.execute().test().assertNoErrors().assertValue(expected);
+    executionRoot.execute(false).test().assertNoErrors().assertValue(expected);
   }
 
   @Test

@@ -1,10 +1,10 @@
 package dev.fastgql.integration;
 
-import dev.fastgql.FastGQL;
 import dev.fastgql.db.DatasourceConfig;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.core.Vertx;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -29,7 +29,6 @@ public interface WithFastGQL {
   default Network getNetwork() {
     return null;
   }
-  ;
 
   default int getDeploymentPort() {
     return 8081;
@@ -83,14 +82,14 @@ public interface WithFastGQL {
     return true;
   }
 
-  default void setup(Vertx vertx, VertxTestContext context) {
+  default void setup(Vertx vertx, VertxTestContext context, AbstractVerticle verticle) {
     Startables.deepStart(getAllContainers()).join();
     if (!registerConnector(context)) {
       return;
     }
     DeploymentOptions options = new DeploymentOptions().setConfig(createConfig());
     vertx
-        .rxDeployVerticle(new FastGQL(), options)
+        .rxDeployVerticle(verticle, options)
         .subscribe(
             deploymentID -> {
               setDeploymentID(deploymentID);

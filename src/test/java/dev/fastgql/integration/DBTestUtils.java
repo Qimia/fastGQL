@@ -6,12 +6,19 @@
 
 package dev.fastgql.integration;
 
+import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.reactivex.sqlclient.Pool;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.RowSet;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
 /**
@@ -20,6 +27,8 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
  * @author Kamil Bobrowski
  */
 public class DBTestUtils {
+
+  private static final Logger log = LoggerFactory.getLogger(DBTestUtils.class);
 
   /**
    * Execute SQL queries stored in a resource.
@@ -70,9 +79,26 @@ public class DBTestUtils {
       JdbcDatabaseContainer<?> jdbcDatabaseContainer,
       VertxTestContext context) {
     try {
+      System.out.println("starting sql execution");
       DBTestUtils.executeSQLQueryFromResource(sqlResource, jdbcDatabaseContainer);
+      System.out.println("finishing sql execution");
     } catch (SQLException | IOException e) {
       context.failNow(e);
     }
+  }
+
+  public static Single<RowSet<Row>> executeSQLQuery(String sqlResource, Pool pool) {
+    return Single.fromCallable(() -> ResourcesTestUtils.readResource(sqlResource))
+        .subscribeOn(Schedulers.io())
+        .flatMap(
+            sqlQuery ->
+                pool.rxGetConnection()
+                    .doOnSuccess(sqlConnection -> log.info("[executing] {}", sqlQuery))
+                    .flatMap(
+                        sqlConnection ->
+                            sqlConnection
+                                .rxQuery(sqlQuery)
+                                .doOnSuccess(result -> log.info("[response] {}", sqlQuery))
+                                .doFinally(sqlConnection::close)));
   }
 }

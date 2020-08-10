@@ -68,6 +68,6 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
             query.addWhereConditions(
                 String.format(
                     "(%s.%s = %s)", foreignTableAlias, foreignKeyName, keyValue.toString())));
-    return execute().map(response -> Map.of(fieldName, response));
+    return execute(false).map(response -> Map.of(fieldName, response));
   }
 }
