@@ -27,7 +27,7 @@ public class FastGQL extends AbstractVerticle {
 
   public static void main(String[] args) {
     Launcher.executeCommand(
-        "run", FastGQL.class.getName(), "--conf", "src/main/resources/conf.json");
+        "run", FastGQL.class.getName(), "--conf", "src/main/resources/conf-postgres.json");
   }
 
   protected Injector createInjector() {

@@ -133,7 +133,7 @@ public class DatasourceConfig {
       case postgresql:
         return tableWithAliases ->
             String.format(
-                "LOCK TABLE %s",
+                "LOCK TABLE %s IN SHARE MODE",
                 tableWithAliases.stream()
                     .map(TableWithAlias::getName)
                     .collect(Collectors.joining(", ")));
