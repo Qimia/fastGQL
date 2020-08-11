@@ -237,7 +237,10 @@ public class GraphQLDefinition {
                               getResponse(env, transaction)
                                   .flatMap(
                                       result ->
-                                          transaction.rxCommit().andThen(Single.just(result))))
+                                          transaction
+                                              .rxCommit()
+                                              .doOnComplete(() -> log.info("transaction commited"))
+                                              .andThen(Single.just(result))))
                       .subscribe(promise::complete, promise::fail));
       databaseSchema
           .getTableNames()
@@ -323,7 +326,12 @@ public class GraphQLDefinition {
                           transactionSQLExecutorFunction.apply(transaction));
                       return executionRoot
                           .execute(true)
-                          .flatMap(result -> transaction.rxCommit().andThen(Single.just(result)))
+                          .flatMap(
+                              result ->
+                                  transaction
+                                      .rxCommit()
+                                      .doOnComplete(() -> log.info("transaction commited"))
+                                      .andThen(Single.just(result)))
                           .toFlowable();
                     });
           };

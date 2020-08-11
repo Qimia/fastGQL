@@ -8,11 +8,11 @@ import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.graphql.GraphQLDefinition;
 import graphql.GraphQL;
+import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 import io.vertx.reactivex.core.Vertx;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class GraphQLModule extends AbstractModule {
 
@@ -25,29 +25,28 @@ public class GraphQLModule extends AbstractModule {
   }
 
   @Provides
-  Supplier<GraphQL> provideGraphQLSupplier(
+  Single<GraphQL> provideGraphQLSingle(
       Vertx vertx,
       DatasourceConfig datasourceConfig,
       DebeziumConfig debeziumConfig,
       Function<Connection, DatabaseSchema> connectionDatabaseSchemaFunction,
       GraphQLDefinition.BuilderFactory graphQLDefinitionBuilderFactory) {
-    return () -> {
-      DatabaseSchema databaseSchema;
-      try {
-        Connection connection = datasourceConfig.getConnection();
-        databaseSchema = connectionDatabaseSchemaFunction.apply(connection);
-        connection.close();
-      } catch (SQLException e) {
-        e.printStackTrace();
-        return null;
-      }
-
-      return graphQLDefinitionBuilderFactory
-          .create(databaseSchema)
-          .enableQuery()
-          .enableSubscription(vertx, debeziumConfig)
-          .enableMutation()
-          .build();
-    };
+    return Single.fromCallable(
+            () -> {
+              DatabaseSchema databaseSchema;
+              Connection connection = datasourceConfig.getConnection();
+              databaseSchema = connectionDatabaseSchemaFunction.apply(connection);
+              connection.close();
+              return databaseSchema;
+            })
+        .subscribeOn(Schedulers.io())
+        .map(
+            databaseSchema ->
+                graphQLDefinitionBuilderFactory
+                    .create(databaseSchema)
+                    .enableQuery()
+                    .enableSubscription(vertx, debeziumConfig)
+                    .enableMutation()
+                    .build());
   }
 }
