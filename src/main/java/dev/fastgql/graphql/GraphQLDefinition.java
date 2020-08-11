@@ -217,18 +217,6 @@ public class GraphQLDefinition {
           transaction, databaseSchema, fieldName, rows, returningColumns);
     }
 
-    private void commitTransaction(Transaction transaction) {
-      transaction
-          .rxCommit()
-          .subscribe(() -> log.debug("transaction committed"), err -> log.error(err.getMessage()));
-    }
-
-    private void rollbackTransaction(Transaction transaction) {
-      transaction
-          .rxRollback()
-          .subscribe(() -> log.debug("transaction rollback"), err -> log.error(err.getMessage()));
-    }
-
     /**
      * Enables query by defining data fetcher using {@link VertxDataFetcher} and adding it to {@link
      * GraphQLCodeRegistry}.
@@ -247,7 +235,9 @@ public class GraphQLDefinition {
                       .flatMap(
                           transaction ->
                               getResponse(env, transaction)
-                                  .doFinally(() -> commitTransaction(transaction)))
+                                  .flatMap(
+                                      result ->
+                                          transaction.rxCommit().andThen(Single.just(result))))
                       .subscribe(promise::complete, promise::fail));
       databaseSchema
           .getTableNames()
@@ -278,8 +268,9 @@ public class GraphQLDefinition {
                       .flatMap(
                           transaction ->
                               getResponseMutation(env, transaction)
-                                  .doOnSuccess(result -> commitTransaction(transaction))
-                                  .doOnError(error -> rollbackTransaction(transaction)))
+                                  .flatMap(
+                                      result ->
+                                          transaction.rxCommit().andThen(Single.just(result))))
                       .subscribe(promise::complete, promise::fail));
 
       databaseSchema
@@ -332,7 +323,7 @@ public class GraphQLDefinition {
                           transactionSQLExecutorFunction.apply(transaction));
                       return executionRoot
                           .execute(true)
-                          .doFinally(() -> commitTransaction(transaction))
+                          .flatMap(result -> transaction.rxCommit().andThen(Single.just(result)))
                           .toFlowable();
                     });
           };
