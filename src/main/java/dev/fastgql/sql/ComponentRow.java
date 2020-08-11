@@ -6,6 +6,7 @@
 
 package dev.fastgql.sql;
 
+import dev.fastgql.common.TableWithAlias;
 import io.reactivex.Single;
 import java.util.Map;
 import java.util.Objects;
@@ -53,7 +54,7 @@ public class ComponentRow implements Component {
   }
 
   @Override
-  public Set<String> getQueriedTables() {
+  public Set<TableWithAlias> getQueriedTables() {
     return Set.of();
   }
 

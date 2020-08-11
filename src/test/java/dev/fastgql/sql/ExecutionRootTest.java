@@ -8,10 +8,12 @@ package dev.fastgql.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import dev.fastgql.common.TableWithAlias;
 import io.reactivex.Single;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 public class ExecutionRootTest {
@@ -21,7 +23,7 @@ public class ExecutionRootTest {
 
   @Test
   public void execute() {
-    ExecutionRoot executionRoot = new ExecutionRoot(tableName, tableAlias, null);
+    ExecutionRoot executionRoot = new ExecutionRoot(tableName, tableAlias, null, null, null);
     List<Map<String, Object>> forged =
         List.of(
             Map.of("testTableAlias_id", 101, "testTableAlias_first_name", "John"),
@@ -38,14 +40,17 @@ public class ExecutionRootTest {
 
   @Test
   public void tableNameWhenParent() {
-    ExecutionRoot executionRoot = new ExecutionRoot(tableName, tableAlias, null);
+    ExecutionRoot executionRoot = new ExecutionRoot(tableName, tableAlias, null, null, null);
     assertEquals(tableName, executionRoot.tableNameWhenParent());
   }
 
   @Test
   public void getQueriedTables() {
-    ExecutionRoot executionRoot = new ExecutionRoot(tableName, tableAlias, null);
-    Set<String> queriedTables = executionRoot.getQueriedTables();
-    assertEquals(queriedTables, Set.of(tableName));
+    ExecutionRoot executionRoot = new ExecutionRoot(tableName, tableAlias, null, null, null);
+    Set<TableWithAlias> queriedTables = executionRoot.getQueriedTables();
+    Set<String> queriedTablesString =
+        queriedTables.stream().map(TableWithAlias::toString).collect(Collectors.toSet());
+    Set<String> expected = Set.of((new TableWithAlias(tableName, tableAlias)).toString());
+    assertEquals(expected, queriedTablesString);
   }
 }

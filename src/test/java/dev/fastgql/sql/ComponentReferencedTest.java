@@ -29,7 +29,7 @@ public class ComponentReferencedTest {
   public void updateQuery() {
     ComponentReferenced componentReferenced =
         new ComponentReferenced(
-            fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null);
+            fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null, null, null);
     componentReferenced.setParentTableAlias(parentTableAlias);
     SQLQuery query = new SQLQuery(tableName, tableAlias, null);
     componentReferenced.updateQuery(query);
@@ -44,7 +44,7 @@ public class ComponentReferencedTest {
   public void extractValues_emptyRow() {
     ComponentReferenced componentReferenced =
         new ComponentReferenced(
-            fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null);
+            fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null, null, null);
     componentReferenced.setParentTableAlias(parentTableAlias);
     Map<String, Object> row = Map.of();
     componentReferenced.extractValues(row).test().assertNoErrors().assertValue(Map::isEmpty);
@@ -54,7 +54,7 @@ public class ComponentReferencedTest {
   public void extractValues_singleRow() {
     ComponentReferenced componentReferenced =
         new ComponentReferenced(
-            fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null);
+            fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null, null, null);
     componentReferenced.setParentTableAlias(parentTableAlias);
     componentReferenced.setSqlExecutor(
         sqlQuery -> {

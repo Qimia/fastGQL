@@ -7,6 +7,7 @@
 package dev.fastgql.graphql;
 
 import com.google.inject.assistedinject.Assisted;
+import dev.fastgql.common.TableWithAlias;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import javax.inject.Inject;
 import org.slf4j.Logger;
@@ -81,6 +83,8 @@ public class GraphQLDefinition {
     private final Function<Transaction, SQLExecutor> transactionSQLExecutorFunction;
     private final DebeziumEngineSingleton debeziumEngineSingleton;
     private final EventFlowableFactory eventFlowableFactory;
+    private final Function<Set<TableWithAlias>, String> lockQueryFunction;
+    private final String unlockQuery;
     private boolean queryEnabled = false;
     private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
@@ -111,9 +115,11 @@ public class GraphQLDefinition {
       this.transactionSQLExecutorFunction = transactionSQLExecutorFunction;
       this.debeziumEngineSingleton = debeziumEngineSingleton;
       this.eventFlowableFactory = eventFlowableFactory;
+      this.lockQueryFunction = datasourceConfig.getLockQueryFunction();
+      this.unlockQuery = datasourceConfig.getUnlockQuery();
     }
 
-    private static void traverseSelectionSet(
+    private void traverseSelectionSet(
         GraphQLDatabaseSchema graphQLDatabaseSchema,
         ComponentParent parent,
         AliasGenerator aliasGenerator,
@@ -156,7 +162,9 @@ public class GraphQLDefinition {
                             graphQLField.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
                             graphQLField.getForeignName().getKeyName(),
-                            new SQLArguments(selectedField.getArguments()));
+                            new SQLArguments(selectedField.getArguments()),
+                            lockQueryFunction,
+                            unlockQuery);
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
                         componentReferenced,
@@ -174,7 +182,12 @@ public class GraphQLDefinition {
       AliasGenerator aliasGenerator = new AliasGenerator();
       SQLArguments sqlArguments = new SQLArguments(env.getArguments());
       ComponentExecutable executionRoot =
-          new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), sqlArguments);
+          new ExecutionRoot(
+              env.getField().getName(),
+              aliasGenerator.getAlias(),
+              sqlArguments,
+              lockQueryFunction,
+              unlockQuery);
       traverseSelectionSet(
           graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
       return executionRoot;

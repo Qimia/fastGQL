@@ -6,6 +6,7 @@
 
 package dev.fastgql.sql;
 
+import dev.fastgql.common.TableWithAlias;
 import java.util.Set;
 
 /**
@@ -44,5 +45,5 @@ public interface ComponentParent {
    *
    * @return set of table names
    */
-  Set<String> getQueriedTables();
+  Set<TableWithAlias> getQueriedTables();
 }

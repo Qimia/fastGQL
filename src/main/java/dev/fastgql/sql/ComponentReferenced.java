@@ -6,8 +6,11 @@
 
 package dev.fastgql.sql;
 
+import dev.fastgql.common.TableWithAlias;
 import io.reactivex.Single;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Class to handle part of SQL query related to querying list of other tables which are referencing
@@ -39,8 +42,10 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
       String foreignTable,
       String foreignTableAlias,
       String foreignKeyName,
-      SQLArguments args) {
-    super(foreignTable, foreignTableAlias, args);
+      SQLArguments args,
+      Function<Set<TableWithAlias>, String> lockQueryFunction,
+      String unlockQuery) {
+    super(foreignTable, foreignTableAlias, args, lockQueryFunction, unlockQuery);
     this.keyName = keyName;
     this.fieldName = fieldName;
     this.foreignTableAlias = foreignTableAlias;

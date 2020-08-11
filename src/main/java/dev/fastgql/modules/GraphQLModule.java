@@ -41,6 +41,7 @@ public class GraphQLModule extends AbstractModule {
         e.printStackTrace();
         return null;
       }
+
       return graphQLDefinitionBuilderFactory
           .create(databaseSchema)
           .enableQuery()

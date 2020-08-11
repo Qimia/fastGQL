@@ -6,6 +6,7 @@
 
 package dev.fastgql.sql;
 
+import dev.fastgql.common.TableWithAlias;
 import io.reactivex.Single;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +33,9 @@ public class ExecutionRoot implements ComponentExecutable {
   private final String tableAlias;
   private final SQLQuery query;
   private final List<Component> components;
-  private final Set<String> queriedTables = new HashSet<>();
+  private final Set<TableWithAlias> queriedTables = new HashSet<>();
+  private final Function<Set<TableWithAlias>, String> lockQueryFunction;
+  private final String unlockQuery;
   private SQLExecutor sqlExecutor;
 
   /**
@@ -41,12 +45,19 @@ public class ExecutionRoot implements ComponentExecutable {
    * @param tableAlias alias of the table
    * @param args argument from GraphQL query
    */
-  public ExecutionRoot(String tableName, String tableAlias, SQLArguments args) {
+  public ExecutionRoot(
+      String tableName,
+      String tableAlias,
+      SQLArguments args,
+      Function<Set<TableWithAlias>, String> lockQueryFunction,
+      String unlockQuery) {
     this.tableName = tableName;
     this.tableAlias = tableAlias;
     this.query = new SQLQuery(tableName, tableAlias, args);
     this.components = new ArrayList<>();
-    this.queriedTables.add(tableName);
+    this.queriedTables.add(new TableWithAlias(tableName, tableAlias));
+    this.lockQueryFunction = lockQueryFunction;
+    this.unlockQuery = unlockQuery;
   }
 
   @Override
@@ -54,9 +65,6 @@ public class ExecutionRoot implements ComponentExecutable {
     if (sqlExecutor == null) {
       throw new RuntimeException("SQLExecutor not initialized");
     }
-
-    String lockTablesQueryString =
-        String.format("LOCK TABLE %s", String.join(", ", getQueriedTables()));
 
     components.forEach(component -> component.updateQuery(query));
     String queryString = query.build();
@@ -89,8 +97,19 @@ public class ExecutionRoot implements ComponentExecutable {
                   return Single.just(List.of());
                 });
 
-    if (lockTables) {
-      return sqlExecutor.execute(lockTablesQueryString).flatMap(result -> querySingle);
+    if (lockTables && lockQueryFunction != null) {
+      return sqlExecutor
+          .execute(lockQueryFunction.apply(getQueriedTables()))
+          .flatMap(
+              lockResult ->
+                  querySingle.flatMap(
+                      result -> {
+                        if (unlockQuery != null && unlockQuery.length() > 0) {
+                          return sqlExecutor.execute(unlockQuery).map(unlockResult -> result);
+                        } else {
+                          return Single.just(result);
+                        }
+                      }));
     } else {
       return querySingle;
     }
@@ -116,7 +135,7 @@ public class ExecutionRoot implements ComponentExecutable {
   }
 
   @Override
-  public Set<String> getQueriedTables() {
+  public Set<TableWithAlias> getQueriedTables() {
     return queriedTables;
   }
 

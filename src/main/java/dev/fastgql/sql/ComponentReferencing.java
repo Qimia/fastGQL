@@ -6,6 +6,7 @@
 
 package dev.fastgql.sql;
 
+import dev.fastgql.common.TableWithAlias;
 import io.reactivex.Single;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,8 +28,8 @@ public class ComponentReferencing implements Component {
   private final String foreignTableName;
   private final String foreignTableAlias;
   private final String foreignKeyName;
-  private List<Component> components;
-  private Set<String> queriedTables = new HashSet<>();
+  private final List<Component> components;
+  private final Set<TableWithAlias> queriedTables = new HashSet<>();
   private SQLExecutor sqlExecutor;
 
   /**
@@ -53,7 +54,7 @@ public class ComponentReferencing implements Component {
     this.foreignTableAlias = foreignTableAlias;
     this.foreignKeyName = foreignKeyName;
     this.components = new ArrayList<>();
-    this.queriedTables.add(foreignTableName);
+    this.queriedTables.add(new TableWithAlias(foreignTableName, foreignTableAlias));
   }
 
   @Override
@@ -99,7 +100,7 @@ public class ComponentReferencing implements Component {
   }
 
   @Override
-  public Set<String> getQueriedTables() {
+  public Set<TableWithAlias> getQueriedTables() {
     return queriedTables;
   }
 }
