@@ -103,9 +103,6 @@ public class ExecutionRoot implements ComponentExecutable {
       System.out.println(">>>>>>>>>>>>>>>> RETURNING SINGLE");
       return sqlExecutor
           .execute(lockQueryFunction.apply(getQueriedTables()))
-          .flatMap(lockResult -> querySingle)
-          //.flatMap(result -> sqlExecutor.execute("UNLOCK TABLES").map(unlockResult -> result));
-      //.flatMap(result -> sqlExecutor.execute(unlockQuery).map(unlockResult -> result));
           .flatMap(
               lockResult ->
                   querySingle.flatMap(

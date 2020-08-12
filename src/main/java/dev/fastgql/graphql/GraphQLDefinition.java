@@ -319,29 +319,14 @@ public class GraphQLDefinition {
 
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
           env -> {
-            log.info("new subscription");
             ComponentExecutable executionRoot = getExecutionRoot(env);
             return eventFlowableFactory
                 .create(executionRoot)
-                .doOnEach(evt -> System.out.println("EVENT"))
-                .flatMap(record -> sqlConnectionPool.rxGetConnection().toFlowable())
+                .flatMap(record -> sqlConnectionPool.rxBegin().toFlowable())
                 .flatMap(
-                    connection -> {
-                      SQLExecutor sqlExecutor = sqlConnectionSQLExecutorFunction.apply(connection);
-                      //executionRoot.setSqlExecutor(sqlExecutor);
-                      Single<List<Map<String, Object>>> executeResult = executionRoot.execute(sqlExecutor, true);
-                        //.flatMap(result -> sqlExecutor.execute("UNLOCK TABLES").map(unlockResult -> result));
-                      return connection.rxQuery("SELECT 1").toFlowable().flatMap(r -> executeResult
-                          .flatMap(
-                              result -> sqlExecutor.execute("SELECT 1")//connection.rxQuery("UNLOCK TABLES")
-                                .flatMap(rows -> connection.rxQuery("SELECT 1"))
-                                .flatMap(rows -> {
-                                  connection.close();
-                                  System.out.println("CONNECTION CLOSED");
-                                  return Single.just(result);
-                                }))
-                          .toFlowable());
-                    });
+                    transaction -> executionRoot.execute(transactionSQLExecutorFunction.apply(transaction), true).toFlowable()
+                      .flatMap(result -> transaction.rxCommit().andThen(Flowable.just(result)))
+                );
           };
       databaseSchema
           .getTableNames()
