@@ -51,7 +51,6 @@ public class ComponentReferencingTest {
         query.build());
   }
 
-/*
   @Test
   public void extractValues_emptyRow() {
     ComponentReferencing componentReferencing =
@@ -59,12 +58,10 @@ public class ComponentReferencingTest {
             fieldName, keyName, foreignTableName, foreignTableAlias, foreignKeyName);
     componentReferencing.setParentTableAlias(parentTableAlias);
     Map<String, Object> row = Map.of();
-    Single<Map<String, Object>> values = componentReferencing.extractValues(row);
+    Single<Map<String, Object>> values = componentReferencing.extractValues(null, row);
     values.test().assertNoErrors().assertValue(Map::isEmpty);
   }
-*/
 
-/*
   @Test
   public void extractValues_singeRow() {
     ComponentReferencing componentReferencing =
@@ -79,11 +76,10 @@ public class ComponentReferencingTest {
             keyValue,
             String.format("%s_%s", foreignTableAlias, foreignKeyName),
             foreignKeyValue);
-    Single<Map<String, Object>> values = componentReferencing.extractValues(row);
+    Single<Map<String, Object>> values = componentReferencing.extractValues(null, row);
     values
         .test()
         .assertNoErrors()
         .assertValue(Map.of(fieldName, Map.of(foreignKeyName, foreignKeyValue)));
   }
-*/
 }

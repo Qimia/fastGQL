@@ -21,7 +21,6 @@ public class ExecutionRootTest {
   static final String tableName = "testTableName";
   static final String tableAlias = "testTableAlias";
 
-/*
   @Test
   public void execute() {
     ExecutionRoot executionRoot = new ExecutionRoot(tableName, tableAlias, null, null, null);
@@ -32,13 +31,15 @@ public class ExecutionRootTest {
     List<Map<String, Object>> expected =
         List.of(Map.of("id", 101, "first_name", "John"), Map.of("id", 102, "first_name", "Mike"));
 
-    executionRoot.setSqlExecutor(query -> Single.just(forged));
     executionRoot.addComponent(new ComponentRow("id"));
     executionRoot.addComponent(new ComponentRow("first_name"));
 
-    executionRoot.execute(false).test().assertNoErrors().assertValue(expected);
+    executionRoot
+        .execute(query -> Single.just(forged), false)
+        .test()
+        .assertNoErrors()
+        .assertValue(expected);
   }
-*/
 
   @Test
   public void tableNameWhenParent() {

@@ -41,13 +41,9 @@ public class ComponentRow implements Component {
     this.parentTableAlias = parentTableAlias;
   }
 
-/*
   @Override
-  public void setSqlExecutor(SQLExecutor sqlExecutor) {}
-*/
-
-  @Override
-  public Single<Map<String, Object>> extractValues(SQLExecutor sqlExecutor, Map<String, Object> row) {
+  public Single<Map<String, Object>> extractValues(
+      SQLExecutor sqlExecutor, Map<String, Object> row) {
     Object value = SQLResponseUtils.getValue(row, parentTableAlias, keyName);
     if (value == null) {
       return Single.just(Map.of());

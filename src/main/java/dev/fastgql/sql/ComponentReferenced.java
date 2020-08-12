@@ -63,7 +63,8 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
   }
 
   @Override
-  public Single<Map<String, Object>> extractValues(SQLExecutor sqlExecutor, Map<String, Object> row) {
+  public Single<Map<String, Object>> extractValues(
+      SQLExecutor sqlExecutor, Map<String, Object> row) {
     Object keyValue = SQLResponseUtils.getValue(row, parentTableAlias, keyName);
     if (keyValue == null) {
       return Single.just(Map.of());

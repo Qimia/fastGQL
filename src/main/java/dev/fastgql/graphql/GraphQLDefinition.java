@@ -39,7 +39,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.reactivex.sqlclient.SqlConnection;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -82,7 +81,6 @@ public class GraphQLDefinition {
     private final GraphQLSchema.Builder graphQLSchemaBuilder;
     private final GraphQLCodeRegistry.Builder graphQLCodeRegistryBuilder;
     private final Function<Transaction, SQLExecutor> transactionSQLExecutorFunction;
-    private final Function<SqlConnection, SQLExecutor> sqlConnectionSQLExecutorFunction;
     private final DebeziumEngineSingleton debeziumEngineSingleton;
     private final EventFlowableFactory eventFlowableFactory;
     private final Function<Set<TableWithAlias>, String> lockQueryFunction;
@@ -104,7 +102,6 @@ public class GraphQLDefinition {
         Pool sqlConnectionPool,
         DatasourceConfig datasourceConfig,
         Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
-        Function<SqlConnection, SQLExecutor> sqlConnectionSQLExecutorFunction,
         DebeziumEngineSingleton debeziumEngineSingleton,
         EventFlowableFactory eventFlowableFactory) {
       this.databaseSchema = databaseSchema;
@@ -116,7 +113,6 @@ public class GraphQLDefinition {
         returningStatementEnabled = true;
       }
       this.transactionSQLExecutorFunction = transactionSQLExecutorFunction;
-      this.sqlConnectionSQLExecutorFunction = sqlConnectionSQLExecutorFunction;
       this.debeziumEngineSingleton = debeziumEngineSingleton;
       this.eventFlowableFactory = eventFlowableFactory;
       this.lockQueryFunction = datasourceConfig.getLockQueryFunction();
@@ -200,7 +196,6 @@ public class GraphQLDefinition {
     private Single<List<Map<String, Object>>> getResponse(
         SQLExecutor sqlExecutor, DataFetchingEnvironment env, Transaction transaction) {
       ComponentExecutable executionRoot = getExecutionRoot(env);
-      //executionRoot.setSqlExecutor(transactionSQLExecutorFunction.apply(transaction));
       return executionRoot.execute(sqlExecutor, true);
     }
 
@@ -238,13 +233,13 @@ public class GraphQLDefinition {
                       .rxBegin()
                       .flatMap(
                           transaction ->
-                              getResponse(transactionSQLExecutorFunction.apply(transaction), env, transaction)
+                              getResponse(
+                                      transactionSQLExecutorFunction.apply(transaction),
+                                      env,
+                                      transaction)
                                   .flatMap(
                                       result ->
-                                          transaction
-                                              .rxCommit()
-                                              .doOnComplete(() -> log.info("transaction commited"))
-                                              .andThen(Single.just(result))))
+                                          transaction.rxCommit().andThen(Single.just(result))))
                       .subscribe(promise::complete, promise::fail));
       databaseSchema
           .getTableNames()
@@ -324,9 +319,12 @@ public class GraphQLDefinition {
                 .create(executionRoot)
                 .flatMap(record -> sqlConnectionPool.rxBegin().toFlowable())
                 .flatMap(
-                    transaction -> executionRoot.execute(transactionSQLExecutorFunction.apply(transaction), true).toFlowable()
-                      .flatMap(result -> transaction.rxCommit().andThen(Flowable.just(result)))
-                );
+                    transaction ->
+                        executionRoot
+                            .execute(transactionSQLExecutorFunction.apply(transaction), true)
+                            .toFlowable()
+                            .flatMap(
+                                result -> transaction.rxCommit().andThen(Flowable.just(result))));
           };
       databaseSchema
           .getTableNames()

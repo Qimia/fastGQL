@@ -40,7 +40,6 @@ public class ComponentReferencedTest {
         query.build());
   }
 
-/*
   @Test
   public void extractValues_emptyRow() {
     ComponentReferenced componentReferenced =
@@ -48,18 +47,16 @@ public class ComponentReferencedTest {
             fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null, null, null);
     componentReferenced.setParentTableAlias(parentTableAlias);
     Map<String, Object> row = Map.of();
-    componentReferenced.extractValues(row).test().assertNoErrors().assertValue(Map::isEmpty);
+    componentReferenced.extractValues(null, row).test().assertNoErrors().assertValue(Map::isEmpty);
   }
-*/
 
-/*
   @Test
   public void extractValues_singleRow() {
     ComponentReferenced componentReferenced =
         new ComponentReferenced(
             fieldName, keyName, foreignTable, foreignTableAlias, foreignKeyName, null, null, null);
     componentReferenced.setParentTableAlias(parentTableAlias);
-    componentReferenced.setSqlExecutor(
+    SQLExecutor sqlExecutor =
         sqlQuery -> {
           assertEquals(
               String.format(
@@ -67,13 +64,12 @@ public class ComponentReferencedTest {
                   foreignTable, foreignTableAlias, foreignTableAlias, foreignKeyName, keyValue),
               sqlQuery);
           return Single.just(List.of());
-        });
+        };
     Map<String, Object> row = Map.of(String.format("%s_%s", parentTableAlias, keyName), keyValue);
     componentReferenced
-        .extractValues(row)
+        .extractValues(sqlExecutor, row)
         .test()
         .assertNoErrors()
         .assertValue(Map.of(fieldName, List.of()));
   }
-*/
 }

@@ -10,8 +10,6 @@ import io.vertx.reactivex.sqlclient.Pool;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import org.checkerframework.checker.units.qual.Time;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -56,11 +54,9 @@ public interface SubscriptionTests extends SetupTearDownForEach {
                                 .andThen(
                                     GraphQLTestUtils.verifySubscription(
                                         expected, context, webSocket)))
-                    .delay(10, TimeUnit.SECONDS)
                     .andThen(
                         DBTestUtils.executeSQLQuery(
                             String.format("%s/query.sql", directory), pool)))
-        .subscribe(
-            rows -> System.out.println("affected rows: " + rows.rowCount()), context::failNow);
+        .subscribe(rows -> {}, context::failNow);
   }
 }
