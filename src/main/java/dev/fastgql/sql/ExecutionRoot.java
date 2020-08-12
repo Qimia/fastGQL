@@ -98,18 +98,24 @@ public class ExecutionRoot implements ComponentExecutable {
                 });
 
     if (lockTables && lockQueryFunction != null) {
+      System.out.println(">>>>>>>>>>>>>>>> RETURNING SINGLE");
       return sqlExecutor
           .execute(lockQueryFunction.apply(getQueriedTables()))
+          .flatMap(lockResult -> querySingle);
+          //.flatMap(result -> sqlExecutor.execute("UNLOCK TABLES").map(unlockResult -> result));
+      //.flatMap(result -> sqlExecutor.execute(unlockQuery).map(unlockResult -> result));
+/*
           .flatMap(
               lockResult ->
                   querySingle.flatMap(
                       result -> {
-                        if (false && unlockQuery != null && unlockQuery.length() > 0) {
-                          return sqlExecutor.execute(unlockQuery).map(unlockResult -> result).doOnSuccess(r -> System.out.println("****** UNLOCK SUCCESS"));
+                        if (unlockQuery != null && unlockQuery.length() > 0) {
+                          return sqlExecutor.execute(unlockQuery).map(unlockResult -> result);
                         } else {
                           return Single.just(result);
                         }
                       }));
+*/
     } else {
       return querySingle;
     }

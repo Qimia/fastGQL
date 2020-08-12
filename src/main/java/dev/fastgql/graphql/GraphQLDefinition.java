@@ -327,13 +327,14 @@ public class GraphQLDefinition {
                 .flatMap(record -> sqlConnectionPool.rxGetConnection().toFlowable())
                 .flatMap(
                     connection -> {
-                      executionRoot.setSqlExecutor(
-                          sqlConnectionSQLExecutorFunction.apply(connection));
-                      return connection.rxQuery("START TRANSACTION").toFlowable().flatMap(r -> executionRoot
+                      SQLExecutor sqlExecutor = sqlConnectionSQLExecutorFunction.apply(connection);
+                      executionRoot.setSqlExecutor(sqlExecutor);
+                      return connection.rxQuery("SELECT 1").toFlowable().flatMap(r -> executionRoot
                           .execute(true)
+                          .flatMap(result -> sqlExecutor.execute("UNLOCK TABLES").map(unlockResult -> result))
                           .flatMap(
-                              result -> connection.rxQuery("COMMIT")
-                                .flatMap(rows -> connection.rxQuery("UNLOCK TABLES"))
+                              result -> sqlExecutor.execute("SELECT 1")//connection.rxQuery("UNLOCK TABLES")
+                                .flatMap(rows -> connection.rxQuery("SELECT 1"))
                                 .flatMap(rows -> {
                                   connection.close();
                                   System.out.println("CONNECTION CLOSED");
