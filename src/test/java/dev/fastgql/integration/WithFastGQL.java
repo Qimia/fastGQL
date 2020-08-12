@@ -96,6 +96,8 @@ public interface WithFastGQL {
                     "password", datasourceConfig.getPassword(),
                     "schema", datasourceConfig.getSchema()));
 
+    System.out.println(config.toString());
+
     if (isDebeziumActive()) {
       config.put("debezium", createDebeziumConfigEntry());
     }

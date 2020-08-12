@@ -31,7 +31,10 @@ public class DBTestUtils {
    * @return single of RowSet
    */
   public static Single<RowSet<Row>> executeSQLQuery(String sqlResource, Pool pool) {
-    return Single.fromCallable(() -> ResourcesTestUtils.readResource(sqlResource))
+    return Single.fromCallable(() -> {
+      System.out.println("*************** READING MOD RESOURCE");
+      return ResourcesTestUtils.readResource(sqlResource);
+    })
         .subscribeOn(Schedulers.io())
         .flatMap(
             sqlQuery ->
@@ -41,7 +44,10 @@ public class DBTestUtils {
                         transaction ->
                             transaction
                                 .rxQuery(sqlQuery)
-                                .flatMap(rows -> transaction.rxCommit().andThen(Single.just(rows)))
-                                .doOnSuccess(result -> log.info("[response] {}", sqlQuery))));
+                                .flatMap(rows -> {
+                                  System.out.println("******** ROWS AFFECTED: " + rows.rowCount());
+                                  return transaction.rxCommit().doOnComplete(() -> log.info("****** transaction commited")).doOnError(error -> log.error(error.getMessage())).andThen(Single.just(rows));
+                                })
+                                .doOnSuccess(result -> log.info("[response] {}", sqlQuery)).doOnError(error -> log.error("****** ERRRROR " + error))));
   }
 }

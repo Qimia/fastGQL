@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.fastgql.sql.SQLExecutor;
 import dev.fastgql.sql.SQLUtils;
+import io.vertx.reactivex.sqlclient.SqlConnection;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -25,13 +26,26 @@ public class SQLExecutorWithDelayModule extends AbstractModule {
   @Provides
   protected Function<Transaction, SQLExecutor> provideTransactionSQLExecutorFunction() {
     return transaction ->
-        query ->
-            transaction
-                .rxQuery(query)
-                .doOnSuccess(rows -> log.info("[executing] {}", query))
-                .map(SQLUtils::rowSetToList)
-                .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
-                .doOnSuccess(result -> log.info("[response] {}", query))
-                .doOnError(error -> log.error(error.toString()));
+      query ->
+        transaction
+          .rxQuery(query)
+          .doOnSuccess(rows -> log.info("[executing] {}", query))
+          .map(SQLUtils::rowSetToList)
+          .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
+          .doOnSuccess(result -> log.info("[response] {}", query))
+          .doOnError(error -> log.error(error.toString()));
   }
-}
+
+    @Provides
+    protected Function<SqlConnection, SQLExecutor> provideSqlConnectionSQLExecutorFunction() {
+      return connection ->
+        query ->
+          connection
+            .rxQuery(query)
+            .doOnSuccess(rows -> log.info("[executing] {}", query))
+            .map(SQLUtils::rowSetToList)
+            .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
+            .doOnSuccess(result -> log.info("[response] {}", query))
+            .doOnError(error -> log.error(error.toString()));
+    }
+  }

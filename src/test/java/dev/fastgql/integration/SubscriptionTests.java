@@ -1,6 +1,7 @@
 package dev.fastgql.integration;
 
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.http.HttpClient;
@@ -8,6 +9,9 @@ import io.vertx.reactivex.ext.web.client.WebClient;
 import io.vertx.reactivex.sqlclient.Pool;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import org.checkerframework.checker.units.qual.Time;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -22,6 +26,7 @@ public interface SubscriptionTests extends SetupTearDownForEach {
    */
   @ParameterizedTest(name = "{index} => Test: [{arguments}]")
   @MethodSource("dev.fastgql.integration.ResourcesTestUtils#subscriptionDirectories")
+  @Timeout(value = 10, timeUnit = TimeUnit.DAYS)
   default void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context) {
 
     Pool pool = getPool(vertx);
@@ -51,6 +56,7 @@ public interface SubscriptionTests extends SetupTearDownForEach {
                                 .andThen(
                                     GraphQLTestUtils.verifySubscription(
                                         expected, context, webSocket)))
+                    .delay(10, TimeUnit.SECONDS)
                     .andThen(
                         DBTestUtils.executeSQLQuery(
                             String.format("%s/query.sql", directory), pool)))

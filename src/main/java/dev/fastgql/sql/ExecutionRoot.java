@@ -104,8 +104,8 @@ public class ExecutionRoot implements ComponentExecutable {
               lockResult ->
                   querySingle.flatMap(
                       result -> {
-                        if (unlockQuery != null && unlockQuery.length() > 0) {
-                          return sqlExecutor.execute(unlockQuery).map(unlockResult -> result);
+                        if (false && unlockQuery != null && unlockQuery.length() > 0) {
+                          return sqlExecutor.execute(unlockQuery).map(unlockResult -> result).doOnSuccess(r -> System.out.println("****** UNLOCK SUCCESS"));
                         } else {
                           return Single.just(result);
                         }
