@@ -19,11 +19,8 @@ import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.core.http.HttpServer;
-import org.apache.log4j.Logger;
 
 public class FastGQL extends AbstractVerticle {
-
-  private static final Logger log = Logger.getLogger(FastGQL.class);
 
   public static void main(String[] args) {
     Launcher.executeCommand(
@@ -39,7 +36,7 @@ public class FastGQL extends AbstractVerticle {
         new SQLExecutorModule());
   }
 
-  protected void startServer(Injector injector, Promise<Void> promise) {
+  private void startServer(Injector injector, Promise<Void> promise) {
     injector
         .getInstance(new Key<Single<HttpServer>>() {})
         .subscribe(server -> promise.complete(), promise::fail);

@@ -23,7 +23,7 @@ public class SQLExecutorWithDelayModule extends AbstractModule {
   }
 
   @Provides
-  protected Function<Transaction, SQLExecutor> provideTransactionSQLExecutorFunction() {
+  Function<Transaction, SQLExecutor> provideTransactionSQLExecutorFunction() {
     return transaction ->
         query ->
             transaction
