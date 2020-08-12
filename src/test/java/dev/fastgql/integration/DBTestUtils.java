@@ -6,13 +6,13 @@
 
 package dev.fastgql.integration;
 
-import io.vertx.junit5.VertxTestContext;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-import org.testcontainers.containers.JdbcDatabaseContainer;
+import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
+import io.vertx.reactivex.sqlclient.Pool;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.RowSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Test utils for executing SQL queries.
@@ -21,58 +21,27 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
  */
 public class DBTestUtils {
 
-  /**
-   * Execute SQL queries stored in a resource.
-   *
-   * @param sqlResource name of resource
-   * @param jdbcUrl JDBC url
-   * @param username database username
-   * @param password database password
-   * @throws SQLException when SQL query cannot be executed
-   * @throws IOException when resource cannot be read
-   */
-  public static void executeSQLQueryFromResource(
-      String sqlResource, String jdbcUrl, String username, String password)
-      throws SQLException, IOException {
-    try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password);
-        Statement statement = connection.createStatement()) {
-      statement.execute(ResourcesTestUtils.readResource(sqlResource));
-    }
-  }
+  private static final Logger log = LoggerFactory.getLogger(DBTestUtils.class);
 
   /**
    * Execute SQL queries stored in a resource.
    *
    * @param sqlResource name of resource
-   * @param jdbcDatabaseContainer database testcontainer
-   * @throws SQLException when SQL query cannot be executed
-   * @throws IOException when resource cannot be read
+   * @param pool reactive pool of sql connections
+   * @return single of RowSet
    */
-  public static void executeSQLQueryFromResource(
-      String sqlResource, JdbcDatabaseContainer<?> jdbcDatabaseContainer)
-      throws IOException, SQLException {
-    executeSQLQueryFromResource(
-        sqlResource,
-        jdbcDatabaseContainer.getJdbcUrl(),
-        jdbcDatabaseContainer.getUsername(),
-        jdbcDatabaseContainer.getPassword());
-  }
-
-  /**
-   * Execute SQL queries stored in a resource with specified delay.
-   *
-   * @param sqlResource name of resource
-   * @param jdbcDatabaseContainer database testcontainer
-   * @param context vertx test context
-   */
-  public static void executeSQLQueryFromResourceWithContext(
-      String sqlResource,
-      JdbcDatabaseContainer<?> jdbcDatabaseContainer,
-      VertxTestContext context) {
-    try {
-      DBTestUtils.executeSQLQueryFromResource(sqlResource, jdbcDatabaseContainer);
-    } catch (SQLException | IOException e) {
-      context.failNow(e);
-    }
+  public static Single<RowSet<Row>> executeSQLQuery(String sqlResource, Pool pool) {
+    return Single.fromCallable(() -> ResourcesTestUtils.readResource(sqlResource))
+        .subscribeOn(Schedulers.io())
+        .flatMap(
+            sqlQuery ->
+                pool.rxBegin()
+                    .doOnSuccess(transaction -> log.info("[executing] {}", sqlQuery))
+                    .flatMap(
+                        transaction ->
+                            transaction
+                                .rxQuery(sqlQuery)
+                                .flatMap(rows -> transaction.rxCommit().andThen(Single.just(rows)))
+                                .doOnSuccess(result -> log.info("[response] {}", sqlQuery))));
   }
 }

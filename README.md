@@ -35,5 +35,5 @@ Build production bundle:
 Execute production version:
 
 ```shell script
-build/install/fastgql/bin/fastgql run --conf src/main/resources/conf.json dev.fastgql.FastGQL
+build/install/fastgql/bin/fastgql run --conf src/main/resources/conf-postgres.json dev.fastgql.FastGQL
 ```

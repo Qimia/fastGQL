@@ -1,6 +1,15 @@
 package dev.fastgql;
 
-import dev.fastgql.integration.*;
+import dev.fastgql.integration.ContainerEnvWithDatabase;
+import dev.fastgql.integration.ContainerEnvWithDatabaseAndDebezium;
+import dev.fastgql.integration.MutationTests;
+import dev.fastgql.integration.QueryTests;
+import dev.fastgql.integration.SubscriptionTests;
+import dev.fastgql.integration.WithEmbeddedDebezium;
+import dev.fastgql.integration.WithMySQL;
+import dev.fastgql.integration.WithMySQLConnector;
+import dev.fastgql.integration.WithPostgres;
+import dev.fastgql.integration.WithPostgresConnector;
 import io.vertx.junit5.VertxExtension;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

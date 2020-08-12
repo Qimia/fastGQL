@@ -6,6 +6,7 @@
 
 package dev.fastgql.sql;
 
+import dev.fastgql.common.TableWithAlias;
 import java.util.Set;
 
 /**
@@ -31,18 +32,9 @@ public interface ComponentParent {
   String tableNameWhenParent();
 
   /**
-   * Set SQL executor. If exact function to execute SQL query is not known at the time of
-   * constructing the object then default {@link SQLExecutor} can be passed and then altered once
-   * the function is known.
-   *
-   * @param sqlExecutor SQL executor to execute queries
-   */
-  void setSqlExecutor(SQLExecutor sqlExecutor);
-
-  /**
    * Get set of tables which are needed to be queried.
    *
    * @return set of table names
    */
-  Set<String> getQueriedTables();
+  Set<TableWithAlias> getQueriedTables();
 }

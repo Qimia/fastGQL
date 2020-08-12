@@ -51,7 +51,8 @@ public class SQLResponseUtilsTest {
     for (int i = 0; i < 10; i++) {
       row.put(String.format("t%d_k%d", i, i), i);
     }
-    Single<Map<String, Object>> response = SQLResponseUtils.constructResponse(row, components);
+    Single<Map<String, Object>> response =
+        SQLResponseUtils.constructResponse(null, row, components);
     response.test().assertNoErrors().assertValue(l -> l.equals(expected));
   }
 }

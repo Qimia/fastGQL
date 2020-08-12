@@ -6,6 +6,7 @@
 
 package dev.fastgql.sql;
 
+import dev.fastgql.common.TableWithAlias;
 import io.reactivex.Single;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,9 +28,8 @@ public class ComponentReferencing implements Component {
   private final String foreignTableName;
   private final String foreignTableAlias;
   private final String foreignKeyName;
-  private List<Component> components;
-  private Set<String> queriedTables = new HashSet<>();
-  private SQLExecutor sqlExecutor;
+  private final List<Component> components;
+  private final Set<TableWithAlias> queriedTables = new HashSet<>();
 
   /**
    * Construct component by providing information about key which is referencing foreign key and
@@ -53,13 +53,13 @@ public class ComponentReferencing implements Component {
     this.foreignTableAlias = foreignTableAlias;
     this.foreignKeyName = foreignKeyName;
     this.components = new ArrayList<>();
-    this.queriedTables.add(foreignTableName);
+    this.queriedTables.add(new TableWithAlias(foreignTableName, foreignTableAlias));
   }
 
   @Override
   public void addComponent(Component component) {
     component.setParentTableAlias(foreignTableAlias);
-    component.setSqlExecutor(sqlExecutor);
+    // component.setSqlExecutor(sqlExecutor);
     components.add(component);
     queriedTables.addAll(component.getQueriedTables());
   }
@@ -84,22 +84,17 @@ public class ComponentReferencing implements Component {
   }
 
   @Override
-  public void setSqlExecutor(SQLExecutor sqlExecutor) {
-    this.sqlExecutor = sqlExecutor;
-    this.components.forEach(component -> component.setSqlExecutor(sqlExecutor));
-  }
-
-  @Override
-  public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
+  public Single<Map<String, Object>> extractValues(
+      SQLExecutor sqlExecutor, Map<String, Object> row) {
     if (SQLResponseUtils.getValue(row, parentTableAlias, keyName) == null) {
       return Single.just(Map.of());
     }
-    return SQLResponseUtils.constructResponse(row, components)
+    return SQLResponseUtils.constructResponse(sqlExecutor, row, components)
         .map(response -> Map.of(fieldName, response));
   }
 
   @Override
-  public Set<String> getQueriedTables() {
+  public Set<TableWithAlias> getQueriedTables() {
     return queriedTables;
   }
 }

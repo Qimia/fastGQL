@@ -6,6 +6,7 @@
 
 package dev.fastgql.sql;
 
+import dev.fastgql.common.TableWithAlias;
 import io.reactivex.Single;
 import java.util.Map;
 import java.util.Objects;
@@ -41,10 +42,8 @@ public class ComponentRow implements Component {
   }
 
   @Override
-  public void setSqlExecutor(SQLExecutor sqlExecutor) {}
-
-  @Override
-  public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
+  public Single<Map<String, Object>> extractValues(
+      SQLExecutor sqlExecutor, Map<String, Object> row) {
     Object value = SQLResponseUtils.getValue(row, parentTableAlias, keyName);
     if (value == null) {
       return Single.just(Map.of());
@@ -53,7 +52,7 @@ public class ComponentRow implements Component {
   }
 
   @Override
-  public Set<String> getQueriedTables() {
+  public Set<TableWithAlias> getQueriedTables() {
     return Set.of();
   }
 

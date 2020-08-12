@@ -46,12 +46,12 @@ public class SQLResponseUtils {
    * @return {@link Single} which emits combined Map of all responses emitted by input components
    */
   public static Single<Map<String, Object>> constructResponse(
-      Map<String, Object> row, List<Component> components) {
+      SQLExecutor sqlExecutor, Map<String, Object> row, List<Component> components) {
     Objects.requireNonNull(row);
     Objects.requireNonNull(components);
     List<Single<Map<String, Object>>> componentValuesSingles =
         components.stream()
-            .map(component -> component.extractValues(row))
+            .map(component -> component.extractValues(sqlExecutor, row))
             .collect(Collectors.toList());
     return Single.zip(
         componentValuesSingles,

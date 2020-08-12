@@ -6,6 +6,7 @@
 
 package dev.fastgql.db;
 
+import dev.fastgql.common.TableWithAlias;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.pgclient.PgConnectOptions;
@@ -17,8 +18,11 @@ import io.vertx.sqlclient.PoolOptions;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Datasource config.
@@ -100,6 +104,43 @@ public class DatasourceConfig {
 
   public Connection getConnection() throws SQLException {
     return DriverManager.getConnection(jdbcUrl, username, password);
+  }
+
+  public String getUnlockQuery() {
+    switch (dbType) {
+      case mysql:
+        return "UNLOCK TABLES";
+      case postgresql:
+      case other:
+      default:
+        return null;
+    }
+  }
+
+  public Function<Set<TableWithAlias>, String> getLockQueryFunction() {
+    switch (dbType) {
+      case mysql:
+        return tableWithAliases ->
+            String.format(
+                "LOCK TABLES %s",
+                tableWithAliases.stream()
+                    .map(
+                        tableWithAlias ->
+                            String.format(
+                                "%s as %s READ",
+                                tableWithAlias.getName(), tableWithAlias.getAlias()))
+                    .collect(Collectors.joining(", ")));
+      case postgresql:
+        return tableWithAliases ->
+            String.format(
+                "LOCK TABLE %s IN SHARE MODE",
+                tableWithAliases.stream()
+                    .map(TableWithAlias::getName)
+                    .collect(Collectors.joining(", ")));
+      case other:
+      default:
+        return tableWithAliases -> null;
+    }
   }
 
   /**

@@ -17,7 +17,6 @@ import io.vertx.reactivex.core.http.HttpServerResponse;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
-import java.util.function.Supplier;
 import javax.inject.Singleton;
 
 public class ServerModule extends AbstractModule {
@@ -52,50 +51,58 @@ public class ServerModule extends AbstractModule {
   Handler<RoutingContext> provideUpdateHandler(
       GraphQLHandlerUpdatable graphQLHandlerUpdatable,
       ApolloWSHandlerUpdatable apolloWSHandlerUpdatable,
-      Supplier<GraphQL> graphQLSupplier) {
-    return context -> {
-      GraphQL graphQL = graphQLSupplier.get();
-      if (graphQLHandlerUpdatable != null) {
-        graphQLHandlerUpdatable.updateGraphQL(graphQL);
-      }
-      if (apolloWSHandlerUpdatable != null) {
-        apolloWSHandlerUpdatable.updateGraphQL(graphQL);
-      }
-      HttpServerResponse response = context.response();
-      response.putHeader("content-type", "text/html").end("updated");
-    };
+      Single<GraphQL> graphQLSingle) {
+    return context ->
+        graphQLSingle.subscribe(
+            graphQL -> {
+              if (graphQLHandlerUpdatable != null) {
+                graphQLHandlerUpdatable.updateGraphQL(graphQL);
+              }
+              if (apolloWSHandlerUpdatable != null) {
+                apolloWSHandlerUpdatable.updateGraphQL(graphQL);
+              }
+              HttpServerResponse response = context.response();
+              response.putHeader("content-type", "text/html").end("updated");
+            },
+            context::fail);
   }
 
   @Provides
-  Router provideRouter(
+  Single<Router> provideRouterSingle(
       Vertx vertx,
       GraphQLHandlerUpdatable graphQLHandlerUpdatable,
       ApolloWSHandlerUpdatable apolloWSHandlerUpdatable,
       GraphiQLHandler graphiQLHandler,
       @UpdateHandler Handler<RoutingContext> updateHandler,
-      Supplier<GraphQL> graphQLSupplier) {
-    Router router = Router.router(vertx);
-    GraphQL graphQL = graphQLSupplier.get();
-    if (apolloWSHandlerUpdatable != null) {
-      apolloWSHandlerUpdatable.updateGraphQL(graphQL);
-      router.route("/graphql").handler(apolloWSHandlerUpdatable);
-    }
-    if (graphQLHandlerUpdatable != null) {
-      graphQLHandlerUpdatable.updateGraphQL(graphQL);
-      router.route("/graphql").handler(graphQLHandlerUpdatable);
-    }
-    if (graphiQLHandler != null) {
-      router.route("/graphiql/*").handler(graphiQLHandler);
-    }
-    if (updateHandler != null) {
-      router.route("/update").handler(updateHandler);
-    }
-    return router;
+      Single<GraphQL> graphQLSingle) {
+    return graphQLSingle.map(
+        graphQL -> {
+          Router router = Router.router(vertx);
+          if (apolloWSHandlerUpdatable != null) {
+            apolloWSHandlerUpdatable.updateGraphQL(graphQL);
+            router.route("/graphql").handler(apolloWSHandlerUpdatable);
+          }
+          if (graphQLHandlerUpdatable != null) {
+            graphQLHandlerUpdatable.updateGraphQL(graphQL);
+            router.route("/graphql").handler(graphQLHandlerUpdatable);
+          }
+          if (graphiQLHandler != null) {
+            router.route("/graphiql/*").handler(graphiQLHandler);
+          }
+          if (updateHandler != null) {
+            router.route("/update").handler(updateHandler);
+          }
+          return router;
+        });
   }
 
   @Provides
   Single<HttpServer> provideHttpServer(
-      Vertx vertx, HttpServerOptions httpServerOptions, Router router, @ServerPort int port) {
-    return vertx.createHttpServer(httpServerOptions).requestHandler(router).rxListen(port);
+      Vertx vertx,
+      HttpServerOptions httpServerOptions,
+      Single<Router> routerSingle,
+      @ServerPort int port) {
+    return routerSingle.flatMap(
+        router -> vertx.createHttpServer(httpServerOptions).requestHandler(router).rxListen(port));
   }
 }

@@ -40,7 +40,7 @@ public class ComponentRowTest {
     ComponentRow componentRow = new ComponentRow(keyName);
     componentRow.setParentTableAlias(parentTableAlias);
     Map<String, Object> row = Map.of();
-    Single<Map<String, Object>> values = componentRow.extractValues(row);
+    Single<Map<String, Object>> values = componentRow.extractValues(null, row);
     values.test().assertNoErrors().assertValue(Map::isEmpty);
   }
 
@@ -49,7 +49,7 @@ public class ComponentRowTest {
     ComponentRow componentRow = new ComponentRow(keyName);
     componentRow.setParentTableAlias(parentTableAlias);
     Map<String, Object> row = Map.of(String.format("%s_%s", parentTableAlias, keyName), keyValue);
-    Single<Map<String, Object>> values = componentRow.extractValues(row);
+    Single<Map<String, Object>> values = componentRow.extractValues(null, row);
     values.test().assertNoErrors().assertValue(Map.of(keyName, keyValue));
   }
 

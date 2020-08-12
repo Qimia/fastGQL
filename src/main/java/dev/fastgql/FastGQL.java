@@ -11,6 +11,7 @@ import com.google.inject.Injector;
 import com.google.inject.Key;
 import dev.fastgql.modules.DatabaseModule;
 import dev.fastgql.modules.GraphQLModule;
+import dev.fastgql.modules.SQLExecutorModule;
 import dev.fastgql.modules.ServerModule;
 import dev.fastgql.modules.VertxModule;
 import io.reactivex.Single;
@@ -18,33 +19,32 @@ import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.core.http.HttpServer;
-import org.apache.log4j.Logger;
 
 public class FastGQL extends AbstractVerticle {
 
-  private static final Logger log = Logger.getLogger(FastGQL.class);
-
   public static void main(String[] args) {
     Launcher.executeCommand(
-        "run", FastGQL.class.getName(), "--conf", "src/main/resources/conf.json");
+        "run", FastGQL.class.getName(), "--conf", "src/main/resources/conf-postgres.json");
+  }
+
+  protected Injector createInjector() {
+    return Guice.createInjector(
+        new VertxModule(vertx, config()),
+        new ServerModule(),
+        new GraphQLModule(),
+        new DatabaseModule(),
+        new SQLExecutorModule());
+  }
+
+  private void startServer(Injector injector, Promise<Void> promise) {
+    injector
+        .getInstance(new Key<Single<HttpServer>>() {})
+        .subscribe(server -> promise.complete(), promise::fail);
   }
 
   @Override
-  public void start(Promise<Void> future) {
-    Injector injector =
-        Guice.createInjector(
-            new VertxModule(vertx, config()),
-            new ServerModule(),
-            new GraphQLModule(),
-            new DatabaseModule());
-
-    injector
-        .getInstance(new Key<Single<HttpServer>>() {})
-        .subscribe(
-            server -> {
-              log.debug("deployed server");
-              future.complete();
-            },
-            future::fail);
+  public void start(Promise<Void> promise) {
+    Injector injector = createInjector();
+    startServer(injector, promise);
   }
 }

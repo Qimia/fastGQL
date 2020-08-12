@@ -172,24 +172,6 @@ public class GraphQLDatabaseSchema {
     return GraphQLArgument.newArgument().name(name).type(type).build();
   }
 
-  // private static Map<String, Map<String, GraphQLFieldDefinition>> createGraphMutation(
-  //  DatabaseSchema databaseSchema
-  // ) {
-  //  Objects.requireNonNull(databaseSchema);
-  //  Map<String, Map<String, GraphQLFieldDefinition>> graph = new HashMap<>();
-  //  databaseSchema
-  //    .getGraph()
-  //    .forEach(
-  //      (tableName, keyNameToKeyDefinition) -> {
-  //        graph.put(tableName, new HashMap<>());
-  //        Map<String, GraphQLFieldDefinition> fieldNameToGraphQLFieldDefinition =
-  //          graph.get(tableName);
-
-  //      }
-  //    );
-  //  return graph;
-  // }
-
   private static Map<String, Map<String, GraphQLField>> createGraph(DatabaseSchema databaseSchema) {
     Objects.requireNonNull(databaseSchema);
     Map<String, Map<String, GraphQLField>> graph = new HashMap<>();

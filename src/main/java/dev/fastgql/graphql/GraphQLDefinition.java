@@ -7,6 +7,7 @@
 package dev.fastgql.graphql;
 
 import com.google.inject.assistedinject.Assisted;
+import dev.fastgql.common.TableWithAlias;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import javax.inject.Inject;
 import org.slf4j.Logger;
@@ -81,6 +83,8 @@ public class GraphQLDefinition {
     private final Function<Transaction, SQLExecutor> transactionSQLExecutorFunction;
     private final DebeziumEngineSingleton debeziumEngineSingleton;
     private final EventFlowableFactory eventFlowableFactory;
+    private final Function<Set<TableWithAlias>, String> lockQueryFunction;
+    private final String unlockQuery;
     private boolean queryEnabled = false;
     private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
@@ -111,9 +115,11 @@ public class GraphQLDefinition {
       this.transactionSQLExecutorFunction = transactionSQLExecutorFunction;
       this.debeziumEngineSingleton = debeziumEngineSingleton;
       this.eventFlowableFactory = eventFlowableFactory;
+      this.lockQueryFunction = datasourceConfig.getLockQueryFunction();
+      this.unlockQuery = datasourceConfig.getUnlockQuery();
     }
 
-    private static void traverseSelectionSet(
+    private void traverseSelectionSet(
         GraphQLDatabaseSchema graphQLDatabaseSchema,
         ComponentParent parent,
         AliasGenerator aliasGenerator,
@@ -156,7 +162,9 @@ public class GraphQLDefinition {
                             graphQLField.getForeignName().getTableName(),
                             aliasGenerator.getAlias(),
                             graphQLField.getForeignName().getKeyName(),
-                            new SQLArguments(selectedField.getArguments()));
+                            new SQLArguments(selectedField.getArguments()),
+                            lockQueryFunction,
+                            unlockQuery);
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
                         componentReferenced,
@@ -174,17 +182,21 @@ public class GraphQLDefinition {
       AliasGenerator aliasGenerator = new AliasGenerator();
       SQLArguments sqlArguments = new SQLArguments(env.getArguments());
       ComponentExecutable executionRoot =
-          new ExecutionRoot(env.getField().getName(), aliasGenerator.getAlias(), sqlArguments);
+          new ExecutionRoot(
+              env.getField().getName(),
+              aliasGenerator.getAlias(),
+              sqlArguments,
+              lockQueryFunction,
+              unlockQuery);
       traverseSelectionSet(
           graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
       return executionRoot;
     }
 
     private Single<List<Map<String, Object>>> getResponse(
-        DataFetchingEnvironment env, Transaction transaction) {
+        SQLExecutor sqlExecutor, DataFetchingEnvironment env, Transaction transaction) {
       ComponentExecutable executionRoot = getExecutionRoot(env);
-      executionRoot.setSqlExecutor(transactionSQLExecutorFunction.apply(transaction));
-      return executionRoot.execute();
+      return executionRoot.execute(sqlExecutor, true);
     }
 
     private Single<Map<String, Object>> getResponseMutation(
@@ -204,18 +216,6 @@ public class GraphQLDefinition {
           transaction, databaseSchema, fieldName, rows, returningColumns);
     }
 
-    private void commitTransaction(Transaction transaction) {
-      transaction
-          .rxCommit()
-          .subscribe(() -> log.debug("transaction committed"), err -> log.error(err.getMessage()));
-    }
-
-    private void rollbackTransaction(Transaction transaction) {
-      transaction
-          .rxRollback()
-          .subscribe(() -> log.debug("transaction rollback"), err -> log.error(err.getMessage()));
-    }
-
     /**
      * Enables query by defining data fetcher using {@link VertxDataFetcher} and adding it to {@link
      * GraphQLCodeRegistry}.
@@ -233,8 +233,13 @@ public class GraphQLDefinition {
                       .rxBegin()
                       .flatMap(
                           transaction ->
-                              getResponse(env, transaction)
-                                  .doFinally(() -> commitTransaction(transaction)))
+                              getResponse(
+                                      transactionSQLExecutorFunction.apply(transaction),
+                                      env,
+                                      transaction)
+                                  .flatMap(
+                                      result ->
+                                          transaction.rxCommit().andThen(Single.just(result))))
                       .subscribe(promise::complete, promise::fail));
       databaseSchema
           .getTableNames()
@@ -265,8 +270,9 @@ public class GraphQLDefinition {
                       .flatMap(
                           transaction ->
                               getResponseMutation(env, transaction)
-                                  .doOnSuccess(result -> commitTransaction(transaction))
-                                  .doOnError(error -> rollbackTransaction(transaction)))
+                                  .flatMap(
+                                      result ->
+                                          transaction.rxCommit().andThen(Single.just(result))))
                       .subscribe(promise::complete, promise::fail));
 
       databaseSchema
@@ -308,20 +314,17 @@ public class GraphQLDefinition {
 
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
           env -> {
-            log.info("new subscription");
             ComponentExecutable executionRoot = getExecutionRoot(env);
             return eventFlowableFactory
                 .create(executionRoot)
                 .flatMap(record -> sqlConnectionPool.rxBegin().toFlowable())
                 .flatMap(
-                    transaction -> {
-                      executionRoot.setSqlExecutor(
-                          transactionSQLExecutorFunction.apply(transaction));
-                      return executionRoot
-                          .execute()
-                          .doFinally(() -> commitTransaction(transaction))
-                          .toFlowable();
-                    });
+                    transaction ->
+                        executionRoot
+                            .execute(transactionSQLExecutorFunction.apply(transaction), true)
+                            .toFlowable()
+                            .flatMap(
+                                result -> transaction.rxCommit().andThen(Flowable.just(result))));
           };
       databaseSchema
           .getTableNames()

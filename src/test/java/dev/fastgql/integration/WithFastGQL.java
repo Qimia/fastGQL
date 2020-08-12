@@ -1,11 +1,16 @@
 package dev.fastgql.integration;
 
-import dev.fastgql.FastGQL;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import dev.fastgql.db.DatasourceConfig;
+import dev.fastgql.modules.DatabaseModule;
+import dev.fastgql.modules.VertxModule;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.sqlclient.Pool;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.testcontainers.containers.GenericContainer;
@@ -29,7 +34,6 @@ public interface WithFastGQL {
   default Network getNetwork() {
     return null;
   }
-  ;
 
   default int getDeploymentPort() {
     return 8081;
@@ -59,6 +63,26 @@ public interface WithFastGQL {
     getJdbcDatabaseContainer().close();
   }
 
+  default JsonObject createConfigMultipleQueries() {
+    DatasourceConfig datasourceConfig = createDatasourceConfig();
+    JsonObject config =
+        new JsonObject()
+            .put("http.port", getDeploymentPort())
+            .put(
+                "datasource",
+                Map.of(
+                    "jdbcUrl", getJdbcUrlForMultipleQueries(),
+                    "username", datasourceConfig.getUsername(),
+                    "password", datasourceConfig.getPassword(),
+                    "schema", datasourceConfig.getSchema()));
+
+    if (isDebeziumActive()) {
+      config.put("debezium", createDebeziumConfigEntry());
+    }
+
+    return config;
+  }
+
   default JsonObject createConfig() {
     DatasourceConfig datasourceConfig = createDatasourceConfig();
     JsonObject config =
@@ -83,14 +107,14 @@ public interface WithFastGQL {
     return true;
   }
 
-  default void setup(Vertx vertx, VertxTestContext context) {
+  default void setup(Vertx vertx, VertxTestContext context, AbstractVerticle verticle) {
     Startables.deepStart(getAllContainers()).join();
     if (!registerConnector(context)) {
       return;
     }
     DeploymentOptions options = new DeploymentOptions().setConfig(createConfig());
     vertx
-        .rxDeployVerticle(new FastGQL(), options)
+        .rxDeployVerticle(verticle, options)
         .subscribe(
             deploymentID -> {
               setDeploymentID(deploymentID);
@@ -106,5 +130,18 @@ public interface WithFastGQL {
               closeAllContainers();
               context.completeNow();
             });
+  }
+
+  default Pool getPool(Vertx vertx) {
+    Injector injector =
+        Guice.createInjector(new VertxModule(vertx, createConfig()), new DatabaseModule());
+    return injector.getInstance(Pool.class);
+  }
+
+  default Pool getPoolMultipleQueries(Vertx vertx) {
+    Injector injector =
+        Guice.createInjector(
+            new VertxModule(vertx, createConfigMultipleQueries()), new DatabaseModule());
+    return injector.getInstance(Pool.class);
   }
 }

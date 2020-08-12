@@ -45,7 +45,9 @@ public class EventFlowableFactory {
                 queriedTable ->
                     String.format(
                         "%s.%s.%s",
-                        debeziumConfig.getServerName(), datasourceConfig.getSchema(), queriedTable))
+                        debeziumConfig.getServerName(),
+                        datasourceConfig.getSchema(),
+                        queriedTable.getName()))
             .collect(Collectors.toSet());
     if (debeziumConfig.isEmbedded()) {
       return createForEmbedded(topics);
