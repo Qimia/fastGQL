@@ -13,7 +13,7 @@ Check style:
 Start Postgres container:
 
 ```shell script
-./start_postgres.sh
+scripts/start_postgres.sh
 ```
 
 Start FastGQL in dev mode with hot reload:
