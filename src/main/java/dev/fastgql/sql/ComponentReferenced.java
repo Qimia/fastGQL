@@ -63,7 +63,7 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
   }
 
   @Override
-  public Single<Map<String, Object>> extractValues(Map<String, Object> row) {
+  public Single<Map<String, Object>> extractValues(SQLExecutor sqlExecutor, Map<String, Object> row) {
     Object keyValue = SQLResponseUtils.getValue(row, parentTableAlias, keyName);
     if (keyValue == null) {
       return Single.just(Map.of());
@@ -73,6 +73,6 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
             query.addWhereConditions(
                 String.format(
                     "(%s.%s = %s)", foreignTableAlias, foreignKeyName, keyValue.toString())));
-    return execute(false).map(response -> Map.of(fieldName, response));
+    return execute(sqlExecutor, false).map(response -> Map.of(fieldName, response));
   }
 }

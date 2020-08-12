@@ -21,6 +21,7 @@ public class ExecutionRootTest {
   static final String tableName = "testTableName";
   static final String tableAlias = "testTableAlias";
 
+/*
   @Test
   public void execute() {
     ExecutionRoot executionRoot = new ExecutionRoot(tableName, tableAlias, null, null, null);
@@ -37,6 +38,7 @@ public class ExecutionRootTest {
 
     executionRoot.execute(false).test().assertNoErrors().assertValue(expected);
   }
+*/
 
   @Test
   public void tableNameWhenParent() {

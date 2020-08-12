@@ -198,10 +198,10 @@ public class GraphQLDefinition {
     }
 
     private Single<List<Map<String, Object>>> getResponse(
-        DataFetchingEnvironment env, Transaction transaction) {
+        SQLExecutor sqlExecutor, DataFetchingEnvironment env, Transaction transaction) {
       ComponentExecutable executionRoot = getExecutionRoot(env);
-      executionRoot.setSqlExecutor(transactionSQLExecutorFunction.apply(transaction));
-      return executionRoot.execute(true);
+      //executionRoot.setSqlExecutor(transactionSQLExecutorFunction.apply(transaction));
+      return executionRoot.execute(sqlExecutor, true);
     }
 
     private Single<Map<String, Object>> getResponseMutation(
@@ -238,7 +238,7 @@ public class GraphQLDefinition {
                       .rxBegin()
                       .flatMap(
                           transaction ->
-                              getResponse(env, transaction)
+                              getResponse(transactionSQLExecutorFunction.apply(transaction), env, transaction)
                                   .flatMap(
                                       result ->
                                           transaction
@@ -328,10 +328,10 @@ public class GraphQLDefinition {
                 .flatMap(
                     connection -> {
                       SQLExecutor sqlExecutor = sqlConnectionSQLExecutorFunction.apply(connection);
-                      executionRoot.setSqlExecutor(sqlExecutor);
-                      return connection.rxQuery("SELECT 1").toFlowable().flatMap(r -> executionRoot
-                          .execute(true)
-                          .flatMap(result -> sqlExecutor.execute("UNLOCK TABLES").map(unlockResult -> result))
+                      //executionRoot.setSqlExecutor(sqlExecutor);
+                      Single<List<Map<String, Object>>> executeResult = executionRoot.execute(sqlExecutor, true);
+                        //.flatMap(result -> sqlExecutor.execute("UNLOCK TABLES").map(unlockResult -> result));
+                      return connection.rxQuery("SELECT 1").toFlowable().flatMap(r -> executeResult
                           .flatMap(
                               result -> sqlExecutor.execute("SELECT 1")//connection.rxQuery("UNLOCK TABLES")
                                 .flatMap(rows -> connection.rxQuery("SELECT 1"))

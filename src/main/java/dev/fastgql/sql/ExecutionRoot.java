@@ -36,7 +36,7 @@ public class ExecutionRoot implements ComponentExecutable {
   private final Set<TableWithAlias> queriedTables = new HashSet<>();
   private final Function<Set<TableWithAlias>, String> lockQueryFunction;
   private final String unlockQuery;
-  private SQLExecutor sqlExecutor;
+  //private SQLExecutor sqlExecutor;
 
   /**
    * Construct execution root by providing table name and its alias.
@@ -61,10 +61,12 @@ public class ExecutionRoot implements ComponentExecutable {
   }
 
   @Override
-  public Single<List<Map<String, Object>>> execute(boolean lockTables) {
+  public Single<List<Map<String, Object>>> execute(SQLExecutor sqlExecutor, boolean lockTables) {
+/*
     if (sqlExecutor == null) {
       throw new RuntimeException("SQLExecutor not initialized");
     }
+*/
 
     components.forEach(component -> component.updateQuery(query));
     String queryString = query.build();
@@ -79,7 +81,7 @@ public class ExecutionRoot implements ComponentExecutable {
                   if (rowList.size() > 0) {
                     List<Single<Map<String, Object>>> componentResponsesSingles =
                         rowList.stream()
-                            .map(row -> SQLResponseUtils.constructResponse(row, components))
+                            .map(row -> SQLResponseUtils.constructResponse(sqlExecutor, row, components))
                             .collect(Collectors.toList());
                     return Single.zip(
                         componentResponsesSingles,
@@ -101,10 +103,9 @@ public class ExecutionRoot implements ComponentExecutable {
       System.out.println(">>>>>>>>>>>>>>>> RETURNING SINGLE");
       return sqlExecutor
           .execute(lockQueryFunction.apply(getQueriedTables()))
-          .flatMap(lockResult -> querySingle);
+          .flatMap(lockResult -> querySingle)
           //.flatMap(result -> sqlExecutor.execute("UNLOCK TABLES").map(unlockResult -> result));
       //.flatMap(result -> sqlExecutor.execute(unlockQuery).map(unlockResult -> result));
-/*
           .flatMap(
               lockResult ->
                   querySingle.flatMap(
@@ -115,7 +116,6 @@ public class ExecutionRoot implements ComponentExecutable {
                           return Single.just(result);
                         }
                       }));
-*/
     } else {
       return querySingle;
     }
@@ -124,7 +124,7 @@ public class ExecutionRoot implements ComponentExecutable {
   @Override
   public void addComponent(Component component) {
     component.setParentTableAlias(tableAlias);
-    component.setSqlExecutor(sqlExecutor);
+    //component.setSqlExecutor(sqlExecutor);
     components.add(component);
     queriedTables.addAll(component.getQueriedTables());
   }
@@ -134,11 +134,13 @@ public class ExecutionRoot implements ComponentExecutable {
     return tableName;
   }
 
+/*
   @Override
   public void setSqlExecutor(SQLExecutor sqlExecutor) {
     this.sqlExecutor = sqlExecutor;
     this.components.forEach(component -> component.setSqlExecutor(sqlExecutor));
   }
+*/
 
   @Override
   public Set<TableWithAlias> getQueriedTables() {

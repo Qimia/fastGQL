@@ -35,6 +35,7 @@ public class ComponentRowTest {
         sqlQuery.build());
   }
 
+/*
   @Test
   public void extractValues_emptyRow() {
     ComponentRow componentRow = new ComponentRow(keyName);
@@ -43,7 +44,9 @@ public class ComponentRowTest {
     Single<Map<String, Object>> values = componentRow.extractValues(row);
     values.test().assertNoErrors().assertValue(Map::isEmpty);
   }
+*/
 
+/*
   @Test
   public void extractValues_singleRow() {
     ComponentRow componentRow = new ComponentRow(keyName);
@@ -52,6 +55,7 @@ public class ComponentRowTest {
     Single<Map<String, Object>> values = componentRow.extractValues(row);
     values.test().assertNoErrors().assertValue(Map.of(keyName, keyValue));
   }
+*/
 
   @Test
   public void addComponent() {

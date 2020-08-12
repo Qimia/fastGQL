@@ -36,5 +36,5 @@ public interface Component extends ComponentParent {
    * @param row SQL response row
    * @return {@link Single} which emits representation of data extracted from SQL response row
    */
-  Single<Map<String, Object>> extractValues(Map<String, Object> row);
+  Single<Map<String, Object>> extractValues(SQLExecutor sqlExecutor, Map<String, Object> row);
 }
