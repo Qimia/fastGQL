@@ -28,7 +28,8 @@ public interface QueryTests extends SetupTearDownForAll {
         .flatMap(rows -> client.get(getDeploymentPort(), "localhost", "/v1/update").rxSend())
         .subscribe(
             response ->
-                GraphQLTestUtils.verifyQuerySimple(directory, getDeploymentPort(), vertx, context),
+                GraphQLTestUtils.verifyQuerySimple(
+                    directory, getDeploymentPort(), null, vertx, context),
             context::failNow);
   }
 }

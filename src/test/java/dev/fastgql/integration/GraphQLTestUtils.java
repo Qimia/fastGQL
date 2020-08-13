@@ -17,6 +17,7 @@ import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.core.http.WebSocket;
+import io.vertx.reactivex.ext.web.client.HttpRequest;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import io.vertx.reactivex.ext.web.client.predicate.ResponsePredicate;
 import io.vertx.reactivex.ext.web.codec.BodyCodec;
@@ -56,6 +57,7 @@ public class GraphQLTestUtils {
    */
   public static void verifyQuery(
       int port,
+      String token,
       String inputResource,
       String outputResource,
       Vertx vertx,
@@ -67,8 +69,12 @@ public class GraphQLTestUtils {
 
     JsonObject request = new JsonObject().put("query", graphQLQuery);
 
-    WebClient.create(vertx)
-        .post(port, "localhost", "/v1/graphql")
+    HttpRequest<Buffer> bufferHttpRequest =
+        WebClient.create(vertx).post(port, "localhost", "/v1/graphql");
+    if (token != null) {
+      bufferHttpRequest.bearerTokenAuthentication(token);
+    }
+    bufferHttpRequest
         .expect(ResponsePredicate.SC_OK)
         .expect(ResponsePredicate.JSON)
         .as(BodyCodec.jsonObject())
@@ -93,14 +99,14 @@ public class GraphQLTestUtils {
    * @param context vertx test context
    */
   public static void verifyQuerySimple(
-      String directory, int port, Vertx vertx, VertxTestContext context) {
+      String directory, int port, String token, Vertx vertx, VertxTestContext context) {
     String query = String.format("%s/query.graphql", directory);
     String expected = String.format("%s/expected.json", directory);
-    verifyQuery(port, query, expected, vertx, context);
+    verifyQuery(port, token, query, expected, vertx, context);
   }
 
   public static void verifyMutation(
-      String directory, int port, Vertx vertx, VertxTestContext context) {
+      String directory, int port, String token, Vertx vertx, VertxTestContext context) {
     String query = String.format("%s/query.graphql", directory);
     String mutation = String.format("%s/mutation.graphql", directory);
     String expectedMutation = String.format("%s/expected-mutation.json", directory);
@@ -124,7 +130,7 @@ public class GraphQLTestUtils {
                 context.verify(
                     () -> {
                       assertEquals(expectedMutationResponse, response.body());
-                      verifyQuery(port, query, expected, vertx, context);
+                      verifyQuery(port, token, query, expected, vertx, context);
                     }),
             context::failNow);
   }
@@ -186,5 +192,30 @@ public class GraphQLTestUtils {
                   }
                   checkpoints.flag();
                 }));
+  }
+
+  /**
+   * Verify that the endpoint requestURI will return Unauthorized Status Code 401 if the token is
+   * not not provided.
+   *
+   * @param port port on which FastGQL is running
+   * @param requestURI request URI
+   * @param vertx Vert.x instance
+   * @param context Vert.x test context
+   */
+  public static void verifyUnauthorizedRequest(
+      int port, String requestURI, Vertx vertx, VertxTestContext context) {
+    WebClient.create(vertx)
+        .post(port, "localhost", requestURI)
+        .expect(ResponsePredicate.SC_UNAUTHORIZED)
+        .rxSend()
+        .subscribe(
+            response ->
+                context.verify(
+                    () -> {
+                      assertEquals(401, response.statusCode());
+                      context.completeNow();
+                    }),
+            context::failNow);
   }
 }

@@ -63,6 +63,10 @@ public interface WithFastGQL {
     return Map.of();
   }
 
+  default String getJwtToken() {
+    return null;
+  }
+
   default Stream<GenericContainer<?>> getAllContainers() {
     return Stream.of(getJdbcDatabaseContainer());
   }

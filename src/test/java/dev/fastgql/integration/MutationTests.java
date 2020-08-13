@@ -28,7 +28,8 @@ public interface MutationTests extends SetupTearDownForAll {
         .flatMap(rows -> client.get(getDeploymentPort(), "localhost", "/v1/update").rxSend())
         .subscribe(
             response ->
-                GraphQLTestUtils.verifyMutation(directory, getDeploymentPort(), vertx, context),
+                GraphQLTestUtils.verifyMutation(
+                    directory, getDeploymentPort(), null, vertx, context),
             context::failNow);
   }
 }
