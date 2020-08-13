@@ -19,6 +19,7 @@ import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.handler.JWTAuthHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
+import javax.annotation.Nullable;
 import javax.inject.Singleton;
 
 public class ServerModule extends AbstractModule {
@@ -71,14 +72,14 @@ public class ServerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  JWTAuthHandler provideJWTAuthHandler(JWTAuth jwtAuth) {
+  JWTAuthHandler provideJWTAuthHandler(@Nullable JWTAuth jwtAuth) {
     return jwtAuth == null ? null : JWTAuthHandler.create(jwtAuth);
   }
 
   @Provides
   Single<Router> provideRouterSingle(
       Vertx vertx,
-      JWTAuthHandler jwtAuthHandler,
+      @Nullable JWTAuthHandler jwtAuthHandler,
       GraphQLHandlerUpdatable graphQLHandlerUpdatable,
       ApolloWSHandlerUpdatable apolloWSHandlerUpdatable,
       GraphiQLHandler graphiQLHandler,

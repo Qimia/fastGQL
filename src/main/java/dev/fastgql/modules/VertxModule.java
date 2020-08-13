@@ -39,8 +39,8 @@ public class VertxModule extends AbstractModule {
   JWTAuth provideJWTAuth() {
     if (config.containsKey("auth")) {
       JsonObject optionsJson = config.getJsonObject("auth");
-      JWTAuthOptions jwtAuthOptions = new JWTAuthOptions()
-          .addPubSecKey(new PubSecKeyOptions(optionsJson));
+      JWTAuthOptions jwtAuthOptions =
+          new JWTAuthOptions().addPubSecKey(new PubSecKeyOptions(optionsJson));
       return JWTAuth.create(vertx, jwtAuthOptions);
     }
     return null;

@@ -45,9 +45,9 @@ public interface SubscriptionTests extends SetupTearDownForEach {
         .flatMap(
             rows ->
                 client
-                    .get(getDeploymentPort(), "localhost", "/update")
+                    .get(getDeploymentPort(), "localhost", "/v1/update")
                     .rxSend()
-                    .flatMap(response -> httpClient.rxWebSocket("/graphql"))
+                    .flatMap(response -> httpClient.rxWebSocket("/v1/graphql"))
                     .flatMapCompletable(
                         webSocket ->
                             GraphQLTestUtils.startSubscription(query, context, webSocket)

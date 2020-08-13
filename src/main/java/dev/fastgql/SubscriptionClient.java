@@ -2,8 +2,6 @@ package dev.fastgql;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Launcher;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketConnectOptions;
@@ -28,12 +26,14 @@ public class SubscriptionClient extends AbstractVerticle {
 
   @Override
   public void start() {
-    WebSocketConnectOptions wsOptions = new WebSocketConnectOptions()
-        .addHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + jwtToken)
-        .setHost("localhost")
-        .setPort(8080)
-        .setURI("/v1/graphql");
-    vertx.createHttpClient()
+    WebSocketConnectOptions wsOptions =
+        new WebSocketConnectOptions()
+            .addHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + jwtToken)
+            .setHost("localhost")
+            .setPort(8080)
+            .setURI("/v1/graphql");
+    vertx
+        .createHttpClient()
         .webSocket(
             wsOptions,
             websocketRes -> {

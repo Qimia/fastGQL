@@ -68,7 +68,7 @@ public class GraphQLTestUtils {
     JsonObject request = new JsonObject().put("query", graphQLQuery);
 
     WebClient.create(vertx)
-        .post(port, "localhost", "/graphql")
+        .post(port, "localhost", "/v1/graphql")
         .expect(ResponsePredicate.SC_OK)
         .expect(ResponsePredicate.JSON)
         .as(BodyCodec.jsonObject())
@@ -114,7 +114,7 @@ public class GraphQLTestUtils {
 
     WebClient webClient = WebClient.create(vertx);
     webClient
-        .post(port, "localhost", "/graphql")
+        .post(port, "localhost", "/v1/graphql")
         .expect(ResponsePredicate.SC_OK)
         .expect(ResponsePredicate.JSON)
         .as(BodyCodec.jsonObject())
