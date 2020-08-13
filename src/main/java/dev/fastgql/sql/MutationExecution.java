@@ -7,7 +7,6 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.sqlclient.Transaction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +14,7 @@ import java.util.Map;
 public class MutationExecution {
 
   public static Single<Map<String, Object>> createResponse(
-      Transaction transaction,
+      SQLExecutorRowSet sqlExecutorRowSet,
       DatabaseSchema databaseSchema,
       String fieldName,
       JsonArray rows,
@@ -30,7 +29,7 @@ public class MutationExecution {
                   buildMutationQueryFromRow(tableName, row, returningColumns, databaseSchema)));
       Single<MutationResponse> mutationResponse =
           Flowable.fromIterable(queries)
-              .flatMap(query -> transaction.rxQuery(query).toFlowable())
+              .flatMap(query -> sqlExecutorRowSet.execute(query).toFlowable())
               .reduce(MutationResponse.newMutationResponse(), MutationResponse::compose);
       return mutationResponse.map(MutationResponse::build);
     }

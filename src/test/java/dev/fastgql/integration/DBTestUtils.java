@@ -42,6 +42,8 @@ public class DBTestUtils {
                             transaction
                                 .rxQuery(sqlQuery)
                                 .flatMap(rows -> transaction.rxCommit().andThen(Single.just(rows)))
-                                .doOnSuccess(result -> log.info("[response] {}", sqlQuery))));
+                                .doOnSuccess(result -> log.info("[response] {}", sqlQuery))
+                                .doOnError(
+                                    error -> log.info("[response error] {}", error.toString()))));
   }
 }

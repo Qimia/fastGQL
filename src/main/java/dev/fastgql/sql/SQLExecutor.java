@@ -6,5 +6,5 @@ import java.util.Map;
 
 @FunctionalInterface
 public interface SQLExecutor {
-  Single<List<Map<String, Object>>> execute(String sqlQuery);
+  Single<List<Map<String, Object>>> execute(String query);
 }

@@ -16,7 +16,7 @@ public interface TransactionTest extends SetupTearDownForEachWithDelay {
   @Test
   @Timeout(value = 2, timeUnit = TimeUnit.MINUTES)
   default void test(Vertx vertx, VertxTestContext context) {
-    String directory = "transactions";
+    String directory = "transactions/query";
     System.out.println(String.format("Test: %s", directory));
 
     WebClient client = WebClient.create(vertx);

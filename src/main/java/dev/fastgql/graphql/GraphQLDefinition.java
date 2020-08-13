@@ -13,17 +13,7 @@ import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.events.EventFlowableFactory;
-import dev.fastgql.sql.AliasGenerator;
-import dev.fastgql.sql.Component;
-import dev.fastgql.sql.ComponentExecutable;
-import dev.fastgql.sql.ComponentParent;
-import dev.fastgql.sql.ComponentReferenced;
-import dev.fastgql.sql.ComponentReferencing;
-import dev.fastgql.sql.ComponentRow;
-import dev.fastgql.sql.ExecutionRoot;
-import dev.fastgql.sql.MutationExecution;
-import dev.fastgql.sql.SQLArguments;
-import dev.fastgql.sql.SQLExecutor;
+import dev.fastgql.sql.*;
 import graphql.GraphQL;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
@@ -81,6 +71,7 @@ public class GraphQLDefinition {
     private final GraphQLSchema.Builder graphQLSchemaBuilder;
     private final GraphQLCodeRegistry.Builder graphQLCodeRegistryBuilder;
     private final Function<Transaction, SQLExecutor> transactionSQLExecutorFunction;
+    private final Function<Transaction, SQLExecutorRowSet> transactionSQLExecutorRowSetFunction;
     private final DebeziumEngineSingleton debeziumEngineSingleton;
     private final EventFlowableFactory eventFlowableFactory;
     private final Function<Set<TableWithAlias>, String> lockQueryFunction;
@@ -102,6 +93,7 @@ public class GraphQLDefinition {
         Pool sqlConnectionPool,
         DatasourceConfig datasourceConfig,
         Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
+        Function<Transaction, SQLExecutorRowSet> transactionSQLExecutorRowSetFunction,
         DebeziumEngineSingleton debeziumEngineSingleton,
         EventFlowableFactory eventFlowableFactory) {
       this.databaseSchema = databaseSchema;
@@ -113,6 +105,7 @@ public class GraphQLDefinition {
         returningStatementEnabled = true;
       }
       this.transactionSQLExecutorFunction = transactionSQLExecutorFunction;
+      this.transactionSQLExecutorRowSetFunction = transactionSQLExecutorRowSetFunction;
       this.debeziumEngineSingleton = debeziumEngineSingleton;
       this.eventFlowableFactory = eventFlowableFactory;
       this.lockQueryFunction = datasourceConfig.getLockQueryFunction();
@@ -194,13 +187,13 @@ public class GraphQLDefinition {
     }
 
     private Single<List<Map<String, Object>>> getResponse(
-        SQLExecutor sqlExecutor, DataFetchingEnvironment env, Transaction transaction) {
+        SQLExecutor sqlExecutor, DataFetchingEnvironment env) {
       ComponentExecutable executionRoot = getExecutionRoot(env);
       return executionRoot.execute(sqlExecutor, true);
     }
 
     private Single<Map<String, Object>> getResponseMutation(
-        DataFetchingEnvironment env, Transaction transaction) {
+        SQLExecutorRowSet sqlExecutorRowSet, DataFetchingEnvironment env) {
       String fieldName = env.getField().getName();
       Object rowsObject = env.getArgument("objects");
       JsonArray rows = rowsObject == null ? null : new JsonArray((List<?>) rowsObject);
@@ -213,7 +206,7 @@ public class GraphQLDefinition {
             .forEach(selectedField -> returningColumns.add(selectedField.getName()));
       }
       return MutationExecution.createResponse(
-          transaction, databaseSchema, fieldName, rows, returningColumns);
+          sqlExecutorRowSet, databaseSchema, fieldName, rows, returningColumns);
     }
 
     /**
@@ -233,10 +226,7 @@ public class GraphQLDefinition {
                       .rxBegin()
                       .flatMap(
                           transaction ->
-                              getResponse(
-                                      transactionSQLExecutorFunction.apply(transaction),
-                                      env,
-                                      transaction)
+                              getResponse(transactionSQLExecutorFunction.apply(transaction), env)
                                   .flatMap(
                                       result ->
                                           transaction.rxCommit().andThen(Single.just(result))))
@@ -269,7 +259,8 @@ public class GraphQLDefinition {
                       .rxBegin()
                       .flatMap(
                           transaction ->
-                              getResponseMutation(env, transaction)
+                              getResponseMutation(
+                                      transactionSQLExecutorRowSetFunction.apply(transaction), env)
                                   .flatMap(
                                       result ->
                                           transaction.rxCommit().andThen(Single.just(result))))
