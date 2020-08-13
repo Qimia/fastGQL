@@ -27,7 +27,7 @@ public interface TransactionTest extends SetupTearDownForEachWithDelay {
         .flatMap(
             rows ->
                 client
-                    .get(getDeploymentPort(), "localhost", "/update")
+                    .get(getDeploymentPort(), "localhost", "/v1/update")
                     .rxSend()
                     .doOnSuccess(
                         response ->
