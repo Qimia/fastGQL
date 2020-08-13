@@ -14,8 +14,10 @@ import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.http.HttpServer;
 import io.vertx.reactivex.core.http.HttpServerResponse;
+import io.vertx.reactivex.ext.auth.jwt.JWTAuth;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
+import io.vertx.reactivex.ext.web.handler.JWTAuthHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
 import javax.inject.Singleton;
 
@@ -68,8 +70,15 @@ public class ServerModule extends AbstractModule {
   }
 
   @Provides
+  @Singleton
+  JWTAuthHandler provideJWTAuthHandler(JWTAuth jwtAuth) {
+    return jwtAuth == null ? null : JWTAuthHandler.create(jwtAuth);
+  }
+
+  @Provides
   Single<Router> provideRouterSingle(
       Vertx vertx,
+      JWTAuthHandler jwtAuthHandler,
       GraphQLHandlerUpdatable graphQLHandlerUpdatable,
       ApolloWSHandlerUpdatable apolloWSHandlerUpdatable,
       GraphiQLHandler graphiQLHandler,
@@ -78,19 +87,22 @@ public class ServerModule extends AbstractModule {
     return graphQLSingle.map(
         graphQL -> {
           Router router = Router.router(vertx);
+          if (jwtAuthHandler != null) {
+            router.route("/v1/*").handler(jwtAuthHandler);
+          }
           if (apolloWSHandlerUpdatable != null) {
             apolloWSHandlerUpdatable.updateGraphQL(graphQL);
-            router.route("/graphql").handler(apolloWSHandlerUpdatable);
+            router.route("/v1/graphql").handler(apolloWSHandlerUpdatable);
           }
           if (graphQLHandlerUpdatable != null) {
             graphQLHandlerUpdatable.updateGraphQL(graphQL);
-            router.route("/graphql").handler(graphQLHandlerUpdatable);
+            router.route("/v1/graphql").handler(graphQLHandlerUpdatable);
           }
           if (graphiQLHandler != null) {
             router.route("/graphiql/*").handler(graphiQLHandler);
           }
           if (updateHandler != null) {
-            router.route("/update").handler(updateHandler);
+            router.route("/v1/update").handler(updateHandler);
           }
           return router;
         });
