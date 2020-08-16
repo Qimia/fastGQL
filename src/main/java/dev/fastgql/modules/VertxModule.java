@@ -5,13 +5,12 @@ import com.google.inject.Provides;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.modules.Annotations.ServerPort;
+import dev.fastgql.security.JWTConfig;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.auth.PubSecKeyOptions;
-import io.vertx.ext.auth.jwt.JWTAuthOptions;
 import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.ext.auth.jwt.JWTAuth;
 
 public class VertxModule extends AbstractModule {
+
   private final Vertx vertx;
   private final JsonObject config;
 
@@ -36,14 +35,8 @@ public class VertxModule extends AbstractModule {
   }
 
   @Provides
-  JWTAuth provideJWTAuth() {
-    if (config.containsKey("auth")) {
-      JsonObject optionsJson = config.getJsonObject("auth");
-      JWTAuthOptions jwtAuthOptions =
-          new JWTAuthOptions().addPubSecKey(new PubSecKeyOptions(optionsJson));
-      return JWTAuth.create(vertx, jwtAuthOptions);
-    }
-    return null;
+  JWTConfig provideJWTConfig() {
+    return JWTConfig.createWithJsonConfig(config.getJsonObject("auth"));
   }
 
   @Provides

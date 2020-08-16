@@ -6,6 +6,7 @@ import dev.fastgql.modules.Annotations.ServerPort;
 import dev.fastgql.modules.Annotations.UpdateHandler;
 import dev.fastgql.router.ApolloWSHandlerUpdatable;
 import dev.fastgql.router.GraphQLHandlerUpdatable;
+import dev.fastgql.security.JWTConfig;
 import graphql.GraphQL;
 import io.reactivex.Single;
 import io.vertx.core.Handler;
@@ -14,7 +15,6 @@ import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.http.HttpServer;
 import io.vertx.reactivex.core.http.HttpServerResponse;
-import io.vertx.reactivex.ext.auth.jwt.JWTAuth;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.handler.JWTAuthHandler;
@@ -72,8 +72,8 @@ public class ServerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  JWTAuthHandler provideJWTAuthHandler(@Nullable JWTAuth jwtAuth) {
-    return jwtAuth == null ? null : JWTAuthHandler.create(jwtAuth);
+  JWTAuthHandler provideJWTAuthHandler(Vertx vertx, JWTConfig jwtConfig) {
+    return jwtConfig.getJWTAuthHandler(vertx);
   }
 
   @Provides
