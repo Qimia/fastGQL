@@ -1,0 +1,34 @@
+{
+  "data": {
+    "addresses": [
+      {
+        "customers_on_address": [
+          {
+            "address_ref": {
+              "street_ref": {
+                "id": 0
+              }
+            },
+            "street_ref": {
+              "id": 0
+            }
+          }
+        ]
+      },
+      {
+        "customers_on_address": [
+          {
+            "address_ref": {
+              "street_ref": {
+                "id": 1
+              }
+            },
+            "street_ref": {
+              "id": 1
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
