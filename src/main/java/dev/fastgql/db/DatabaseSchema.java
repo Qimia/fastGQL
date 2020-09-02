@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Data structure defining database schema, including tables, keys, key types and foreign key
@@ -121,7 +123,10 @@ public class DatabaseSchema {
       if (referencing != null) {
         addKeyDefinition(
             new KeyDefinition(
-                referencing, keyDefinition.getKeyType(), null, Set.of(qualifiedName)));
+                referencing,
+                keyDefinition.getKeyType(),
+                null,
+                Stream.of(qualifiedName).collect(Collectors.toSet())));
       }
     }
   }
