@@ -1,27 +1,24 @@
 package dev.fastgql.newsql;
 
-import dev.fastgql.dsl.PermissionsSpec;
+import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.graphql.GraphQLDatabaseSchema;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.util.Map;
 
-public class SQLExecutionConstants {
+public class ExecutionConstants {
   private final Transaction transaction;
   private final GraphQLDatabaseSchema graphQLDatabaseSchema;
-  private final PermissionsSpec permissionsSpec;
-  private final String role;
+  private final RoleSpec roleSpec;
   private final Map<String, Object> jwtParams;
 
-  public SQLExecutionConstants(
+  public ExecutionConstants(
       Transaction transaction,
       GraphQLDatabaseSchema graphQLDatabaseSchema,
-      PermissionsSpec permissionsSpec,
-      String role,
+      RoleSpec roleSpec,
       Map<String, Object> jwtParams) {
     this.transaction = transaction;
     this.graphQLDatabaseSchema = graphQLDatabaseSchema;
-    this.permissionsSpec = permissionsSpec;
-    this.role = role;
+    this.roleSpec = roleSpec;
     this.jwtParams = jwtParams;
   }
 
@@ -33,12 +30,8 @@ public class SQLExecutionConstants {
     return graphQLDatabaseSchema;
   }
 
-  public PermissionsSpec getPermissionsSpec() {
-    return permissionsSpec;
-  }
-
-  public String getRole() {
-    return role;
+  public RoleSpec getRoleSpec() {
+    return roleSpec;
   }
 
   public Map<String, Object> getJwtParams() {

@@ -1,7 +1,6 @@
 package dev.fastgql.dsl
 
 import java.util.function.Function
-import java.util.stream.Collectors
 
 class OpSpec {
 
@@ -79,7 +78,7 @@ class OpSpec {
         }
 
         def handleLogicalConnective(LogicalConnective logicalConnective, String column) {
-            Condition newCondition = new Condition()
+            Condition newCondition = new Condition(condition.getPathInQuery())
             newCondition.setColumn(column)
             newCondition.setConnective(logicalConnective)
             condition.getNext().add(newCondition)
@@ -87,7 +86,7 @@ class OpSpec {
         }
 
         def handleLogicalConnective(LogicalConnective logicalConnective, Closure cl) {
-            Condition newCondition = new Condition()
+            Condition newCondition = new Condition(condition.getPathInQuery())
             newCondition.setConnective(logicalConnective)
             condition.getNext().add(newCondition)
             def checkSpec = new CheckSpec(newCondition)
@@ -131,17 +130,20 @@ class OpSpec {
     final List<Preset> presets
     final List<String> allowed
     final Condition condition
+    final String tableName
 
-    OpSpec() {
+    OpSpec(String tableName) {
         this.presets = new ArrayList<>()
         this.allowed = new ArrayList<>()
-        this.condition = new Condition()
+        this.condition = new Condition(tableName)
+        this.tableName = tableName
     }
 
     OpSpec(List<Preset> presets, List<String> allowed, Condition condition) {
         this.presets = presets
         this.allowed = allowed
         this.condition = condition
+        this.tableName = null
     }
 
     def allow(String... columns) {
@@ -149,7 +151,7 @@ class OpSpec {
     }
 
     def check(String column) {
-        Condition newCondition = new Condition()
+        Condition newCondition = new Condition(tableName)
         if (condition.getNext().size() > 0) {
             newCondition.setConnective(LogicalConnective.and)
         }
@@ -159,7 +161,7 @@ class OpSpec {
     }
 
     def check(@DelegatesTo(strategy=Closure.DELEGATE_ONLY, value=CheckSpec) Closure cl) {
-        Condition newCondition = new Condition()
+        Condition newCondition = new Condition(tableName)
         if (condition.getNext().size() > 0) {
             newCondition.setConnective(LogicalConnective.and)
         }

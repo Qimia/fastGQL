@@ -15,8 +15,8 @@ import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.dsl.PermissionsSpec;
 import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.events.EventFlowableFactory;
-import dev.fastgql.newsql.SQLExecutionConstants;
-import dev.fastgql.newsql.SQLExecutionFunctions;
+import dev.fastgql.newsql.ExecutionConstants;
+import dev.fastgql.newsql.ExecutionFunctions;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.Component;
 import dev.fastgql.sql.ComponentExecutable;
@@ -87,8 +87,6 @@ public class GraphQLDefinition {
     private final EventFlowableFactory eventFlowableFactory;
     private final Function<Set<TableWithAlias>, String> lockQueryFunction;
     private final String unlockQuery;
-    // private final Supplier<PermissionsSpec> permissionsSpecSupplier =
-    // Config.permissions(Paths.get("src/main/resources/permissions.groovy"));
     private final PermissionsSpec permissionsSpec = Config.permissions();
     private boolean queryEnabled = false;
     private boolean mutationEnabled = false;
@@ -241,15 +239,14 @@ public class GraphQLDefinition {
                           transaction -> {
                             Field field = env.getField();
                             String tableName = field.getName();
-                            SQLExecutionConstants sqlExecutionConstants =
-                                new SQLExecutionConstants(
+                            ExecutionConstants executionConstants =
+                                new ExecutionConstants(
                                     transaction,
                                     graphQLDatabaseSchema,
-                                    permissionsSpec,
-                                    "default",
+                                    permissionsSpec.getRole("default"),
                                     Map.of("id", 70));
-                            return SQLExecutionFunctions.getRootResponse(
-                                    tableName, field, sqlExecutionConstants, null)
+                            return ExecutionFunctions.getRootResponse(
+                                    tableName, field, executionConstants, null)
                                 .toList()
                                 .flatMap(
                                     result -> transaction.rxCommit().andThen(Single.just(result)));

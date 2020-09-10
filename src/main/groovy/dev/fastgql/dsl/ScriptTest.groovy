@@ -6,8 +6,8 @@ class ScriptTest {
 
     static void main(String[] args) {
         def result = PermissionsConfig.create().permissions {
-            table('test') {
-                role('default') {
+            role('default') {
+                table('test') {
                     ops([select]) {
                         //allow 'id', 'test'
                         //preset 'id' to { it.id }
@@ -18,13 +18,14 @@ class ScriptTest {
                         //check 'id' eq 4 and 'id3' eq 2
                         //check { check 'id' eq 5 or 'id' eq 6 }
                         //check 'id2' eq { it.id }
-                        //check 'id' eq 5 or { check 'id' eq 6 or 'id' eq 7 }
+                        check 'id' eq 5 or { check 'id' eq 6 or 'id' eq 7 }
 
                     }
                 }
             }
         }
-        Condition condition = result.getTable('test').getRole('default').getOp(RoleSpec.OpType.select).getCondition()
-        println OpSpecUtils.conditionToSQL(condition, 't0', Map.of())
+        Condition condition = result.getRole('default').getTable('test').getOp(OpType.select).getCondition()
+        println condition
+        println OpSpecUtils.conditionToSQL(condition, Map.of("test", "t0"), Map.of())
     }
 }

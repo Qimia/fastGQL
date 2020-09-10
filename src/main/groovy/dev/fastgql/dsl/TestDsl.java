@@ -13,7 +13,7 @@ public class TestDsl {
     GroovyShell shell = new GroovyShell(new Binding(), config);
     PermissionsSpec result =
         (PermissionsSpec) shell.evaluate(new File("src/main/resources/permissions.groovy"));
-    OpSpec op = result.getTable("test").getRole("default").getOp(RoleSpec.OpType.select);
+    OpSpec op = result.getRole("default").getTable("customers").getOp(OpType.select);
     System.out.println(op);
   }
 }

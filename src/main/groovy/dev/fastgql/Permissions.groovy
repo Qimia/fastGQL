@@ -6,17 +6,24 @@ import dev.fastgql.dsl.PermissionsSpec
 class Permissions {
     static PermissionsSpec permissions() {
         PermissionsConfig.create().permissions {
-            table ('customers') {
-                role ('default') {
+            role ('default') {
+                table ('customers') {
                     ops ([select]) {
-                        check 'id' gt 1
+                        check 'id' gt 1 and {
+                            check 'id' lt 200 and {
+                                check 'id' gt 0 or 'id' lt 200
+                            }
+                        }
                     }
                 }
-            }
-            table ('addresses') {
-                role ('default') {
+                table ('addresses') {
                     ops ([select]) {
-                        check 'id' gt 90
+                        check 'id' gt { it.id }
+                    }
+                }
+                table ('phones') {
+                    ops ([select]) {
+                        check 'id' gt { it.id / 2 }
                     }
                 }
             }

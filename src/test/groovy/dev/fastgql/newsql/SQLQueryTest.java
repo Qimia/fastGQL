@@ -17,7 +17,7 @@ public class SQLQueryTest {
       // OpSpec.Check check = opSpec.new Check("id");
       // OpSpec.Condition condition = opSpec.new Condition(OpSpec.RelationalOperator.eq, 101);
       // check.setCondition(condition);
-      SQLQuery.Table table = new SQLQuery.Table("test", "t0", Map.of());
+      Query.Table table = new Query.Table("test", "t0", Map.of());
       table.addChecks(checks);
       System.out.println(table.sqlCheckString());
     }

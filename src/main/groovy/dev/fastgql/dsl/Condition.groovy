@@ -8,11 +8,23 @@ class Condition {
     RelationalOperator operator
     Object value
     LogicalConnective connective
+    final String pathInQuery
     final List<Condition> next = new ArrayList<>()
+
+    Condition(String pathInQuery) {
+        this.pathInQuery = pathInQuery
+    }
+
+    Condition(String pathInQuery, String column, RelationalOperator operator, Object value) {
+        this.pathInQuery = pathInQuery
+        this.column = column
+        this.operator = operator
+        this.value = value
+    }
 
     @Override
     String toString() {
-        "Condition<column: ${column}, operator: ${operator}, value: ${value}, connective: ${connective}, next: ${next}>"
+        "Condition<pathInQuery: ${pathInQuery}, column: ${column}, operator: ${operator}, value: ${value}, connective: ${connective}, next: ${next}>"
     }
 
     String describe() {

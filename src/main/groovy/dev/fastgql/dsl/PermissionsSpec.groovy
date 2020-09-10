@@ -2,22 +2,22 @@ package dev.fastgql.dsl
 
 class PermissionsSpec {
 
-    final Map<String, TableSpec> tables = new HashMap<>()
+    final Map<String, RoleSpec> roles = new HashMap<>()
 
-    def table(String name, @DelegatesTo(strategy=Closure.DELEGATE_ONLY, value=TableSpec) Closure cl) {
-        def tableSpec = new TableSpec()
-        def code = cl.rehydrate(tableSpec, this, this)
+    def role(String role, @DelegatesTo(strategy=Closure.DELEGATE_ONLY, value=RoleSpec) Closure cl) {
+        def roleSpec = new RoleSpec()
+        def code = cl.rehydrate(roleSpec, this, this)
         code.resolveStrategy = Closure.DELEGATE_ONLY
         code()
-        tables.put(name, tableSpec)
+        roles.put(role, roleSpec)
     }
 
-    TableSpec getTable(String name) {
-        return tables.get(name)
+    RoleSpec getRole(String name) {
+        return roles.get(name)
     }
 
     @Override
     String toString() {
-        "PermissionsSpec<tables: ${tables.toString()}>"
+        "PermissionsSpec<roles: ${roles}>"
     }
 }

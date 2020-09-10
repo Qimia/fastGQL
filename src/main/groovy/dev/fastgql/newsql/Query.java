@@ -1,50 +1,10 @@
 package dev.fastgql.newsql;
 
-import dev.fastgql.dsl.OpSpec;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-public class SQLQuery {
-  static class Table {
-    private final String tableName;
-    private final String tableAlias;
-    private final String where;
-
-    Table(
-        String tableName,
-        String tableAlias,
-        List<OpSpec> opSpecList,
-        Map<String, Object> jwtParams) {
-      this.tableName = tableName;
-      this.tableAlias = tableAlias;
-      this.where =
-          opSpecList.stream()
-              .map(
-                  opSpec ->
-                      OpSpecUtils.conditionToSQL(opSpec.getCondition(), tableAlias, jwtParams))
-              .filter(sqlString -> !sqlString.isEmpty())
-              .collect(Collectors.joining(" AND "));
-    }
-
-    public String getTableName() {
-      return tableName;
-    }
-
-    private String getTableAlias() {
-      return tableAlias;
-    }
-
-    private String getWhere() {
-      return where;
-    }
-
-    String sqlString() {
-      return String.format("%s %s", tableName, tableAlias);
-    }
-  }
-
+public class Query {
   static class SelectColumn {
 
     private final String tableAlias;
@@ -90,33 +50,21 @@ public class SQLQuery {
     }
   }
 
-  private int tableAliasCount = 0;
   private int resultAliasCount = 0;
   private final Table table;
   private final List<SelectColumn> selectColumns;
   private final List<LeftJoin> leftJoins;
   private final List<Table> queriedTables = new ArrayList<>();
-  private final Map<String, Object> jwtParams;
 
-  public SQLQuery(String tableName, List<OpSpec> opSpecList, Map<String, Object> jwtParams) {
-    this.table = new Table(tableName, getNextTableAlias(), opSpecList, jwtParams);
+  public Query(Table table) {
+    this.table = table;
     this.selectColumns = new ArrayList<>();
     this.leftJoins = new ArrayList<>();
     this.queriedTables.add(this.table);
-    this.jwtParams = jwtParams;
-  }
-
-  public Table createNewTable(String tableName, List<OpSpec> opSpecList) {
-    return new Table(tableName, getNextTableAlias(), opSpecList, jwtParams);
   }
 
   public Table getTable() {
     return table;
-  }
-
-  private String getNextTableAlias() {
-    tableAliasCount++;
-    return String.format("t%d", tableAliasCount);
   }
 
   private String getNextResultAlias() {

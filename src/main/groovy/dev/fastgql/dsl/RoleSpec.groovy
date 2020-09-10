@@ -2,32 +2,22 @@ package dev.fastgql.dsl
 
 class RoleSpec {
 
-    enum OpType {
-        select,
-        insert,
-        delete
-    }
+    final Map<String, TableSpec> tables = new HashMap<>()
 
-    final OpType insert = OpType.insert
-    final OpType select = OpType.select
-    final OpType delete = OpType.delete
-
-    final Map<OpType, OpSpec> opSpecs = new HashMap<>()
-
-    def ops(List<OpType> ops, @DelegatesTo(strategy=Closure.DELEGATE_ONLY, value=OpSpec) Closure cl) {
-        def opSpec = new OpSpec()
-        def code = cl.rehydrate(opSpec, this, this)
+    def table(String name, @DelegatesTo(strategy=Closure.DELEGATE_ONLY, value=TableSpec) Closure cl) {
+        def tableSpec = new TableSpec(name)
+        def code = cl.rehydrate(tableSpec, this, this)
         code.resolveStrategy = Closure.DELEGATE_ONLY
         code()
-        ops.forEach { opSpecs.put(it, opSpec) }
+        tables.put(name, tableSpec)
     }
 
-    OpSpec getOp(OpType opType) {
-        return opSpecs.get(opType)
+    TableSpec getTable(String name) {
+        return tables.get(name)
     }
 
     @Override
     String toString() {
-        "RoleSpec<opSpecs: ${opSpecs}"
+        "RoleSpec<tables: ${tables}"
     }
 }
