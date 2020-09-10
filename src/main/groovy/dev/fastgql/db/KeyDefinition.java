@@ -21,7 +21,7 @@ public class KeyDefinition {
   private final QualifiedName qualifiedName;
   private final KeyType keyType;
   private QualifiedName referencing;
-  private Set<QualifiedName> referencedBy;
+  private final Set<QualifiedName> referencedBy;
 
   /**
    * Define table key.

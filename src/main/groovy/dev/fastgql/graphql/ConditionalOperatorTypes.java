@@ -28,22 +28,20 @@ public class ConditionalOperatorTypes {
           GraphQLBoolean, comparisonExpBuilder("Boolean", GraphQLBoolean).build(),
           GraphQLFloat, comparisonExpBuilder("Float", GraphQLFloat).build(),
           GraphQLString, stringComparisonExpBuilder().build());
-  private static Map<String, String> operatorNameToValueMap = new HashMap<>();
+  private static final Map<String, String> operatorNameToValueMap;
 
-  public static Map<String, String> getOperatorNameToValueMap() {
-    if (operatorNameToValueMap.isEmpty()) {
-      createOperatorNameToValueMap();
-    }
-    return operatorNameToValueMap;
-  }
-
-  private static void createOperatorNameToValueMap() {
+  static {
+    operatorNameToValueMap = new HashMap<>();
     for (GenericOps op : GenericOps.values()) {
       operatorNameToValueMap.put(op.name, op.value);
     }
     for (TextOps op : TextOps.values()) {
       operatorNameToValueMap.put(op.name, op.value);
     }
+  }
+
+  public static Map<String, String> getOperatorNameToValueMap() {
+    return operatorNameToValueMap;
   }
 
   private static Builder comparisonExpBuilder(String prefix, GraphQLScalarType type) {
@@ -104,9 +102,9 @@ public class ConditionalOperatorTypes {
     _lte("lte", "<=", "less than or equal"),
     _is_null("_is_null", "IS NULL", "is null");
 
-    public final String name;
-    public final String value;
-    public final String description;
+    private final String name;
+    private final String value;
+    private final String description;
 
     GenericOps(String name, String value, String description) {
       this.name = name;
@@ -123,9 +121,9 @@ public class ConditionalOperatorTypes {
     _similar("_similar", "SIMILAR TO", "similar to"),
     _nsimilar("_nsimilar", "NOT SIMILAR TO", "not similar to");
 
-    public final String name;
-    public final String value;
-    public final String description;
+    private final String name;
+    private final String value;
+    private final String description;
 
     TextOps(String name, String value, String description) {
       this.name = name;

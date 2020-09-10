@@ -22,10 +22,10 @@ public class SQLQuery {
   private final String table;
   private final String alias;
   private final SQLArguments args;
-  private Set<String> keys;
-  private List<String> joins;
-  private List<String> whereConditions;
-  private Map<String, String> fieldToAlias;
+  private final Set<String> keys;
+  private final List<String> joins;
+  private final List<String> whereConditions;
+  private final Map<String, String> fieldToAlias;
 
   /**
    * Construct SQLQuery with table and its alias.
@@ -75,13 +75,6 @@ public class SQLQuery {
 
   public void addWhereConditions(String whereConditional) {
     whereConditions.add(whereConditional);
-  }
-
-  /** Reset query to initial state. */
-  public void reset() {
-    keys = new HashSet<>();
-    joins = new ArrayList<>();
-    whereConditions = new ArrayList<>();
   }
 
   /**

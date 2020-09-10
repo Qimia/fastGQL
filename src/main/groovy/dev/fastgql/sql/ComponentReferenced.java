@@ -10,6 +10,7 @@ import dev.fastgql.common.TableWithAlias;
 import io.reactivex.Single;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -69,11 +70,12 @@ public class ComponentReferenced extends ExecutionRoot implements Component {
     if (keyValue == null) {
       return Single.just(Map.of());
     }
-    modifyQuery(
+    Consumer<SQLQuery> sqlQueryModifier =
         query ->
             query.addWhereConditions(
                 String.format(
-                    "(%s.%s = %s)", foreignTableAlias, foreignKeyName, keyValue.toString())));
-    return execute(sqlExecutor, false).map(response -> Map.of(fieldName, response));
+                    "(%s.%s = %s)", foreignTableAlias, foreignKeyName, keyValue.toString()));
+    return execute(sqlExecutor, false, sqlQueryModifier)
+        .map(response -> Map.of(fieldName, response));
   }
 }

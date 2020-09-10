@@ -31,7 +31,7 @@ public class ExecutionRoot implements ComponentExecutable {
   private final Logger log = LoggerFactory.getLogger(ExecutionRoot.class);
   private final String tableName;
   private final String tableAlias;
-  private final SQLQuery query;
+  private final SQLArguments sqlArguments;
   private final List<Component> components;
   private final Set<TableWithAlias> queriedTables = new HashSet<>();
   private final Function<Set<TableWithAlias>, String> lockQueryFunction;
@@ -52,19 +52,27 @@ public class ExecutionRoot implements ComponentExecutable {
       String unlockQuery) {
     this.tableName = tableName;
     this.tableAlias = tableAlias;
-    this.query = new SQLQuery(tableName, tableAlias, args);
+    this.sqlArguments = args;
     this.components = new ArrayList<>();
     this.queriedTables.add(new TableWithAlias(tableName, tableAlias));
     this.lockQueryFunction = lockQueryFunction;
     this.unlockQuery = unlockQuery;
   }
 
+  public String createQueryString(Consumer<SQLQuery> sqlQueryModifier) {
+    SQLQuery sqlQuery = new SQLQuery(tableName, tableAlias, sqlArguments);
+    components.forEach(component -> component.updateQuery(sqlQuery));
+    if (sqlQueryModifier != null) {
+      sqlQueryModifier.accept(sqlQuery);
+    }
+    return sqlQuery.build();
+  }
+
   @Override
-  public Single<List<Map<String, Object>>> execute(SQLExecutor sqlExecutor, boolean lockTables) {
-    components.forEach(component -> component.updateQuery(query));
-    String queryString = query.build();
+  public Single<List<Map<String, Object>>> execute(
+      SQLExecutor sqlExecutor, boolean lockTables, Consumer<SQLQuery> sqlQueryModifier) {
+    String queryString = createQueryString(sqlQueryModifier);
     log.debug("executing query: {}", queryString);
-    query.reset();
 
     Single<List<Map<String, Object>>> querySingle =
         sqlExecutor
@@ -128,9 +136,5 @@ public class ExecutionRoot implements ComponentExecutable {
   @Override
   public Set<TableWithAlias> getQueriedTables() {
     return queriedTables;
-  }
-
-  protected void modifyQuery(Consumer<SQLQuery> modifier) {
-    modifier.accept(query);
   }
 }

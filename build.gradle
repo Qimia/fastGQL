@@ -1,4 +1,5 @@
 plugins {
+    id 'groovy'
     id 'java'
     id 'checkstyle'
     id 'io.vertx.vertx-plugin' version '1.0.2'
@@ -25,7 +26,7 @@ checkstyle {
 
 spotless {
     java {
-        target 'src/**/java/dev/fastgql/**/*.java'
+        target 'src/**/**/dev/fastgql/**/*.java'
         googleJavaFormat("1.8")
     }
 }
@@ -37,6 +38,7 @@ vertx {
 }
 
 dependencies {
+    implementation 'org.codehaus.groovy:groovy-all:3.0.5'
     implementation 'io.vertx:vertx-core'
     implementation 'io.vertx:vertx-web'
     implementation 'io.vertx:vertx-web-graphql'

@@ -9,6 +9,7 @@ package dev.fastgql.sql;
 import io.reactivex.Single;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * This interface is used by top-level component which executes SQL query.
@@ -22,5 +23,6 @@ public interface ComponentExecutable extends ComponentParent {
    *
    * @return {@link Single} which emits list of tables
    */
-  Single<List<Map<String, Object>>> execute(SQLExecutor sqlExecutor, boolean lockTables);
+  Single<List<Map<String, Object>>> execute(
+      SQLExecutor sqlExecutor, boolean lockTables, Consumer<SQLQuery> sqlQueryModifier);
 }

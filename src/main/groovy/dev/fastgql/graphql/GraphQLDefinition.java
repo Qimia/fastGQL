@@ -7,12 +7,16 @@
 package dev.fastgql.graphql;
 
 import com.google.inject.assistedinject.Assisted;
+import dev.fastgql.Config;
 import dev.fastgql.common.TableWithAlias;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
+import dev.fastgql.dsl.PermissionsSpec;
 import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.events.EventFlowableFactory;
+import dev.fastgql.newsql.SQLExecutionConstants;
+import dev.fastgql.newsql.SQLExecutionFunctions;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.Component;
 import dev.fastgql.sql.ComponentExecutable;
@@ -25,6 +29,7 @@ import dev.fastgql.sql.MutationExecution;
 import dev.fastgql.sql.SQLArguments;
 import dev.fastgql.sql.SQLExecutor;
 import graphql.GraphQL;
+import graphql.language.Field;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.DataFetchingFieldSelectionSet;
@@ -41,10 +46,7 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import javax.inject.Inject;
 import org.slf4j.Logger;
@@ -85,6 +87,9 @@ public class GraphQLDefinition {
     private final EventFlowableFactory eventFlowableFactory;
     private final Function<Set<TableWithAlias>, String> lockQueryFunction;
     private final String unlockQuery;
+    // private final Supplier<PermissionsSpec> permissionsSpecSupplier =
+    // Config.permissions(Paths.get("src/main/resources/permissions.groovy"));
+    private final PermissionsSpec permissionsSpec = Config.permissions();
     private boolean queryEnabled = false;
     private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
@@ -103,7 +108,8 @@ public class GraphQLDefinition {
         DatasourceConfig datasourceConfig,
         Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
         DebeziumEngineSingleton debeziumEngineSingleton,
-        EventFlowableFactory eventFlowableFactory) {
+        EventFlowableFactory eventFlowableFactory)
+        throws IOException {
       this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
       this.sqlConnectionPool = sqlConnectionPool;
@@ -196,7 +202,7 @@ public class GraphQLDefinition {
     private Single<List<Map<String, Object>>> getResponse(
         SQLExecutor sqlExecutor, DataFetchingEnvironment env, Transaction transaction) {
       ComponentExecutable executionRoot = getExecutionRoot(env);
-      return executionRoot.execute(sqlExecutor, true);
+      return executionRoot.execute(sqlExecutor, true, null);
     }
 
     private Single<Map<String, Object>> getResponseMutation(
@@ -232,15 +238,39 @@ public class GraphQLDefinition {
                   sqlConnectionPool
                       .rxBegin()
                       .flatMap(
-                          transaction ->
-                              getResponse(
-                                      transactionSQLExecutorFunction.apply(transaction),
-                                      env,
-                                      transaction)
-                                  .flatMap(
-                                      result ->
-                                          transaction.rxCommit().andThen(Single.just(result))))
+                          transaction -> {
+                            Field field = env.getField();
+                            String tableName = field.getName();
+                            SQLExecutionConstants sqlExecutionConstants =
+                                new SQLExecutionConstants(
+                                    transaction,
+                                    graphQLDatabaseSchema,
+                                    permissionsSpec,
+                                    "default",
+                                    Map.of("id", 70));
+                            return SQLExecutionFunctions.getRootResponse(
+                                    tableName, field, sqlExecutionConstants, null)
+                                .toList()
+                                .flatMap(
+                                    result -> transaction.rxCommit().andThen(Single.just(result)));
+                          })
                       .subscribe(promise::complete, promise::fail));
+
+      // VertxDataFetcher<List<Map<String, Object>>> queryDataFetcher =
+      //    new VertxDataFetcher<>(
+      //        (env, promise) ->
+      //            sqlConnectionPool
+      //                .rxBegin()
+      //                .flatMap(
+      //                    transaction ->
+      //                        getResponse(
+      //                                transactionSQLExecutorFunction.apply(transaction),
+      //                                env,
+      //                                transaction)
+      //                            .flatMap(
+      //                                result ->
+      //                                    transaction.rxCommit().andThen(Single.just(result))))
+      //                .subscribe(promise::complete, promise::fail));
       databaseSchema
           .getTableNames()
           .forEach(
@@ -321,7 +351,7 @@ public class GraphQLDefinition {
                 .flatMap(
                     transaction ->
                         executionRoot
-                            .execute(transactionSQLExecutorFunction.apply(transaction), true)
+                            .execute(transactionSQLExecutorFunction.apply(transaction), true, null)
                             .toFlowable()
                             .flatMap(
                                 result -> transaction.rxCommit().andThen(Flowable.just(result))));

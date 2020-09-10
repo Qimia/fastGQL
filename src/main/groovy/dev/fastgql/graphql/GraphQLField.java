@@ -113,9 +113,11 @@ public class GraphQLField {
 
   @Override
   public String toString() {
-    return "GraphQLNodeDefinition{"
+    return "GraphQLField{"
         + "qualifiedName="
         + qualifiedName
+        + ", referenceType="
+        + referenceType
         + ", graphQLType="
         + graphQLType
         + ", foreignName="

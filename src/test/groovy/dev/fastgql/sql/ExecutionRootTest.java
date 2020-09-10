@@ -35,7 +35,7 @@ public class ExecutionRootTest {
     executionRoot.addComponent(new ComponentRow("first_name"));
 
     executionRoot
-        .execute(query -> Single.just(forged), false)
+        .execute(query -> Single.just(forged), false, null)
         .test()
         .assertNoErrors()
         .assertValue(expected);
