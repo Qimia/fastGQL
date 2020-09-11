@@ -1,9 +1,7 @@
 package dev.fastgql.newsql;
 
-import dev.fastgql.dsl.OpSpec;
 import dev.fastgql.dsl.OpType;
 import dev.fastgql.dsl.RoleSpec;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -13,33 +11,42 @@ public class Table {
   private final String tableName;
   private final String tableAlias;
   private final String where;
+  private final String orderBy;
+  private final String limit;
+  private final String offset;
   private final List<String> allowedColumns;
 
   Table(
       String tableName,
       String tableAlias,
       RoleSpec roleSpec,
-      OpSpec opSpecFromArguments,
-      OpSpec opSpecExtra,
+      Arguments arguments,
+      Condition extraCondition,
       Map<String, Object> jwtParams,
       Map<String, String> pathInQueryToAlias) {
     this.tableName = tableName;
     this.tableAlias = tableAlias;
     this.where =
-        Stream.of(
-                OpSpecUtils.conditionToSQL(
-                    roleSpec.getTable(tableName).getOp(OpType.select).getCondition(),
-                    tableAlias,
-                    jwtParams),
-                opSpecFromArguments == null
-                    ? ""
-                    : OpSpecUtils.conditionToSQL(
-                        opSpecFromArguments.getCondition(), pathInQueryToAlias, jwtParams),
-                opSpecExtra == null
-                    ? ""
-                    : OpSpecUtils.conditionToSQL(opSpecExtra.getCondition(), tableAlias, jwtParams))
-            .filter(sqlString -> !sqlString.isEmpty())
-            .collect(Collectors.joining(" AND "));
+      Stream.of(
+        ConditionUtils.conditionToSQL(
+          roleSpec.getTable(tableName).getOp(OpType.select).getCondition(),
+          tableAlias,
+          jwtParams),
+        arguments.getCondition() == null
+          ? ""
+          : ConditionUtils.conditionToSQL(
+          arguments.getCondition(), pathInQueryToAlias, jwtParams),
+        extraCondition == null
+          ? ""
+          : ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams))
+        .filter(sqlString -> !sqlString.isEmpty())
+        .collect(Collectors.joining(" AND "));
+    this.orderBy =
+      arguments.getOrderByList() == null
+        ? ""
+        : OrderByUtils.orderByToSQL(arguments.getOrderByList(), pathInQueryToAlias);
+    this.limit = arguments.getLimit() == null ? "" : arguments.getLimit().toString();
+    this.offset = arguments.getOffset() == null ? "" : arguments.getOffset().toString();
     this.allowedColumns = roleSpec.getTable(tableName).getOp(OpType.select).getAllowed();
   }
 
@@ -53,6 +60,18 @@ public class Table {
 
   public String getWhere() {
     return where;
+  }
+
+  public String getOrderBy() {
+    return orderBy;
+  }
+
+  public String getLimit() {
+    return limit;
+  }
+
+  public String getOffset() {
+    return offset;
   }
 
   public boolean isColumnAllowed(String column) {

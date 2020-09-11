@@ -1,7 +1,6 @@
 package dev.fastgql.newsql;
 
 import dev.fastgql.common.ReferenceType;
-import dev.fastgql.dsl.OpSpec;
 import dev.fastgql.graphql.GraphQLField;
 import graphql.language.Field;
 import io.reactivex.Observable;
@@ -20,7 +19,9 @@ public class ExecutionFunctions {
       Table table, GraphQLField graphQLField, Query query) {
     String columnName = graphQLField.getQualifiedName().getKeyName();
     if (!table.isColumnAllowed(columnName)) {
-      throw new RuntimeException(String.format("No permission to access column %s of table %s", columnName, table.getTableName()));
+      throw new RuntimeException(
+          String.format(
+              "No permission to access column %s of table %s", columnName, table.getTableName()));
     }
     Query.SelectColumn selectColumn = query.addSelectColumn(table, columnName);
     return row -> {
@@ -48,7 +49,7 @@ public class ExecutionFunctions {
             foreignTableName,
             pathInQueryToAlias.get(newPathInQuery),
             executionConstants.getRoleSpec(),
-            null,
+            new Arguments(),
             null,
             executionConstants.getJwtParams(),
             pathInQueryToAlias);
@@ -85,7 +86,7 @@ public class ExecutionFunctions {
                   foreignTableName,
                   field,
                   executionConstants,
-                  OpSpecUtils.checkColumnIsEqValue(foreignColumnName, value))
+                  ConditionUtils.checkColumnIsEqValue(foreignColumnName, value))
               .toList()
               .map(result -> Map.of(field.getName(), result));
     };
@@ -179,7 +180,10 @@ public class ExecutionFunctions {
   }
 
   public static Observable<Map<String, Object>> getRootResponse(
-      String tableName, Field field, ExecutionConstants executionConstants, OpSpec opSpecExtra) {
+      String tableName,
+      Field field,
+      ExecutionConstants executionConstants,
+      Condition extraCondition) {
     Map<String, String> pathInQueryToAlias =
         createPathInQueryToAlias(null, "t", tableName, field, executionConstants);
 
@@ -188,8 +192,8 @@ public class ExecutionFunctions {
             tableName,
             pathInQueryToAlias.get(field.getName()),
             executionConstants.getRoleSpec(),
-            OpSpecUtils.argumentsToOpSpec(field.getArguments(), tableName),
-            opSpecExtra,
+            new Arguments(field.getArguments(), tableName),
+            extraCondition,
             executionConstants.getJwtParams(),
             pathInQueryToAlias);
 

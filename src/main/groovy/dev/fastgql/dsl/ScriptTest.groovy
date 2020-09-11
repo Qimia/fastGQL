@@ -1,6 +1,8 @@
 package dev.fastgql.dsl
 
-import dev.fastgql.newsql.OpSpecUtils
+import dev.fastgql.newsql.Condition
+import dev.fastgql.newsql.ConditionUtils
+
 
 class ScriptTest {
 
@@ -26,6 +28,6 @@ class ScriptTest {
         }
         Condition condition = result.getRole('default').getTable('test').getOp(OpType.select).getCondition()
         println condition
-        println OpSpecUtils.conditionToSQL(condition, Map.of("test", "t0"), Map.of())
+        println ConditionUtils.conditionToSQL(condition, Map.of("test", "t0"), Map.of())
     }
 }

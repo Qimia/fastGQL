@@ -1,22 +1,16 @@
 package dev.fastgql.newsql;
 
-import dev.fastgql.dsl.Condition;
 import dev.fastgql.dsl.LogicalConnective;
-import dev.fastgql.dsl.OpSpec;
 import dev.fastgql.dsl.RelationalOperator;
 import graphql.language.*;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-class OpSpecUtils {
-  static OpSpec checkColumnIsEqValue(String columnName, Object value) {
-    return new OpSpec(
-        List.of(),
-        List.of(),
-        new Condition(null, columnName, RelationalOperator.eq, params -> value));
+class ConditionUtils {
+  static Condition checkColumnIsEqValue(String columnName, Object value) {
+    return new Condition(null, columnName, RelationalOperator.eq, params -> value);
   }
 
   private static String relationalOperatorToString(RelationalOperator relationalOperator) {
@@ -148,8 +142,8 @@ class OpSpecUtils {
   }
 
   private static Condition createArrayCondition(
-      ObjectValue objectValue, LogicalConnective logicalConnective, String pathInQuery) {
-    return objectValue.getChildren().stream()
+      ArrayValue arrayValue, LogicalConnective logicalConnective, String pathInQuery) {
+    return arrayValue.getChildren().stream()
         .map(node -> createConditionFromObjectValue((ObjectValue) node, pathInQuery))
         .reduce(conditionReducer(logicalConnective))
         .orElseThrow();
@@ -159,11 +153,15 @@ class OpSpecUtils {
       ObjectField objectField, String pathInQuery) {
     switch (objectField.getName()) {
       case "_and":
-        return createArrayCondition(
-            (ObjectValue) objectField.getValue(), LogicalConnective.and, pathInQuery);
+        return objectField.getValue() instanceof ArrayValue
+            ? createArrayCondition(
+                (ArrayValue) objectField.getValue(), LogicalConnective.and, pathInQuery)
+            : createConditionFromObjectValue((ObjectValue) objectField.getValue(), pathInQuery);
       case "_or":
-        return createArrayCondition(
-            (ObjectValue) objectField.getValue(), LogicalConnective.or, pathInQuery);
+        return objectField.getValue() instanceof ArrayValue
+            ? createArrayCondition(
+                (ArrayValue) objectField.getValue(), LogicalConnective.or, pathInQuery)
+            : createConditionFromObjectValue((ObjectValue) objectField.getValue(), pathInQuery);
       default:
         return createBasicCondition(
             objectField.getName(), (ObjectValue) objectField.getValue(), pathInQuery);
@@ -178,14 +176,7 @@ class OpSpecUtils {
         .orElseThrow();
   }
 
-  static OpSpec argumentsToOpSpec(List<Argument> arguments, String pathInQuery) {
-    Condition condition = new Condition(null);
-    for (Argument argument : arguments) {
-      if (argument.getName().equals("where")) {
-        condition =
-            createConditionFromObjectValue(((ObjectValue) argument.getValue()), pathInQuery);
-      }
-    }
-    return new OpSpec(List.of(), List.of(), condition);
+  static Condition createCondition(Argument argument, String tableName) {
+    return createConditionFromObjectValue((ObjectValue) argument.getValue(), tableName);
   }
 }

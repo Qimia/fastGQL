@@ -1,5 +1,7 @@
 package dev.fastgql.dsl
 
+import dev.fastgql.newsql.Condition
+
 import java.util.function.Function
 
 class OpSpec {

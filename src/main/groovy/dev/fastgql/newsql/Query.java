@@ -87,20 +87,36 @@ public class Query {
   }
 
   public String createQuery() {
-    String baseString =
+    StringBuilder sqlStringBuilder = new StringBuilder();
+    sqlStringBuilder.append(
         String.format(
             "SELECT %s FROM %s %s",
             selectColumns.stream().map(SelectColumn::sqlString).collect(Collectors.joining(", ")),
             table.sqlString(),
-            leftJoins.stream().map(LeftJoin::sqlString).collect(Collectors.joining(" ")));
+            leftJoins.stream().map(LeftJoin::sqlString).collect(Collectors.joining(" "))));
+
     String whereSqlString =
         queriedTables.stream()
             .map(Table::getWhere)
             .filter(where -> !where.isEmpty())
             .collect(Collectors.joining(" AND "));
+    String orderBySqlString = table.getOrderBy();
+    String limitSqlString = table.getLimit();
+    String offsetSqlString = table.getOffset();
+
     if (!whereSqlString.isEmpty()) {
-      return String.format("%s WHERE %s", baseString, whereSqlString);
+      sqlStringBuilder.append(String.format(" WHERE %s", whereSqlString));
     }
-    return baseString;
+    if (!orderBySqlString.isEmpty()) {
+      sqlStringBuilder.append(String.format(" ORDER BY %s", orderBySqlString));
+    }
+    if (!limitSqlString.isEmpty()) {
+      sqlStringBuilder.append(String.format(" LIMIT %s", limitSqlString));
+    }
+    if (!offsetSqlString.isEmpty()) {
+      sqlStringBuilder.append(String.format(" OFFSET %s", offsetSqlString));
+    }
+
+    return sqlStringBuilder.toString();
   }
 }
