@@ -1,12 +1,11 @@
 package dev.fastgql.dsl
 
 import java.util.function.Function
-import java.util.stream.Collectors
 
 class Condition {
     String column
     RelationalOperator operator
-    Object value
+    Function<Map<String, Object>, Object> function
     LogicalConnective connective
     final String pathInQuery
     final List<Condition> next = new ArrayList<>()
@@ -15,25 +14,15 @@ class Condition {
         this.pathInQuery = pathInQuery
     }
 
-    Condition(String pathInQuery, String column, RelationalOperator operator, Object value) {
+    Condition(String pathInQuery, String column, RelationalOperator operator, Function<Map<String, Object>, Object> function) {
         this.pathInQuery = pathInQuery
         this.column = column
         this.operator = operator
-        this.value = value
+        this.function = function
     }
 
     @Override
     String toString() {
-        "Condition<pathInQuery: ${pathInQuery}, column: ${column}, operator: ${operator}, value: ${value}, connective: ${connective}, next: ${next}>"
-    }
-
-    String describe() {
-        String nextDescription = next.stream().map(condition -> condition.describe()).collect(Collectors.joining(" "))
-        String nextDescriptionWithSpace = nextDescription? " ${nextDescription}":""
-        String connectiveDescription = connective? "${connective} ":""
-        String valueDescription = value instanceof Function ? "[function]" : "${value}"
-        String rootConditionDescription = "${column} ${operator} ${valueDescription}"
-        String rootConditionDescriptionFormatted = next.size() > 0 ? "(${rootConditionDescription})" : rootConditionDescription
-        return column == null ? nextDescription : "${connectiveDescription}(${rootConditionDescriptionFormatted}${nextDescriptionWithSpace})"
+        "Condition<pathInQuery: ${pathInQuery}, column: ${column}, operator: ${operator}, function: ${function}, connective: ${connective}, next: ${next}>"
     }
 }

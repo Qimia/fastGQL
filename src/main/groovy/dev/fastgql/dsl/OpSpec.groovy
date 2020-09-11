@@ -36,11 +36,9 @@ class OpSpec {
 
         private def handleOperator(RelationalOperator operator, Object value) {
             condition.setOperator(operator)
-            condition.setValue(
-                    value instanceof Closure
-                            ? value as Function<Map<String, Object>, Object>
-                            : value
-            )
+            value instanceof Closure
+                    ? condition.setFunction(value as Function<Map<String, Object>, Object>)
+                    : condition.setFunction { value }
             return new CheckChain(parent)
         }
 

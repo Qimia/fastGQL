@@ -19,6 +19,9 @@ public class ExecutionFunctions {
   private static Function<Row, Single<Map<String, Object>>> createExecutorForColumn(
       Table table, GraphQLField graphQLField, Query query) {
     String columnName = graphQLField.getQualifiedName().getKeyName();
+    if (!table.isColumnAllowed(columnName)) {
+      throw new RuntimeException(String.format("No permission to access column %s of table %s", columnName, table.getTableName()));
+    }
     Query.SelectColumn selectColumn = query.addSelectColumn(table, columnName);
     return row -> {
       Object value = row.getValue(selectColumn.getResultAlias());
@@ -183,12 +186,13 @@ public class ExecutionFunctions {
     Table table =
         new Table(
             tableName,
-            pathInQueryToAlias.get(tableName),
+            pathInQueryToAlias.get(field.getName()),
             executionConstants.getRoleSpec(),
             OpSpecUtils.argumentsToOpSpec(field.getArguments(), tableName),
             opSpecExtra,
             executionConstants.getJwtParams(),
             pathInQueryToAlias);
+
     Query query = new Query(table);
     List<Function<Row, Single<Map<String, Object>>>> executorList =
         createExecutors(
