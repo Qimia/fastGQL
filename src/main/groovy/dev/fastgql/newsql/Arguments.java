@@ -2,11 +2,15 @@ package dev.fastgql.newsql;
 
 import graphql.language.Argument;
 import graphql.language.IntValue;
-
 import java.math.BigInteger;
 import java.util.List;
 
 public class Arguments {
+
+  private static final String WHERE = "where";
+  private static final String ORDER_BY = "order_by";
+  private static final String LIMIT = "limit";
+  private static final String OFFSET = "offset";
 
   private final Condition condition;
   private final List<OrderBy> orderByList;
@@ -21,10 +25,6 @@ public class Arguments {
   }
 
   public Arguments(List<Argument> arguments, String tableName) {
-    final String WHERE_NAME = "where";
-    final String ORDER_BY_NAME = "order_by";
-    final String LIMIT_NAME = "limit";
-    final String OFFSET_NAME = "offset";
     Condition condition = null;
     List<OrderBy> orderByList = null;
     BigInteger limit = null;
@@ -32,16 +32,16 @@ public class Arguments {
 
     for (Argument argument : arguments) {
       switch (argument.getName()) {
-        case WHERE_NAME:
+        case WHERE:
           condition = ConditionUtils.createCondition(argument, tableName);
           break;
-        case ORDER_BY_NAME:
+        case ORDER_BY:
           orderByList = OrderByUtils.createOrderBy(argument, tableName);
           break;
-        case LIMIT_NAME:
+        case LIMIT:
           limit = ((IntValue) argument.getValue()).getValue();
           break;
-        case OFFSET_NAME:
+        case OFFSET:
           offset = ((IntValue) argument.getValue()).getValue();
           break;
         default:

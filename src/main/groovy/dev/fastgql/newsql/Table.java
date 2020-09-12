@@ -26,28 +26,28 @@ public class Table {
       Map<String, String> pathInQueryToAlias) {
     this.tableName = tableName;
     this.tableAlias = tableAlias;
+    this.allowedColumns = roleSpec.getTable(tableName).getOp(OpType.select).getAllowed();
     this.where =
-      Stream.of(
-        ConditionUtils.conditionToSQL(
-          roleSpec.getTable(tableName).getOp(OpType.select).getCondition(),
-          tableAlias,
-          jwtParams),
-        arguments.getCondition() == null
-          ? ""
-          : ConditionUtils.conditionToSQL(
-          arguments.getCondition(), pathInQueryToAlias, jwtParams),
-        extraCondition == null
-          ? ""
-          : ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams))
-        .filter(sqlString -> !sqlString.isEmpty())
-        .collect(Collectors.joining(" AND "));
+        Stream.of(
+                ConditionUtils.conditionToSQL(
+                    roleSpec.getTable(tableName).getOp(OpType.select).getCondition(),
+                    tableAlias,
+                    jwtParams),
+                arguments.getCondition() == null
+                    ? ""
+                    : ConditionUtils.conditionToSQL(
+                        arguments.getCondition(), pathInQueryToAlias, jwtParams),
+                extraCondition == null
+                    ? ""
+                    : ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams))
+            .filter(sqlString -> !sqlString.isEmpty())
+            .collect(Collectors.joining(" AND "));
     this.orderBy =
-      arguments.getOrderByList() == null
-        ? ""
-        : OrderByUtils.orderByToSQL(arguments.getOrderByList(), pathInQueryToAlias);
+        arguments.getOrderByList() == null
+            ? ""
+            : OrderByUtils.orderByToSQL(arguments.getOrderByList(), pathInQueryToAlias);
     this.limit = arguments.getLimit() == null ? "" : arguments.getLimit().toString();
     this.offset = arguments.getOffset() == null ? "" : arguments.getOffset().toString();
-    this.allowedColumns = roleSpec.getTable(tableName).getOp(OpType.select).getAllowed();
   }
 
   public String getTableName() {

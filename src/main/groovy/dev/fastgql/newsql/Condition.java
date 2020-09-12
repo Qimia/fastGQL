@@ -1,7 +1,7 @@
 package dev.fastgql.newsql;
 
+import dev.fastgql.common.RelationalOperator;
 import dev.fastgql.dsl.LogicalConnective;
-import dev.fastgql.dsl.RelationalOperator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,11 +12,13 @@ public class Condition {
   private RelationalOperator operator;
   private Function<Map<String, Object>, Object> function;
   private LogicalConnective connective;
+  private boolean negated;
   private final String pathInQuery;
   private final List<Condition> next = new ArrayList<>();
 
   public Condition(String pathInQuery) {
     this.pathInQuery = pathInQuery;
+    this.negated = false;
   }
 
   public Condition(
@@ -28,6 +30,7 @@ public class Condition {
     this.column = column;
     this.operator = operator;
     this.function = function;
+    this.negated = false;
   }
 
   public String getColumn() {
@@ -50,6 +53,10 @@ public class Condition {
     return pathInQuery;
   }
 
+  public boolean isNegated() {
+    return negated;
+  }
+
   public List<Condition> getNext() {
     return next;
   }
@@ -70,10 +77,14 @@ public class Condition {
     this.connective = connective;
   }
 
+  public void setNegated(boolean negated) {
+    this.negated = negated;
+  }
+
   @Override
   public String toString() {
     return String.format(
-        "Condition<pathInQuery: %s, column: %s, operator: %s, function: %s, connective: %s, next: %s>",
-        pathInQuery, column, operator, function, connective, next);
+        "Condition<pathInQuery: %s, negated: %s, column: %s, operator: %s, function: %s, connective: %s, next: %s>",
+        pathInQuery, negated, column, operator, function, connective, next);
   }
 }

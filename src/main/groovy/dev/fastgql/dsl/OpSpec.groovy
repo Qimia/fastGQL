@@ -1,5 +1,6 @@
 package dev.fastgql.dsl
 
+import dev.fastgql.common.RelationalOperator
 import dev.fastgql.newsql.Condition
 
 import java.util.function.Function
@@ -44,30 +45,65 @@ class OpSpec {
             return new CheckChain(parent)
         }
 
-        def eq(Object value) {
-            return handleOperator(RelationalOperator.eq, value)
+        def _eq(Object value) {
+            return handleOperator(RelationalOperator._eq, value)
         }
 
-        def neq(Object value) {
-            return handleOperator(RelationalOperator.neq, value)
+        def _neq(Object value) {
+            return handleOperator(RelationalOperator._neq, value)
         }
 
-        def lt(Object value) {
-            return handleOperator(RelationalOperator.lt, value)
+        def _in(Object... value) {
+            return handleOperator(RelationalOperator._in, value)
         }
 
-        def gt(Object value) {
-            return handleOperator(RelationalOperator.gt, value)
+        def _nin(Object... value) {
+            return handleOperator(RelationalOperator._nin, value)
         }
 
-        def lte(Object value) {
-            return handleOperator(RelationalOperator.lte, value)
+        def _gt(Object value) {
+            return handleOperator(RelationalOperator._gt, value)
         }
 
-        def gte(Object value) {
-            return handleOperator(RelationalOperator.gte, value)
+        def _lt(Object value) {
+            return handleOperator(RelationalOperator._lt, value)
         }
 
+        def _gte(Object value) {
+            return handleOperator(RelationalOperator._gte, value)
+        }
+
+        def _lte(Object value) {
+            return handleOperator(RelationalOperator._lte, value)
+        }
+
+        def _is_null(boolean value) {
+            return handleOperator(RelationalOperator._is_null, value)
+        }
+
+        def _like(String value) {
+            return handleOperator(RelationalOperator._like, value)
+        }
+
+        def _nlike(String value) {
+            return handleOperator(RelationalOperator._nlike, value)
+        }
+
+        def _ilike(String value) {
+            return handleOperator(RelationalOperator._ilike, value)
+        }
+
+        def _nilike(String value) {
+            return handleOperator(RelationalOperator._nilike, value)
+        }
+
+        def _similar(String value) {
+            return handleOperator(RelationalOperator._similar, value)
+        }
+
+        def _nsimilar(String value) {
+            return handleOperator(RelationalOperator._nsimilar, value)
+        }
     }
 
     static class CheckChain {

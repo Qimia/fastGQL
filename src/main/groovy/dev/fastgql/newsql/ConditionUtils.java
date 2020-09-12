@@ -1,8 +1,10 @@
 package dev.fastgql.newsql;
 
+import dev.fastgql.common.RelationalOperator;
 import dev.fastgql.dsl.LogicalConnective;
-import dev.fastgql.dsl.RelationalOperator;
 import graphql.language.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -10,45 +12,7 @@ import java.util.stream.Collectors;
 
 class ConditionUtils {
   static Condition checkColumnIsEqValue(String columnName, Object value) {
-    return new Condition(null, columnName, RelationalOperator.eq, params -> value);
-  }
-
-  private static String relationalOperatorToString(RelationalOperator relationalOperator) {
-    switch (relationalOperator) {
-      case eq:
-        return "=";
-      case neq:
-        return "<>";
-      case gt:
-        return ">";
-      case lt:
-        return "<";
-      case gte:
-        return ">=";
-      case lte:
-        return "<=";
-      default:
-        return "";
-    }
-  }
-
-  private static RelationalOperator graphQLStringToRelationalOperator(String graphQLString) {
-    switch (graphQLString) {
-      case "_eq":
-        return RelationalOperator.eq;
-      case "_neq":
-        return RelationalOperator.neq;
-      case "_gt":
-        return RelationalOperator.gt;
-      case "_lt":
-        return RelationalOperator.lt;
-      case "_gte":
-        return RelationalOperator.gte;
-      case "_lte":
-        return RelationalOperator.lte;
-      default:
-        throw new RuntimeException("not recognized operator: " + graphQLString);
-    }
+    return new Condition(null, columnName, RelationalOperator._eq, params -> value);
   }
 
   private static String conditionToSQLInternal(
@@ -59,33 +23,41 @@ class ConditionUtils {
         condition.getNext().stream()
             .map(it -> conditionToSQLInternal(it, conditionStringFunction, jwtParams))
             .collect(Collectors.joining(" "));
+
+    String connectiveDescription =
+        condition.getConnective() != null
+            ? String.format("%s ", condition.getConnective().toString().toUpperCase())
+            : "";
+
     if (condition.getColumn() != null
         && condition.getOperator() != null
         && condition.getFunction() != null) {
       String tableAlias = conditionStringFunction.apply(condition);
       String nextDescriptionWithSpace =
           !nextDescription.isEmpty() ? String.format(" %s", nextDescription) : "";
-      String connectiveDescription =
-          condition.getConnective() != null
-              ? String.format("%s ", condition.getConnective().toString().toUpperCase())
-              : "";
       Object value = condition.getFunction().apply(jwtParams);
-      String valueDescription =
-          value instanceof String ? String.format("'%s'", value) : value.toString();
-      String relationalOperatorString = relationalOperatorToString(condition.getOperator());
+      String valueDescription = objectToSql(value);
+      String relationalOperatorString = condition.getOperator().getSql();
       String rootConditionDescription =
           String.format(
               "%s.%s%s%s",
               tableAlias, condition.getColumn(), relationalOperatorString, valueDescription);
-      String rootConditionDescriptionFormatted =
-          condition.getNext().size() > 0
-              ? String.format("(%s)", rootConditionDescription)
-              : rootConditionDescription;
-      return String.format(
-          "%s(%s%s)",
-          connectiveDescription, rootConditionDescriptionFormatted, nextDescriptionWithSpace);
+      String notDescription = condition.isNegated() ? "NOT " : "";
+      return notDescription.isEmpty() && connectiveDescription.isEmpty()
+          ? rootConditionDescription + nextDescriptionWithSpace
+          : nextDescriptionWithSpace.isEmpty()
+              ? String.format(
+                  "%s%s%s", notDescription, connectiveDescription, rootConditionDescription)
+              : String.format(
+                  "%s%s(%s%s)",
+                  notDescription,
+                  connectiveDescription,
+                  rootConditionDescription,
+                  nextDescriptionWithSpace);
     } else {
-      return nextDescription;
+      return connectiveDescription.isEmpty()
+          ? nextDescription
+          : String.format("%s%s", connectiveDescription, nextDescription);
     }
   }
 
@@ -101,14 +73,33 @@ class ConditionUtils {
     return conditionToSQLInternal(condition, conditionArg -> alias, jwtParams);
   }
 
-  private static Object objectFieldToObject(ObjectField objectField) {
-    Value<?> value = objectField.getValue();
+  private static String listToSql(List<?> list) {
+    return String.format(
+        "(%s)", list.stream().map(ConditionUtils::objectToSql).collect(Collectors.joining(", ")));
+  }
+
+  private static String objectToSql(Object object) {
+    if (object instanceof String) {
+      return String.format("'%s'", object);
+    } else if (object instanceof List) {
+      return listToSql((List<?>) object);
+    } else if (object instanceof Object[]) {
+      return listToSql(Arrays.asList((Object[]) object));
+    } else {
+      return object.toString();
+    }
+  }
+
+  private static Object valueToObject(Value<?> value) {
     if (value instanceof IntValue) {
       return ((IntValue) value).getValue();
     } else if (value instanceof FloatValue) {
       return ((FloatValue) value).getValue();
     } else if (value instanceof StringValue) {
       return ((StringValue) value).getValue();
+    } else if (value instanceof ArrayValue) {
+      return ((ArrayValue) value)
+          .getValues().stream().map(ConditionUtils::valueToObject).collect(Collectors.toList());
     } else {
       throw new RuntimeException("not recognized object type: " + value.getClass());
     }
@@ -124,26 +115,25 @@ class ConditionUtils {
 
   private static Condition createBasicCondition(
       String name, ObjectValue objectValue, String pathInQuery) {
-    return objectValue.getChildren().stream()
-        .map(node -> (ObjectField) node)
+    return objectValue.getObjectFields().stream()
         .map(
             objectField ->
                 objectField.getValue() instanceof ObjectValue
-                        || objectField.getValue() instanceof ArrayValue
+                        || List.of("_and", "_or", "_not").contains(objectField.getName())
                     ? createConditionFromObjectField(
                         objectField, String.format("%s/%s", pathInQuery, name))
                     : new Condition(
                         pathInQuery,
                         name,
-                        graphQLStringToRelationalOperator(objectField.getName()),
-                        params -> objectFieldToObject(objectField)))
+                        RelationalOperator.valueOf(objectField.getName()),
+                        params -> valueToObject(objectField.getValue())))
         .reduce(conditionReducer(LogicalConnective.and))
         .orElseThrow();
   }
 
   private static Condition createArrayCondition(
       ArrayValue arrayValue, LogicalConnective logicalConnective, String pathInQuery) {
-    return arrayValue.getChildren().stream()
+    return arrayValue.getValues().stream()
         .map(node -> createConditionFromObjectValue((ObjectValue) node, pathInQuery))
         .reduce(conditionReducer(logicalConnective))
         .orElseThrow();
@@ -162,6 +152,13 @@ class ConditionUtils {
             ? createArrayCondition(
                 (ArrayValue) objectField.getValue(), LogicalConnective.or, pathInQuery)
             : createConditionFromObjectValue((ObjectValue) objectField.getValue(), pathInQuery);
+      case "_not":
+        Condition notCondition = new Condition(pathInQuery);
+        Condition condition =
+            createConditionFromObjectValue((ObjectValue) objectField.getValue(), pathInQuery);
+        condition.setNegated(true);
+        notCondition.getNext().add(condition);
+        return notCondition;
       default:
         return createBasicCondition(
             objectField.getName(), (ObjectValue) objectField.getValue(), pathInQuery);
@@ -170,8 +167,8 @@ class ConditionUtils {
 
   private static Condition createConditionFromObjectValue(
       ObjectValue objectValue, String pathInQuery) {
-    return objectValue.getChildren().stream()
-        .map(node -> createConditionFromObjectField((ObjectField) node, pathInQuery))
+    return objectValue.getObjectFields().stream()
+        .map(objectField -> createConditionFromObjectField(objectField, pathInQuery))
         .reduce(conditionReducer(LogicalConnective.and))
         .orElseThrow();
   }

@@ -99,7 +99,7 @@ public class ConditionalOperatorTypes {
     _gt("_gt", ">", "greater than"),
     _lt("_lt", "<", "less than"),
     _gte("_gte", ">=", "greater than or equal"),
-    _lte("lte", "<=", "less than or equal"),
+    _lte("_lte", "<=", "less than or equal"),
     _is_null("_is_null", "IS NULL", "is null");
 
     private final String name;

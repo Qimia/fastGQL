@@ -43,6 +43,7 @@ import io.reactivex.Single;
 import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
@@ -106,8 +107,7 @@ public class GraphQLDefinition {
         DatasourceConfig datasourceConfig,
         Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
         DebeziumEngineSingleton debeziumEngineSingleton,
-        EventFlowableFactory eventFlowableFactory)
-        throws IOException {
+        EventFlowableFactory eventFlowableFactory) {
       this.databaseSchema = databaseSchema;
       this.graphQLDatabaseSchema = new GraphQLDatabaseSchema(databaseSchema);
       this.sqlConnectionPool = sqlConnectionPool;
@@ -237,6 +237,8 @@ public class GraphQLDefinition {
                       .rxBegin()
                       .flatMap(
                           transaction -> {
+                            RoutingContext routingContext = env.getContext();
+                            // System.out.println(routingContext.user());
                             Field field = env.getField();
                             String tableName = field.getName();
                             ExecutionConstants executionConstants =
