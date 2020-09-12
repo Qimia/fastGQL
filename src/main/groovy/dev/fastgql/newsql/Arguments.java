@@ -24,7 +24,7 @@ public class Arguments {
     this.offset = null;
   }
 
-  public Arguments(List<Argument> arguments, String tableName) {
+  public Arguments(List<Argument> arguments, String pathInQuery) {
     Condition condition = null;
     List<OrderBy> orderByList = null;
     BigInteger limit = null;
@@ -33,10 +33,10 @@ public class Arguments {
     for (Argument argument : arguments) {
       switch (argument.getName()) {
         case WHERE:
-          condition = ConditionUtils.createCondition(argument, tableName);
+          condition = ConditionUtils.createCondition(argument, pathInQuery);
           break;
         case ORDER_BY:
-          orderByList = OrderByUtils.createOrderBy(argument, tableName);
+          orderByList = OrderByUtils.createOrderBy(argument, pathInQuery);
           break;
         case LIMIT:
           limit = ((IntValue) argument.getValue()).getValue();

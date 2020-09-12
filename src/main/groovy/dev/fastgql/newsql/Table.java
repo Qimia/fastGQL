@@ -41,6 +41,7 @@ public class Table {
                     ? ""
                     : ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams))
             .filter(sqlString -> !sqlString.isEmpty())
+            .map(sqlString -> String.format("(%s)", sqlString))
             .collect(Collectors.joining(" AND "));
     this.orderBy =
         arguments.getOrderByList() == null

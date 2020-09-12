@@ -15,8 +15,7 @@ import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.dsl.PermissionsSpec;
 import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.events.EventFlowableFactory;
-import dev.fastgql.newsql.ExecutionConstants;
-import dev.fastgql.newsql.ExecutionFunctions;
+import dev.fastgql.newsql.*;
 import dev.fastgql.sql.AliasGenerator;
 import dev.fastgql.sql.Component;
 import dev.fastgql.sql.ComponentExecutable;
@@ -84,9 +83,11 @@ public class GraphQLDefinition {
     private final GraphQLSchema.Builder graphQLSchemaBuilder;
     private final GraphQLCodeRegistry.Builder graphQLCodeRegistryBuilder;
     private final Function<Transaction, SQLExecutor> transactionSQLExecutorFunction;
+    private final Function<Transaction, QueryExecutor> transactionQueryExecutorFunction;
     private final DebeziumEngineSingleton debeziumEngineSingleton;
     private final EventFlowableFactory eventFlowableFactory;
-    private final Function<Set<TableWithAlias>, String> lockQueryFunction;
+    private final Function<Set<TableWithAlias>, String> lockQueryFunctionDELETE;
+    private final Function<Set<TableAlias>, String> lockQueryFunction;
     private final String unlockQuery;
     private final PermissionsSpec permissionsSpec = Config.permissions();
     private boolean queryEnabled = false;
@@ -106,6 +107,7 @@ public class GraphQLDefinition {
         Pool sqlConnectionPool,
         DatasourceConfig datasourceConfig,
         Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
+        Function<Transaction, QueryExecutor> transactionQueryExecutorFunction,
         DebeziumEngineSingleton debeziumEngineSingleton,
         EventFlowableFactory eventFlowableFactory) {
       this.databaseSchema = databaseSchema;
@@ -117,9 +119,11 @@ public class GraphQLDefinition {
         returningStatementEnabled = true;
       }
       this.transactionSQLExecutorFunction = transactionSQLExecutorFunction;
+      this.transactionQueryExecutorFunction = transactionQueryExecutorFunction;
       this.debeziumEngineSingleton = debeziumEngineSingleton;
       this.eventFlowableFactory = eventFlowableFactory;
-      this.lockQueryFunction = datasourceConfig.getLockQueryFunction();
+      this.lockQueryFunctionDELETE = datasourceConfig.todeleteLockQueryFunction();
+      this.lockQueryFunction = datasourceConfig.tableListLockQueryFunction();
       this.unlockQuery = datasourceConfig.getUnlockQuery();
     }
 
@@ -167,7 +171,7 @@ public class GraphQLDefinition {
                             aliasGenerator.getAlias(),
                             graphQLField.getForeignName().getKeyName(),
                             new SQLArguments(selectedField.getArguments()),
-                            lockQueryFunction,
+                          lockQueryFunctionDELETE,
                             unlockQuery);
                     traverseSelectionSet(
                         graphQLDatabaseSchema,
@@ -190,7 +194,7 @@ public class GraphQLDefinition {
               env.getField().getName(),
               aliasGenerator.getAlias(),
               sqlArguments,
-              lockQueryFunction,
+            lockQueryFunctionDELETE,
               unlockQuery);
       traverseSelectionSet(
           graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
@@ -237,19 +241,21 @@ public class GraphQLDefinition {
                       .rxBegin()
                       .flatMap(
                           transaction -> {
-                            RoutingContext routingContext = env.getContext();
+                            //RoutingContext routingContext = env.getContext();
                             // System.out.println(routingContext.user());
                             Field field = env.getField();
                             String tableName = field.getName();
                             ExecutionConstants executionConstants =
                                 new ExecutionConstants(
-                                    transaction,
+                                    transactionQueryExecutorFunction.apply(transaction),
                                     graphQLDatabaseSchema,
                                     permissionsSpec.getRole("default"),
-                                    Map.of("id", 70));
+                                    Map.of("id", 70),
+                                    lockQueryFunction,
+                                    unlockQuery
+                                  );
                             return ExecutionFunctions.getRootResponse(
-                                    tableName, field, executionConstants, null)
-                                .toList()
+                                    tableName, field, executionConstants, null, true)
                                 .flatMap(
                                     result -> transaction.rxCommit().andThen(Single.just(result)));
                           })

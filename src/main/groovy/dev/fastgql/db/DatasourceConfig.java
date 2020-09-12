@@ -7,6 +7,7 @@
 package dev.fastgql.db;
 
 import dev.fastgql.common.TableWithAlias;
+import dev.fastgql.newsql.TableAlias;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.pgclient.PgConnectOptions;
@@ -117,7 +118,34 @@ public class DatasourceConfig {
     }
   }
 
-  public Function<Set<TableWithAlias>, String> getLockQueryFunction() {
+  public Function<Set<TableAlias>, String> tableListLockQueryFunction() {
+    switch (dbType) {
+      case mysql:
+        return tables ->
+          String.format(
+            "LOCK TABLES %s",
+            tables.stream()
+              .map(
+                table ->
+                  String.format(
+                    "%s as %s READ",
+                    table.getTableName(), table.getTableAlias()))
+              .collect(Collectors.joining(", ")));
+      case postgresql:
+        return tables ->
+          String.format(
+            "LOCK TABLE %s IN SHARE MODE",
+            tables.stream()
+              .map(TableAlias::getTableName)
+              .distinct()
+              .collect(Collectors.joining(", ")));
+      case other:
+      default:
+        return tableWithAliases -> null;
+    }
+  }
+
+  public Function<Set<TableWithAlias>, String> todeleteLockQueryFunction() {
     switch (dbType) {
       case mysql:
         return tableWithAliases ->
