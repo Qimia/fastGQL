@@ -4,12 +4,15 @@ import dev.fastgql.integration.ContainerEnvWithDatabase;
 import dev.fastgql.integration.ContainerEnvWithDatabaseAndDebezium;
 import dev.fastgql.integration.MutationTests;
 import dev.fastgql.integration.QueryTests;
+import dev.fastgql.integration.QueryTestsWithSecurity;
 import dev.fastgql.integration.SubscriptionTests;
+import dev.fastgql.integration.SubscriptionTestsWithSecurity;
 import dev.fastgql.integration.WithEmbeddedDebezium;
 import dev.fastgql.integration.WithMySQL;
 import dev.fastgql.integration.WithMySQLConnector;
 import dev.fastgql.integration.WithPostgres;
 import dev.fastgql.integration.WithPostgresConnector;
+import dev.fastgql.integration.WithSecurity;
 import io.vertx.junit5.VertxExtension;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,6 +29,11 @@ public class IntegrationTests {
     class PostgresQuery extends ContainerEnvWithDatabase implements WithPostgres, QueryTests {}
 
     @Nested
+    @DisplayName("PostgreSQL Query Tests with JWT Security")
+    class PostgresQueryWithSecurity extends ContainerEnvWithDatabase
+        implements WithPostgres, WithSecurity, QueryTestsWithSecurity {}
+
+    @Nested
     @DisplayName("PostgreSQL Mutation Tests")
     class PostgresMutation extends ContainerEnvWithDatabase
         implements WithPostgres, MutationTests {}
@@ -39,6 +47,14 @@ public class IntegrationTests {
     @DisplayName("PostgreSQL Subscription Tests with embedded Debezium")
     class PostgresSubscriptionEmbeddedDebezium extends ContainerEnvWithDatabase
         implements WithPostgres, WithEmbeddedDebezium, SubscriptionTests {}
+
+    @Nested
+    @DisplayName("PostgreSQL Subscription Tests with JWT Security and embedded Debezium")
+    class PostgresSubscriptionWithSecurity extends ContainerEnvWithDatabase
+        implements WithPostgres,
+            WithEmbeddedDebezium,
+            WithSecurity,
+            SubscriptionTestsWithSecurity {}
   }
 
   @Nested
@@ -47,6 +63,11 @@ public class IntegrationTests {
     @Nested
     @DisplayName("MySQL Query Tests")
     class MySQLQuery extends ContainerEnvWithDatabase implements WithMySQL, QueryTests {}
+
+    @Nested
+    @DisplayName("MySQL Query Tests with JWT Security")
+    class MySQLQueryWithSecurity extends ContainerEnvWithDatabase
+        implements WithMySQL, WithSecurity, QueryTestsWithSecurity {}
 
     @Nested
     @DisplayName("MySQL Mutation Tests")
@@ -61,5 +82,10 @@ public class IntegrationTests {
     @DisplayName("MySQL Subscription Tests with embedded Debezium")
     class MySQLSubscriptionEmbeddedDebezium extends ContainerEnvWithDatabase
         implements WithMySQL, WithEmbeddedDebezium, SubscriptionTests {}
+
+    @Nested
+    @DisplayName("MySQL Subscription Tests with JWT Security and embedded Debezium")
+    class MySQLSubscriptionWithSecurity extends ContainerEnvWithDatabase
+        implements WithMySQL, WithEmbeddedDebezium, WithSecurity, SubscriptionTestsWithSecurity {}
   }
 }

@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 public interface TransactionTest extends SetupTearDownForEachWithDelay {
+
   @Test
   @Timeout(value = 2, timeUnit = TimeUnit.MINUTES)
   default void test(Vertx vertx, VertxTestContext context) {
@@ -27,7 +28,7 @@ public interface TransactionTest extends SetupTearDownForEachWithDelay {
         .flatMap(
             rows ->
                 client
-                    .get(getDeploymentPort(), "localhost", "/update")
+                    .get(getDeploymentPort(), "localhost", "/v1/update")
                     .rxSend()
                     .doOnSuccess(
                         response ->
@@ -40,7 +41,8 @@ public interface TransactionTest extends SetupTearDownForEachWithDelay {
                                 .subscribe()))
         .subscribe(
             response ->
-                GraphQLTestUtils.verifyQuerySimple(directory, getDeploymentPort(), vertx, context),
+                GraphQLTestUtils.verifyQuerySimple(
+                    directory, getDeploymentPort(), null, vertx, context),
             context::failNow);
   }
 }

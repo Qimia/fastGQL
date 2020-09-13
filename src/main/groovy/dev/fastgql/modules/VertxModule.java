@@ -5,10 +5,12 @@ import com.google.inject.Provides;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.modules.Annotations.ServerPort;
+import dev.fastgql.security.JWTConfig;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.Vertx;
 
 public class VertxModule extends AbstractModule {
+
   private final Vertx vertx;
   private final JsonObject config;
 
@@ -30,6 +32,11 @@ public class VertxModule extends AbstractModule {
   @Provides
   DebeziumConfig provideDebeziumConfig() {
     return DebeziumConfig.createWithJsonConfig(config.getJsonObject("debezium"));
+  }
+
+  @Provides
+  JWTConfig provideJWTConfig() {
+    return JWTConfig.createWithJsonConfig(config.getJsonObject("auth"));
   }
 
   @Provides

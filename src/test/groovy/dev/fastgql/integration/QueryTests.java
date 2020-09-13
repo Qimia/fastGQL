@@ -25,10 +25,11 @@ public interface QueryTests extends SetupTearDownForAll {
 
     WebClient client = WebClient.create(vertx);
     DBTestUtils.executeSQLQuery(Paths.get(directory, "init.sql").toString(), poolMultipleQueries)
-        .flatMap(rows -> client.get(getDeploymentPort(), "localhost", "/update").rxSend())
+        .flatMap(rows -> client.get(getDeploymentPort(), "localhost", "/v1/update").rxSend())
         .subscribe(
             response ->
-                GraphQLTestUtils.verifyQuerySimple(directory, getDeploymentPort(), vertx, context),
+                GraphQLTestUtils.verifyQuerySimple(
+                    directory, getDeploymentPort(), null, vertx, context),
             context::failNow);
   }
 }

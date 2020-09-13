@@ -47,6 +47,7 @@ dependencies {
     implementation 'io.vertx:vertx-mysql-client'
     implementation 'io.vertx:vertx-kafka-client'
     implementation 'io.vertx:vertx-web-client'
+    implementation 'io.vertx:vertx-auth-jwt'
     implementation 'mysql:mysql-connector-java:5.1.49'
     implementation 'org.postgresql:postgresql:42.2.12'
     implementation 'org.apache.kafka:kafka-clients:2.4.0'
