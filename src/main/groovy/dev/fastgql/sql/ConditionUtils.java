@@ -86,7 +86,7 @@ class ConditionUtils {
     } else if (object instanceof Object[]) {
       return listToSql(Arrays.asList((Object[]) object));
     } else {
-      return object.toString();
+      return String.valueOf(object);
     }
   }
 

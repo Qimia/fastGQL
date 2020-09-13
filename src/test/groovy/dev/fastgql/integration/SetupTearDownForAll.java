@@ -1,6 +1,5 @@
 package dev.fastgql.integration;
 
-import dev.fastgql.FastGQL;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import org.junit.jupiter.api.AfterAll;
@@ -11,7 +10,7 @@ import org.junit.jupiter.api.TestInstance;
 public interface SetupTearDownForAll extends WithFastGQL {
   @BeforeAll
   default void beforeAll(Vertx vertx, VertxTestContext context) {
-    setup(vertx, context, new FastGQL());
+    setup(vertx, context, new FastGQLForTests());
   }
 
   @AfterAll

@@ -1,10 +1,10 @@
-package dev.fastgql
+package dev.fastgql.security
 
 import dev.fastgql.dsl.PermissionsConfig
 import dev.fastgql.dsl.PermissionsSpec
 
 class Permissions {
-    static PermissionsSpec permissions() {
+    static PermissionsSpec getPermissionsSpec() {
         PermissionsConfig.create().permissions {
             role ('default') {
                 table ('customers') {

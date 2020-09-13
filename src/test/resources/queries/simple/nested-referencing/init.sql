@@ -21,9 +21,6 @@ CREATE TABLE customers(
 );
 
 INSERT INTO streets VALUES (0);
-INSERT INTO streets VALUES (1);
 INSERT INTO addresses VALUES (0, 0);
-INSERT INTO addresses VALUES (1, 1);
 INSERT INTO customers VALUES (0, 0, 0);
-INSERT INTO customers VALUES (1, 1, 1);
 

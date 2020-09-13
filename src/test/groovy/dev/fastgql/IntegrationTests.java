@@ -12,7 +12,6 @@ import dev.fastgql.integration.WithMySQL;
 import dev.fastgql.integration.WithMySQLConnector;
 import dev.fastgql.integration.WithPostgres;
 import dev.fastgql.integration.WithPostgresConnector;
-import dev.fastgql.integration.WithSecurity;
 import io.vertx.junit5.VertxExtension;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,7 +30,7 @@ public class IntegrationTests {
     @Nested
     @DisplayName("PostgreSQL Query Tests with JWT Security")
     class PostgresQueryWithSecurity extends ContainerEnvWithDatabase
-        implements WithPostgres, WithSecurity, QueryTestsWithSecurity {}
+        implements WithPostgres, QueryTestsWithSecurity {}
 
     @Nested
     @DisplayName("PostgreSQL Mutation Tests")
@@ -53,7 +52,6 @@ public class IntegrationTests {
     class PostgresSubscriptionWithSecurity extends ContainerEnvWithDatabase
         implements WithPostgres,
             WithEmbeddedDebezium,
-            WithSecurity,
             SubscriptionTestsWithSecurity {}
   }
 
@@ -67,7 +65,7 @@ public class IntegrationTests {
     @Nested
     @DisplayName("MySQL Query Tests with JWT Security")
     class MySQLQueryWithSecurity extends ContainerEnvWithDatabase
-        implements WithMySQL, WithSecurity, QueryTestsWithSecurity {}
+        implements WithMySQL, QueryTestsWithSecurity {}
 
     @Nested
     @DisplayName("MySQL Mutation Tests")
@@ -86,6 +84,6 @@ public class IntegrationTests {
     @Nested
     @DisplayName("MySQL Subscription Tests with JWT Security and embedded Debezium")
     class MySQLSubscriptionWithSecurity extends ContainerEnvWithDatabase
-        implements WithMySQL, WithEmbeddedDebezium, WithSecurity, SubscriptionTestsWithSecurity {}
+        implements WithMySQL, WithEmbeddedDebezium, SubscriptionTestsWithSecurity {}
   }
 }

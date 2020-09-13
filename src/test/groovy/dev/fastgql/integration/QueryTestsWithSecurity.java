@@ -2,12 +2,17 @@ package dev.fastgql.integration;
 
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import io.vertx.reactivex.sqlclient.Pool;
+
+import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
-public interface QueryTestsWithSecurity extends SetupTearDownForAll {
+public interface QueryTestsWithSecurity extends SetupTearDownForAll, WithSecurity {
 
   /**
    * Test GraphQL query with security / response given in input directory
@@ -16,24 +21,27 @@ public interface QueryTestsWithSecurity extends SetupTearDownForAll {
    * @param context Vert.x test context
    */
   @Test
-  default void shouldAuthorized(Vertx vertx, VertxTestContext context) {
+  default void shouldAuthorized(Vertx vertx, VertxTestContext context) throws IOException {
     String directory = "queries/simple/list";
     System.out.println(String.format("Test: %s", directory));
     Pool poolMultipleQueries = getPoolMultipleQueries(vertx);
 
+    String permissionsScript = ResourcesTestUtils.readResource(Paths.get(directory, "permissions.groovy").toString());
+    String jwtToken = getJwtToken(vertx, Map.of());
+
     WebClient client = WebClient.create(vertx);
     DBTestUtils.executeSQLQuery(Paths.get(directory, "init.sql").toString(), poolMultipleQueries)
-        .flatMap(
+      .flatMap(rows -> client.post(getDeploymentPort(), "localhost", "/v1/permissions").bearerTokenAuthentication(jwtToken).rxSendBuffer(Buffer.buffer(permissionsScript)))
+      .flatMap(
             rows ->
                 client
                     .get(getDeploymentPort(), "localhost", "/v1/update")
-                    .bearerTokenAuthentication(getJwtToken())
-                    // .bearerTokenAuthentication("dummy")
+                    .bearerTokenAuthentication(jwtToken)
                     .rxSend())
         .subscribe(
             response ->
                 GraphQLTestUtils.verifyQuerySimple(
-                    directory, getDeploymentPort(), getJwtToken(), vertx, context),
+                    directory, getDeploymentPort(), jwtToken, vertx, context),
             context::failNow);
   }
 

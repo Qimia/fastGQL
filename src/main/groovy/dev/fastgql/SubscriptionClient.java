@@ -26,6 +26,7 @@ public class SubscriptionClient extends AbstractVerticle {
 
   @Override
   public void start() {
+
     WebSocketConnectOptions wsOptions =
         new WebSocketConnectOptions()
             .addHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + jwtToken)
@@ -41,9 +42,7 @@ public class SubscriptionClient extends AbstractVerticle {
                 WebSocket webSocket = websocketRes.result();
 
                 webSocket.handler(
-                    message -> {
-                      System.out.println(message.toJsonObject().encodePrettily());
-                    });
+                    message -> System.out.println(message.toJsonObject().encodePrettily()));
 
                 JsonObject request =
                     new JsonObject()

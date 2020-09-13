@@ -16,5 +16,10 @@ class Annotations {
 
   @Qualifier
   @Retention(RUNTIME)
+  @interface PermissionsUpdateHandler {}
+
+  @Qualifier
+  @Retention(RUNTIME)
   @interface JwtToken {}
+
 }

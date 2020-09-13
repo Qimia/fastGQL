@@ -2,13 +2,19 @@ package dev.fastgql.modules;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import dev.fastgql.dsl.PermissionsConfig;
+import dev.fastgql.dsl.PermissionsSpec;
 import dev.fastgql.modules.Annotations.JwtToken;
 import dev.fastgql.modules.Annotations.ServerPort;
 import dev.fastgql.modules.Annotations.UpdateHandler;
+import dev.fastgql.modules.Annotations.PermissionsUpdateHandler;
 import dev.fastgql.router.ApolloWSHandlerUpdatable;
 import dev.fastgql.router.GraphQLHandlerUpdatable;
 import dev.fastgql.security.JWTConfig;
+import dev.fastgql.security.PermissionsStore;
 import graphql.GraphQL;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
 import io.reactivex.Single;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
@@ -24,8 +30,11 @@ import io.vertx.reactivex.core.http.HttpServerResponse;
 import io.vertx.reactivex.ext.auth.jwt.JWTAuth;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
+import io.vertx.reactivex.ext.web.handler.BodyHandler;
 import io.vertx.reactivex.ext.web.handler.JWTAuthHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
+import org.codehaus.groovy.control.CompilerConfiguration;
+
 import java.util.Map;
 import javax.annotation.Nullable;
 import javax.inject.Singleton;
@@ -48,38 +57,6 @@ public class ServerModule extends AbstractModule {
   @Singleton
   ApolloWSHandlerUpdatable provideApolloWSHandlerUpdatable() {
     return ApolloWSHandlerUpdatable.create();
-  }
-
-  @Provides
-  @JwtToken
-  String provideJWTToken(Vertx vertx, JWTConfig jwtConfig) {
-    JWTAuth jwtAuth =
-        JWTAuth.create(
-            vertx,
-            new JWTAuthOptions()
-                .addPubSecKey(
-                    new PubSecKeyOptions()
-                        .setAlgorithm(jwtConfig.getAlgorithm())
-                        .setPublicKey(jwtConfig.getPublicKey())
-                        .setSecretKey(jwtConfig.getSecretKey())));
-
-    return jwtAuth.generateToken(
-        JsonObject.mapFrom(Map.of("id", 101)),
-        new JWTOptions().setAlgorithm(jwtConfig.getAlgorithm()));
-  }
-
-  @Provides
-  @Singleton
-  GraphiQLHandler provideGraphiQLHandler(@JwtToken String jwtToken) {
-
-    Map<String, String> headers =
-        Map.of(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + jwtToken);
-
-    return GraphiQLHandler.create(
-        new GraphiQLHandlerOptions()
-            .setHeaders(headers)
-            .setGraphQLUri("/v1/graphql")
-            .setEnabled(true));
   }
 
   @Provides
@@ -106,6 +83,22 @@ public class ServerModule extends AbstractModule {
 
   @Provides
   @Singleton
+  @PermissionsUpdateHandler
+  Handler<RoutingContext> providePermissionsUpdateHandler() {
+    return context -> {
+      String script = context.getBodyAsString();
+      CompilerConfiguration config = new CompilerConfiguration();
+      config.setScriptBaseClass(PermissionsConfig.class.getName());
+      GroovyShell shell = new GroovyShell(new Binding(), config);
+      System.out.println(shell);
+      PermissionsStore.setPermissionsSpec((PermissionsSpec) shell.evaluate(script));
+      HttpServerResponse response = context.response();
+      response.putHeader("content-type", "text/html").end("permissions updated");
+    };
+  }
+
+  @Provides
+  @Singleton
   JWTAuthHandler provideJWTAuthHandler(Vertx vertx, JWTConfig jwtConfig) {
     return jwtConfig.getJWTAuthHandler(vertx);
   }
@@ -116,8 +109,9 @@ public class ServerModule extends AbstractModule {
       @Nullable JWTAuthHandler jwtAuthHandler,
       GraphQLHandlerUpdatable graphQLHandlerUpdatable,
       ApolloWSHandlerUpdatable apolloWSHandlerUpdatable,
-      GraphiQLHandler graphiQLHandler,
+      @Nullable GraphiQLHandler graphiQLHandler,
       @UpdateHandler Handler<RoutingContext> updateHandler,
+      @PermissionsUpdateHandler Handler<RoutingContext> permissionsUpdateHandler,
       Single<GraphQL> graphQLSingle) {
     return graphQLSingle.map(
         graphQL -> {
@@ -138,6 +132,10 @@ public class ServerModule extends AbstractModule {
           }
           if (updateHandler != null) {
             router.route("/v1/update").handler(updateHandler);
+          }
+          if (permissionsUpdateHandler != null) {
+            router.route("/v1/permissions").handler(BodyHandler.create());
+            router.post("/v1/permissions").handler(permissionsUpdateHandler);
           }
           return router;
         });

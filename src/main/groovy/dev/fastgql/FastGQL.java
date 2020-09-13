@@ -9,11 +9,7 @@ package dev.fastgql;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
-import dev.fastgql.modules.DatabaseModule;
-import dev.fastgql.modules.GraphQLModule;
-import dev.fastgql.modules.SQLExecutorModule;
-import dev.fastgql.modules.ServerModule;
-import dev.fastgql.modules.VertxModule;
+import dev.fastgql.modules.*;
 import io.reactivex.Single;
 import io.vertx.core.Launcher;
 import io.vertx.core.Promise;
@@ -33,7 +29,10 @@ public class FastGQL extends AbstractVerticle {
         new ServerModule(),
         new GraphQLModule(),
         new DatabaseModule(),
-        new SQLExecutorModule());
+        new SQLExecutorModule(),
+        new GraphiQLModule(),
+        new PermissionsSourceCodeModule()
+      );
   }
 
   private void startServer(Injector injector, Promise<Void> promise) {

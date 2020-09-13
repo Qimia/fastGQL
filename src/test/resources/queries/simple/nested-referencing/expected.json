@@ -1,0 +1,16 @@
+{
+  "data":  {
+    "customers": [
+      {
+        "address_ref": {
+          "street_ref": {
+            "id":0
+          }
+        },
+        "street_ref": {
+          "id":0
+        }
+      }
+    ]
+  }
+}

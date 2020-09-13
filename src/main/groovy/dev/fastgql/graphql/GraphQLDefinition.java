@@ -7,7 +7,6 @@
 package dev.fastgql.graphql;
 
 import com.google.inject.assistedinject.Assisted;
-import dev.fastgql.Config;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
@@ -30,17 +29,18 @@ import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.auth.jwt.impl.JWTUser;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.ext.web.RoutingContext;
+import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSMessage;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -82,7 +82,7 @@ public class GraphQLDefinition {
     private final EventFlowableFactory eventFlowableFactory;
     private final Function<Set<TableAlias>, String> lockQueryFunction;
     private final String unlockQuery;
-    private final PermissionsSpec permissionsSpec = Config.permissions();
+    private final Supplier<PermissionsSpec> permissionsSpecSupplier;
     private boolean queryEnabled = false;
     private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
@@ -100,6 +100,7 @@ public class GraphQLDefinition {
         Pool sqlConnectionPool,
         DatasourceConfig datasourceConfig,
         Function<Transaction, QueryExecutor> transactionQueryExecutorFunction,
+        Supplier<PermissionsSpec> permissionsSpecSupplier,
         DebeziumEngineSingleton debeziumEngineSingleton,
         EventFlowableFactory eventFlowableFactory) {
       this.databaseSchema = databaseSchema;
@@ -115,6 +116,7 @@ public class GraphQLDefinition {
       this.eventFlowableFactory = eventFlowableFactory;
       this.lockQueryFunction = datasourceConfig.tableListLockQueryFunction();
       this.unlockQuery = datasourceConfig.getUnlockQuery();
+      this.permissionsSpecSupplier = permissionsSpecSupplier;
     }
 
     private Single<Map<String, Object>> getResponseMutation(
@@ -137,6 +139,11 @@ public class GraphQLDefinition {
     private ExecutionFunctions createExecutionFunctions(DataFetchingEnvironment env) {
       Map<String, Object> userParams = createUserParams(env);
       String role = (String) userParams.getOrDefault("role", "default");
+      PermissionsSpec permissionsSpec = permissionsSpecSupplier.get();
+      System.out.println(permissionsSpec);
+      if (permissionsSpec == null) {
+        throw new RuntimeException("No permissions defined");
+      }
       return new ExecutionFunctions(
         graphQLDatabaseSchema,
         permissionsSpec.getRole(role),
@@ -178,7 +185,7 @@ public class GraphQLDefinition {
       RoutingContext routingContext = env.getContext();
       User user = routingContext.getDelegate().user();
       JWTUser jwtUser = (JWTUser) user;
-      return jwtUser.principal().getMap();
+      return jwtUser == null ? Map.of() : jwtUser.principal().getMap();
     }
 
     /**

@@ -3,7 +3,7 @@
     "addresses": [
       {
         "id": 0,
-        "customers_on_address": []
+        "customers_on_address": null
       },
       {
         "id": 1,
