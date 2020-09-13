@@ -6,8 +6,7 @@
 
 package dev.fastgql.db;
 
-import dev.fastgql.common.TableWithAlias;
-import dev.fastgql.newsql.TableAlias;
+import dev.fastgql.sql.TableAlias;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mysqlclient.MySQLConnectOptions;
 import io.vertx.pgclient.PgConnectOptions;
@@ -122,48 +121,21 @@ public class DatasourceConfig {
     switch (dbType) {
       case mysql:
         return tables ->
-          String.format(
-            "LOCK TABLES %s",
-            tables.stream()
-              .map(
-                table ->
-                  String.format(
-                    "%s as %s READ",
-                    table.getTableName(), table.getTableAlias()))
-              .collect(Collectors.joining(", ")));
-      case postgresql:
-        return tables ->
-          String.format(
-            "LOCK TABLE %s IN SHARE MODE",
-            tables.stream()
-              .map(TableAlias::getTableName)
-              .distinct()
-              .collect(Collectors.joining(", ")));
-      case other:
-      default:
-        return tableWithAliases -> null;
-    }
-  }
-
-  public Function<Set<TableWithAlias>, String> todeleteLockQueryFunction() {
-    switch (dbType) {
-      case mysql:
-        return tableWithAliases ->
             String.format(
                 "LOCK TABLES %s",
-                tableWithAliases.stream()
+                tables.stream()
                     .map(
-                        tableWithAlias ->
+                        table ->
                             String.format(
-                                "%s as %s READ",
-                                tableWithAlias.getName(), tableWithAlias.getAlias()))
+                                "%s as %s READ", table.getTableName(), table.getTableAlias()))
                     .collect(Collectors.joining(", ")));
       case postgresql:
-        return tableWithAliases ->
+        return tables ->
             String.format(
                 "LOCK TABLE %s IN SHARE MODE",
-                tableWithAliases.stream()
-                    .map(TableWithAlias::getName)
+                tables.stream()
+                    .map(TableAlias::getTableName)
+                    .distinct()
                     .collect(Collectors.joining(", ")));
       case other:
       default:

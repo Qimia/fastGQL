@@ -1,4 +1,4 @@
-package dev.fastgql.newsql;
+package dev.fastgql.sql;
 
 import dev.fastgql.common.RelationalOperator;
 import dev.fastgql.dsl.LogicalConnective;

@@ -1,8 +1,8 @@
-package dev.fastgql.newsql;
+package dev.fastgql.sql;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Query {
@@ -87,7 +87,7 @@ public class Query {
     return selectColumn;
   }
 
-  public String createQuery() {
+  private String createQueryInternal(Function<Table, String> tableStringFunction) {
     StringBuilder sqlStringBuilder = new StringBuilder();
     sqlStringBuilder.append(
         String.format(
@@ -98,7 +98,7 @@ public class Query {
 
     String whereSqlString =
         queriedTables.stream()
-            .map(Table::getWhere)
+            .map(tableStringFunction)
             .filter(where -> !where.isEmpty())
             .map(sqlString -> String.format("(%s)", sqlString))
             .collect(Collectors.joining(" AND "));
@@ -120,5 +120,13 @@ public class Query {
     }
 
     return sqlStringBuilder.toString();
+  }
+
+  public String createMockQuery() {
+    return createQueryInternal(Table::getMockWhere);
+  }
+
+  public String createQuery() {
+    return createQueryInternal(Table::getWhere);
   }
 }

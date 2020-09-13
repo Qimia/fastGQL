@@ -2,7 +2,6 @@ package dev.fastgql.events;
 
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
-import dev.fastgql.sql.ComponentExecutable;
 import io.debezium.engine.ChangeEvent;
 import io.reactivex.Flowable;
 import io.reactivex.annotations.NonNull;
@@ -38,16 +37,14 @@ public class EventFlowableFactory {
     this.debeziumEngineSingleton = debeziumEngineSingleton;
   }
 
-  public Flowable<ChangeEvent<String, String>> create(ComponentExecutable executionRoot) {
+  public Flowable<ChangeEvent<String, String>> create(Set<String> queriedTables) {
     Set<String> topics =
-        executionRoot.getQueriedTables().stream()
+        queriedTables.stream()
             .map(
                 queriedTable ->
                     String.format(
                         "%s.%s.%s",
-                        debeziumConfig.getServerName(),
-                        datasourceConfig.getSchema(),
-                        queriedTable.getName()))
+                        debeziumConfig.getServerName(), datasourceConfig.getSchema(), queriedTable))
             .collect(Collectors.toSet());
     if (debeziumConfig.isEmbedded()) {
       return createForEmbedded(topics);

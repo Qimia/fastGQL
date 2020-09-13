@@ -1,4 +1,4 @@
-package dev.fastgql.newsql;
+package dev.fastgql.sql;
 
 public class OrderBy {
   private final String pathInQuery;

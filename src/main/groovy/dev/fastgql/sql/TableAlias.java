@@ -1,4 +1,4 @@
-package dev.fastgql.newsql;
+package dev.fastgql.sql;
 
 import java.util.Objects;
 
@@ -24,8 +24,7 @@ public class TableAlias {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     TableAlias that = (TableAlias) o;
-    return Objects.equals(tableName, that.tableName) &&
-      Objects.equals(tableAlias, that.tableAlias);
+    return Objects.equals(tableName, that.tableName) && Objects.equals(tableAlias, that.tableAlias);
   }
 
   @Override

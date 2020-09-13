@@ -1,8 +1,7 @@
-package dev.fastgql.newsql;
+package dev.fastgql.sql;
 
 import io.reactivex.Single;
 import io.vertx.reactivex.sqlclient.Row;
-
 import java.util.List;
 import java.util.Map;
 

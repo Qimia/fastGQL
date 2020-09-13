@@ -8,30 +8,18 @@ package dev.fastgql.graphql;
 
 import com.google.inject.assistedinject.Assisted;
 import dev.fastgql.Config;
-import dev.fastgql.common.TableWithAlias;
 import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.dsl.PermissionsSpec;
 import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.events.EventFlowableFactory;
-import dev.fastgql.newsql.*;
-import dev.fastgql.sql.AliasGenerator;
-import dev.fastgql.sql.Component;
-import dev.fastgql.sql.ComponentExecutable;
-import dev.fastgql.sql.ComponentParent;
-import dev.fastgql.sql.ComponentReferenced;
-import dev.fastgql.sql.ComponentReferencing;
-import dev.fastgql.sql.ComponentRow;
-import dev.fastgql.sql.ExecutionRoot;
+import dev.fastgql.sql.*;
 import dev.fastgql.sql.MutationExecution;
-import dev.fastgql.sql.SQLArguments;
-import dev.fastgql.sql.SQLExecutor;
 import graphql.GraphQL;
 import graphql.language.Field;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
-import graphql.schema.DataFetchingFieldSelectionSet;
 import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLObjectType;
@@ -42,7 +30,6 @@ import io.reactivex.Single;
 import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
@@ -82,11 +69,9 @@ public class GraphQLDefinition {
     private final Pool sqlConnectionPool;
     private final GraphQLSchema.Builder graphQLSchemaBuilder;
     private final GraphQLCodeRegistry.Builder graphQLCodeRegistryBuilder;
-    private final Function<Transaction, SQLExecutor> transactionSQLExecutorFunction;
     private final Function<Transaction, QueryExecutor> transactionQueryExecutorFunction;
     private final DebeziumEngineSingleton debeziumEngineSingleton;
     private final EventFlowableFactory eventFlowableFactory;
-    private final Function<Set<TableWithAlias>, String> lockQueryFunctionDELETE;
     private final Function<Set<TableAlias>, String> lockQueryFunction;
     private final String unlockQuery;
     private final PermissionsSpec permissionsSpec = Config.permissions();
@@ -106,7 +91,6 @@ public class GraphQLDefinition {
         @Assisted DatabaseSchema databaseSchema,
         Pool sqlConnectionPool,
         DatasourceConfig datasourceConfig,
-        Function<Transaction, SQLExecutor> transactionSQLExecutorFunction,
         Function<Transaction, QueryExecutor> transactionQueryExecutorFunction,
         DebeziumEngineSingleton debeziumEngineSingleton,
         EventFlowableFactory eventFlowableFactory) {
@@ -118,93 +102,11 @@ public class GraphQLDefinition {
       if (datasourceConfig.getDbType().equals(DatasourceConfig.DBType.postgresql)) {
         returningStatementEnabled = true;
       }
-      this.transactionSQLExecutorFunction = transactionSQLExecutorFunction;
       this.transactionQueryExecutorFunction = transactionQueryExecutorFunction;
       this.debeziumEngineSingleton = debeziumEngineSingleton;
       this.eventFlowableFactory = eventFlowableFactory;
-      this.lockQueryFunctionDELETE = datasourceConfig.todeleteLockQueryFunction();
       this.lockQueryFunction = datasourceConfig.tableListLockQueryFunction();
       this.unlockQuery = datasourceConfig.getUnlockQuery();
-    }
-
-    private void traverseSelectionSet(
-        GraphQLDatabaseSchema graphQLDatabaseSchema,
-        ComponentParent parent,
-        AliasGenerator aliasGenerator,
-        DataFetchingFieldSelectionSet selectionSet) {
-      selectionSet
-          .getFields()
-          .forEach(
-              selectedField -> {
-                if (selectedField.getQualifiedName().contains("/")) {
-                  return;
-                }
-                GraphQLField graphQLField =
-                    graphQLDatabaseSchema.fieldAt(
-                        parent.tableNameWhenParent(), selectedField.getName());
-                switch (graphQLField.getReferenceType()) {
-                  case NONE:
-                    parent.addComponent(
-                        new ComponentRow(graphQLField.getQualifiedName().getKeyName()));
-                    break;
-                  case REFERENCING:
-                    Component componentReferencing =
-                        new ComponentReferencing(
-                            selectedField.getName(),
-                            graphQLField.getQualifiedName().getKeyName(),
-                            graphQLField.getForeignName().getTableName(),
-                            aliasGenerator.getAlias(),
-                            graphQLField.getForeignName().getKeyName());
-                    traverseSelectionSet(
-                        graphQLDatabaseSchema,
-                        componentReferencing,
-                        aliasGenerator,
-                        selectedField.getSelectionSet());
-                    parent.addComponent(componentReferencing);
-                    break;
-                  case REFERENCED:
-                    Component componentReferenced =
-                        new ComponentReferenced(
-                            selectedField.getName(),
-                            graphQLField.getQualifiedName().getKeyName(),
-                            graphQLField.getForeignName().getTableName(),
-                            aliasGenerator.getAlias(),
-                            graphQLField.getForeignName().getKeyName(),
-                            new SQLArguments(selectedField.getArguments()),
-                          lockQueryFunctionDELETE,
-                            unlockQuery);
-                    traverseSelectionSet(
-                        graphQLDatabaseSchema,
-                        componentReferenced,
-                        aliasGenerator,
-                        selectedField.getSelectionSet());
-                    parent.addComponent(componentReferenced);
-                    break;
-                  default:
-                    throw new RuntimeException("Unrecognized reference type");
-                }
-              });
-    }
-
-    private ComponentExecutable getExecutionRoot(DataFetchingEnvironment env) {
-      AliasGenerator aliasGenerator = new AliasGenerator();
-      SQLArguments sqlArguments = new SQLArguments(env.getArguments());
-      ComponentExecutable executionRoot =
-          new ExecutionRoot(
-              env.getField().getName(),
-              aliasGenerator.getAlias(),
-              sqlArguments,
-            lockQueryFunctionDELETE,
-              unlockQuery);
-      traverseSelectionSet(
-          graphQLDatabaseSchema, executionRoot, aliasGenerator, env.getSelectionSet());
-      return executionRoot;
-    }
-
-    private Single<List<Map<String, Object>>> getResponse(
-        SQLExecutor sqlExecutor, DataFetchingEnvironment env, Transaction transaction) {
-      ComponentExecutable executionRoot = getExecutionRoot(env);
-      return executionRoot.execute(sqlExecutor, true, null);
     }
 
     private Single<Map<String, Object>> getResponseMutation(
@@ -224,6 +126,30 @@ public class GraphQLDefinition {
           transaction, databaseSchema, fieldName, rows, returningColumns);
     }
 
+    private ExecutionDefinition createExecutionDefinition(DataFetchingEnvironment env) {
+      // RoutingContext routingContext = env.getContext();
+      // System.out.println(routingContext.user());
+      Field field = env.getField();
+      String tableName = field.getName();
+      ExecutionFunctions executionFunctions =
+          new ExecutionFunctions(
+              graphQLDatabaseSchema,
+              permissionsSpec.getRole("default"),
+              Map.of("id", 70),
+              lockQueryFunction,
+              unlockQuery);
+      return executionFunctions.createExecutionDefinition(tableName, field, true);
+    }
+
+    private Function<Transaction, Single<List<Map<String, Object>>>>
+        createTransactionQueryResponseFunction(ExecutionDefinition executionDefinition) {
+      return transaction ->
+          executionDefinition
+              .getQueryExecutorResponseFunction()
+              .apply(transactionQueryExecutorFunction.apply(transaction))
+              .flatMap(result -> transaction.rxCommit().andThen(Single.just(result)));
+    }
+
     /**
      * Enables query by defining data fetcher using {@link VertxDataFetcher} and adding it to {@link
      * GraphQLCodeRegistry}.
@@ -240,42 +166,10 @@ public class GraphQLDefinition {
                   sqlConnectionPool
                       .rxBegin()
                       .flatMap(
-                          transaction -> {
-                            //RoutingContext routingContext = env.getContext();
-                            // System.out.println(routingContext.user());
-                            Field field = env.getField();
-                            String tableName = field.getName();
-                            ExecutionConstants executionConstants =
-                                new ExecutionConstants(
-                                    transactionQueryExecutorFunction.apply(transaction),
-                                    graphQLDatabaseSchema,
-                                    permissionsSpec.getRole("default"),
-                                    Map.of("id", 70),
-                                    lockQueryFunction,
-                                    unlockQuery
-                                  );
-                            return ExecutionFunctions.getRootResponse(
-                                    tableName, field, executionConstants, null, true)
-                                .flatMap(
-                                    result -> transaction.rxCommit().andThen(Single.just(result)));
-                          })
+                          transaction ->
+                              createTransactionQueryResponseFunction(createExecutionDefinition(env))
+                                  .apply(transaction))
                       .subscribe(promise::complete, promise::fail));
-
-      // VertxDataFetcher<List<Map<String, Object>>> queryDataFetcher =
-      //    new VertxDataFetcher<>(
-      //        (env, promise) ->
-      //            sqlConnectionPool
-      //                .rxBegin()
-      //                .flatMap(
-      //                    transaction ->
-      //                        getResponse(
-      //                                transactionSQLExecutorFunction.apply(transaction),
-      //                                env,
-      //                                transaction)
-      //                            .flatMap(
-      //                                result ->
-      //                                    transaction.rxCommit().andThen(Single.just(result))))
-      //                .subscribe(promise::complete, promise::fail));
       databaseSchema
           .getTableNames()
           .forEach(
@@ -349,18 +243,16 @@ public class GraphQLDefinition {
 
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
           env -> {
-            ComponentExecutable executionRoot = getExecutionRoot(env);
+            ExecutionDefinition executionDefinition = createExecutionDefinition(env);
+            Function<Transaction, Single<List<Map<String, Object>>>>
+                transactionQueryResponseFunction =
+                    createTransactionQueryResponseFunction(executionDefinition);
             return eventFlowableFactory
-                .create(executionRoot)
-                .flatMap(record -> sqlConnectionPool.rxBegin().toFlowable())
-                .flatMap(
-                    transaction ->
-                        executionRoot
-                            .execute(transactionSQLExecutorFunction.apply(transaction), true, null)
-                            .toFlowable()
-                            .flatMap(
-                                result -> transaction.rxCommit().andThen(Flowable.just(result))));
+                .create(executionDefinition.getQueriedTables())
+                .flatMapSingle(record -> sqlConnectionPool.rxBegin())
+                .flatMapSingle(transactionQueryResponseFunction::apply);
           };
+
       databaseSchema
           .getTableNames()
           .forEach(

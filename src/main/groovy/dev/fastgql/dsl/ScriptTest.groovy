@@ -1,7 +1,7 @@
 package dev.fastgql.dsl
 
-import dev.fastgql.newsql.Condition
-import dev.fastgql.newsql.ConditionUtils
+import dev.fastgql.sql.Condition
+import dev.fastgql.sql.ConditionUtils
 
 
 class ScriptTest {

@@ -1,7 +1,7 @@
 package dev.fastgql.dsl
 
 import dev.fastgql.common.RelationalOperator
-import dev.fastgql.newsql.Condition
+import dev.fastgql.sql.Condition
 
 import java.util.function.Function
 

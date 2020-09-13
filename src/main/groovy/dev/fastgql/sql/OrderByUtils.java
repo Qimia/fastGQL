@@ -1,4 +1,4 @@
-package dev.fastgql.newsql;
+package dev.fastgql.sql;
 
 import graphql.language.*;
 import java.util.List;

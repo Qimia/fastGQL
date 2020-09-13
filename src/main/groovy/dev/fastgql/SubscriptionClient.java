@@ -34,10 +34,7 @@ public class SubscriptionClient extends AbstractVerticle {
                     .put("type", ApolloWSMessageType.START.getText())
                     .put(
                         "payload",
-                        new JsonObject()
-                            .put(
-                                "query",
-                                "subscription { addresses { id customers_on_address { id } } }"));
+                        new JsonObject().put("query", "subscription { customers { id } }"));
             webSocket.write(request.toBuffer());
           } else {
             websocketRes.cause().printStackTrace();
