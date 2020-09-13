@@ -46,7 +46,7 @@ public class DatabaseSchema {
   }
 
   public static class Builder {
-    private Map<String, Map<String, KeyDefinition>> graph = new HashMap<>();
+    private final Map<String, Map<String, KeyDefinition>> graph = new HashMap<>();
 
     public Builder() {}
 

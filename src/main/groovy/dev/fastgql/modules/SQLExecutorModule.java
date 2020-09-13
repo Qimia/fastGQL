@@ -5,7 +5,6 @@ import com.google.inject.Provides;
 import dev.fastgql.sql.QueryExecutor;
 import io.reactivex.Observable;
 import io.vertx.reactivex.sqlclient.Transaction;
-import java.util.Optional;
 import java.util.function.Function;
 
 public class SQLExecutorModule extends AbstractModule {
@@ -18,12 +17,6 @@ public class SQLExecutorModule extends AbstractModule {
                 .rxQuery(query)
                 .doOnSuccess(rows -> System.out.println("EXECUTED: " + query))
                 .flatMapObservable(Observable::fromIterable)
-                .map(Optional::of)
-                .defaultIfEmpty(Optional.empty())
-                .flatMapSingle(
-                    row ->
-                        row.isPresent()
-                            ? queryResponseComposer.apply(rowExecutors, row.get())
-                            : queryResponseComposer.apply(rowExecutors, null));
+                .flatMapMaybe(row -> queryResponseComposer.apply(rowExecutors, row));
   }
 }

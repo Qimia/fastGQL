@@ -5,18 +5,15 @@ import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.graphql.GraphQLDatabaseSchema;
 import dev.fastgql.graphql.GraphQLField;
 import graphql.language.Field;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
-import io.reactivex.Single;
 import io.vertx.reactivex.sqlclient.Row;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ExecutionFunctions {
 
@@ -25,6 +22,7 @@ public class ExecutionFunctions {
   private final Map<String, Object> jwtParams;
   private final Function<Set<TableAlias>, String> tableListLockQueryFunction;
   private final String unlockQuery;
+  private final List<String> mockQueries;
 
   public ExecutionFunctions(
       GraphQLDatabaseSchema graphQLDatabaseSchema,
@@ -38,6 +36,7 @@ public class ExecutionFunctions {
     this.jwtParams = jwtParams;
     this.tableListLockQueryFunction = tableListLockQueryFunction;
     this.unlockQuery = unlockQuery;
+    this.mockQueries = new ArrayList<>();
   }
 
   private RowExecutor createExecutorForColumn(Table table, GraphQLField graphQLField, Query query) {
@@ -49,8 +48,8 @@ public class ExecutionFunctions {
     }
     Query.SelectColumn selectColumn = query.addSelectColumn(table, columnName);
     return (queryExecutor, row) -> {
-      Object value = row.getValue(selectColumn.getResultAlias());
-      return value == null ? Single.just(Map.of()) : Single.just(Map.of(columnName, value));
+      Object value = row == null ? null : row.getValue(selectColumn.getResultAlias());
+      return value == null ? Maybe.empty() : Maybe.just(Map.entry(columnName, value));
     };
   }
 
@@ -84,10 +83,10 @@ public class ExecutionFunctions {
     return (queryExecutor, row) -> {
       Object value = row.getValue(selectColumnReferencing.getResultAlias());
       return value == null
-          ? Single.just(Map.of())
+          ? Maybe.empty()
           : executorListReducerFunction(executors, row)
               .apply(queryExecutor)
-              .map(result -> Map.of(field.getName(), result));
+              .map(result -> Map.entry(field.getName(), result));
     };
   }
 
@@ -104,27 +103,28 @@ public class ExecutionFunctions {
     String foreignColumnName = graphQLField.getForeignName().getKeyName();
     Query.SelectColumn selectColumn = query.addSelectColumn(table, columnName);
 
-    BiFunction<QueryExecutor, Condition, Single<List<Map<String, Object>>>>
-        conditionSingleFunction =
-            queryExecutorConditionResponseFunction(
-                foreignTableName,
-                field,
-                String.format(
-                    "%s.%s={%s/%s}",
-                    pathInQueryToAlias.get(pathInQuery),
-                    foreignColumnName,
-                    table.getPathInQuery(),
-                    columnName),
-                pathInQueryToAlias,
-                pathInQuery);
+    String newPathInQuery = String.format("%s/%s", pathInQuery, field.getName());
+
+    BiFunction<QueryExecutor, Condition, Maybe<List<Map<String, Object>>>> conditionSingleFunction =
+        queryExecutorConditionResponseFunction(
+            foreignTableName,
+            field,
+            String.format(
+                "%s.%s={%s/%s}",
+                pathInQueryToAlias.get(newPathInQuery),
+                foreignColumnName,
+                table.getPathInQuery(),
+                columnName),
+            pathInQueryToAlias,
+            newPathInQuery);
 
     return (queryExecutor, row) -> {
       Object value = row.getValue(selectColumn.getResultAlias());
       return value == null
-          ? Single.just(Map.of())
+          ? Maybe.empty()
           : conditionSingleFunction
               .apply(queryExecutor, ConditionUtils.checkColumnIsEqValue(foreignColumnName, value))
-              .map(result -> Map.of(field.getName(), result));
+              .map(result -> Map.entry(field.getName(), result));
     };
   }
 
@@ -172,6 +172,7 @@ public class ExecutionFunctions {
     return field.getSelectionSet().getSelections().stream()
         .filter(selection -> selection instanceof Field)
         .map(selection -> (Field) selection)
+        .filter(subField -> !subField.getName().equals("__sql"))
         .map(
             subField -> {
               GraphQLField graphQLField =
@@ -180,7 +181,7 @@ public class ExecutionFunctions {
                       || graphQLField.getReferenceType() == ReferenceType.REFERENCED
                   ? createPathInQueryToTableAlias(
                       newPathInQuery,
-                      String.format("%s_%d", currentAlias, count.getAndIncrement()),
+                      String.format("%s%d", currentAlias, count.getAndIncrement()),
                       graphQLField.getForeignName().getTableName(),
                       subField)
                   : new HashMap<String, TableAlias>();
@@ -193,15 +194,18 @@ public class ExecutionFunctions {
             });
   }
 
-  private Function<QueryExecutor, Single<Map<String, Object>>> executorListReducerFunction(
+  private Function<QueryExecutor, Maybe<Map<String, Object>>> executorListReducerFunction(
       List<RowExecutor> executorList, Row row) {
     return queryExecutor ->
         Observable.fromIterable(executorList)
-            .flatMapSingle(executor -> executor.apply(queryExecutor, row))
-            .collect(HashMap::new, Map::putAll);
+            .flatMapMaybe(executor -> executor.apply(queryExecutor, row))
+            .collectInto(
+                (Map<String, Object>) new HashMap<String, Object>(),
+                (accumulator, newEntry) -> accumulator.put(newEntry.getKey(), newEntry.getValue()))
+            .filter(map -> !map.isEmpty());
   }
 
-  private BiFunction<QueryExecutor, Condition, Single<List<Map<String, Object>>>>
+  private BiFunction<QueryExecutor, Condition, Maybe<List<Map<String, Object>>>>
       queryExecutorConditionResponseFunction(
           String tableName,
           Field field,
@@ -222,8 +226,7 @@ public class ExecutionFunctions {
     Query query = new Query(table);
     List<RowExecutor> executorList =
         createExecutors(query.getTable(), field, query, pathInQueryToAlias, pathInQuery);
-    System.out.println("*********** NEW QUERY");
-    System.out.println(query.createMockQuery());
+    mockQueries.add(query.createMockQuery());
 
     return (queryExecutor, condition) -> {
       table.setExtraCondition(condition);
@@ -234,31 +237,66 @@ public class ExecutionFunctions {
               executorList,
               (executorListInComposer, row) ->
                   executorListReducerFunction(executorListInComposer, row).apply(queryExecutor))
-          .toList();
+          .toList()
+          .filter(list -> !list.isEmpty());
     };
   }
 
-  public ExecutionDefinition createExecutionDefinition(
-      String tableName, Field field, boolean lockTables) {
-    Map<String, TableAlias> pathInQueryToTableAlias =
-        createPathInQueryToTableAlias(null, "t", tableName, field);
+  public List<String> createMockQueries(Field field) {
+    Map<String, TableAlias> pathInQueryToTableAlias = createPathInQueryToTableAlias(field);
+    Map<String, String> pathInQueryToAlias = createPathInQueryToAlias(pathInQueryToTableAlias);
+    Set<TableAlias> tableAliases = createTableAliases(pathInQueryToTableAlias);
 
-    Map<String, String> pathInQueryToAlias =
-        pathInQueryToTableAlias.entrySet().stream()
-            .collect(
-                Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getTableAlias()));
+    String tableLockQueryString = tableListLockQueryFunction.apply(tableAliases);
 
-    Set<TableAlias> tableAliases = new HashSet<>(pathInQueryToTableAlias.values());
+    mockQueries.clear();
+
+    queryExecutorConditionResponseFunction(
+        field.getName(), field, "", pathInQueryToAlias, field.getName());
+
+    List<String> mockQueriesReversed =
+        Stream.of(
+                List.of(unlockQuery == null ? "" : unlockQuery),
+                mockQueries,
+                List.of(tableLockQueryString))
+            .flatMap(List::stream)
+            .filter(query -> !query.isEmpty())
+            .collect(Collectors.toList());
+    Collections.reverse(mockQueriesReversed);
+    return mockQueriesReversed;
+  }
+
+  private Map<String, TableAlias> createPathInQueryToTableAlias(Field field) {
+    return createPathInQueryToTableAlias(null, "t", field.getName(), field);
+  }
+
+  private Map<String, String> createPathInQueryToAlias(
+      Map<String, TableAlias> pathInQueryToTableAlias) {
+    return pathInQueryToTableAlias.entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getTableAlias()));
+  }
+
+  private Set<TableAlias> createTableAliases(Map<String, TableAlias> pathInQueryToTableAlias) {
+    return new HashSet<>(pathInQueryToTableAlias.values());
+  }
+
+  public ExecutionDefinition createExecutionDefinition(Field field, boolean lockTables) {
+
+    Map<String, TableAlias> pathInQueryToTableAlias = createPathInQueryToTableAlias(field);
+    Map<String, String> pathInQueryToAlias = createPathInQueryToAlias(pathInQueryToTableAlias);
+    Set<TableAlias> tableAliases = createTableAliases(pathInQueryToTableAlias);
+
+    mockQueries.clear();
+
+    BiFunction<QueryExecutor, Condition, Maybe<List<Map<String, Object>>>>
+        queryResultSingleFunction =
+            queryExecutorConditionResponseFunction(
+                field.getName(), field, "", pathInQueryToAlias, field.getName());
 
     String tableLockQueryString = tableListLockQueryFunction.apply(tableAliases);
     String tableUnlockQueryString = unlockQuery;
 
-    BiFunction<QueryExecutor, Condition, Single<List<Map<String, Object>>>>
-        queryResultSingleFunction =
-            queryExecutorConditionResponseFunction(
-                tableName, field, "", pathInQueryToAlias, tableName);
-
-    Function<QueryExecutor, Single<List<Map<String, Object>>>> queryExecutorResponseFunction =
+    Function<QueryExecutor, Maybe<List<Map<String, Object>>>> queryExecutorResponseFunction =
         queryExecutor -> {
           Observable<Map<String, Object>> tableLockObservable =
               queryExecutor.justQuery(tableLockQueryString);
@@ -267,15 +305,19 @@ public class ExecutionFunctions {
                   ? Observable.just(Map.of())
                   : queryExecutor.justQuery(tableUnlockQueryString);
 
-          Single<List<Map<String, Object>>> queryResultSingle =
+          Maybe<List<Map<String, Object>>> queryResultSingle =
               queryResultSingleFunction.apply(queryExecutor, null);
 
           return tableLockQueryString == null || !lockTables
               ? queryResultSingle
               : tableLockObservable
                   .toList()
-                  .flatMap(lockResult -> queryResultSingle)
-                  .flatMap(result -> tableUnlockObservable.toList().map(unlockResult -> result));
+                  .flatMapMaybe(lockResult -> queryResultSingle)
+                  .flatMap(
+                      result ->
+                          tableUnlockObservable
+                              .toList()
+                              .flatMapMaybe(unlockResult -> Maybe.just(result)));
         };
 
     Set<String> queriedTables =

@@ -18,6 +18,7 @@ import dev.fastgql.sql.*;
 import dev.fastgql.sql.MutationExecution;
 import graphql.GraphQL;
 import graphql.language.Field;
+import graphql.language.OperationDefinition;
 import graphql.schema.DataFetcher;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.FieldCoordinates;
@@ -26,6 +27,7 @@ import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.SelectedField;
 import io.reactivex.Flowable;
+import io.reactivex.Maybe;
 import io.reactivex.Single;
 import io.vertx.core.json.JsonArray;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
@@ -35,6 +37,8 @@ import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,7 +134,6 @@ public class GraphQLDefinition {
       // RoutingContext routingContext = env.getContext();
       // System.out.println(routingContext.user());
       Field field = env.getField();
-      String tableName = field.getName();
       ExecutionFunctions executionFunctions =
           new ExecutionFunctions(
               graphQLDatabaseSchema,
@@ -138,16 +141,29 @@ public class GraphQLDefinition {
               Map.of("id", 70),
               lockQueryFunction,
               unlockQuery);
-      return executionFunctions.createExecutionDefinition(tableName, field, true);
+      return executionFunctions.createExecutionDefinition(field, true);
     }
 
-    private Function<Transaction, Single<List<Map<String, Object>>>>
+    private Function<Transaction, Maybe<List<Map<String, Object>>>>
         createTransactionQueryResponseFunction(ExecutionDefinition executionDefinition) {
       return transaction ->
           executionDefinition
               .getQueryExecutorResponseFunction()
               .apply(transactionQueryExecutorFunction.apply(transaction))
-              .flatMap(result -> transaction.rxCommit().andThen(Single.just(result)));
+              .flatMap(result -> transaction.rxCommit().andThen(Maybe.just(result)));
+    }
+
+    private Stream<Field> createFieldStream(DataFetchingEnvironment env) {
+      return env.getDocument().getDefinitions().stream()
+          .filter(definition -> definition instanceof OperationDefinition)
+          .map(definition -> (OperationDefinition) definition)
+          .filter(
+              operationDefinition ->
+                  operationDefinition.getOperation().equals(OperationDefinition.Operation.QUERY))
+          .map(operationDefinition -> operationDefinition.getSelectionSet().getSelections())
+          .flatMap(List::stream)
+          .filter(selection -> selection instanceof Field)
+          .map(selection -> (Field) selection);
     }
 
     /**
@@ -162,20 +178,57 @@ public class GraphQLDefinition {
       }
       VertxDataFetcher<List<Map<String, Object>>> queryDataFetcher =
           new VertxDataFetcher<>(
-              (env, promise) ->
+              (env, promise) -> {
+                boolean hasMeta =
+                    createFieldStream(env).anyMatch(field -> field.getName().equals("__meta"));
+
+                if (hasMeta) {
+                  promise.complete(null);
+                } else {
                   sqlConnectionPool
                       .rxBegin()
-                      .flatMap(
+                      .flatMapMaybe(
                           transaction ->
                               createTransactionQueryResponseFunction(createExecutionDefinition(env))
                                   .apply(transaction))
-                      .subscribe(promise::complete, promise::fail));
+                      .defaultIfEmpty(List.of())
+                      .subscribe(promise::complete, promise::fail);
+                }
+              });
+
+      VertxDataFetcher<Map<String, Object>> metaDataFetcher =
+          new VertxDataFetcher<>(
+              (env, promise) -> {
+                ExecutionFunctions executionFunctions =
+                    new ExecutionFunctions(
+                        graphQLDatabaseSchema,
+                        permissionsSpec.getRole("default"),
+                        Map.of("id", 70),
+                        lockQueryFunction,
+                        unlockQuery);
+
+                Map<String, String> mockQueries =
+                    createFieldStream(env)
+                        .filter(field -> !field.getName().equals("__meta"))
+                        .map(
+                            field ->
+                                Map.entry(
+                                    field.getName(),
+                                    String.join("; ", executionFunctions.createMockQueries(field))
+                                        .strip()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+                promise.complete(Map.of("sql", mockQueries));
+              });
+
       databaseSchema
           .getTableNames()
           .forEach(
               tableName ->
                   graphQLCodeRegistryBuilder.dataFetcher(
                       FieldCoordinates.coordinates("Query", tableName), queryDataFetcher));
+      graphQLCodeRegistryBuilder.dataFetcher(
+          FieldCoordinates.coordinates("Query", "__meta"), metaDataFetcher);
       queryEnabled = true;
       return this;
     }
@@ -244,13 +297,14 @@ public class GraphQLDefinition {
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
           env -> {
             ExecutionDefinition executionDefinition = createExecutionDefinition(env);
-            Function<Transaction, Single<List<Map<String, Object>>>>
+            Function<Transaction, Maybe<List<Map<String, Object>>>>
                 transactionQueryResponseFunction =
                     createTransactionQueryResponseFunction(executionDefinition);
             return eventFlowableFactory
                 .create(executionDefinition.getQueriedTables())
                 .flatMapSingle(record -> sqlConnectionPool.rxBegin())
-                .flatMapSingle(transactionQueryResponseFunction::apply);
+                .flatMapMaybe(transactionQueryResponseFunction::apply)
+                .defaultIfEmpty(List.of());
           };
 
       databaseSchema

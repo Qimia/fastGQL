@@ -7,6 +7,7 @@
 package dev.fastgql.graphql;
 
 import static graphql.Scalars.GraphQLInt;
+import static graphql.Scalars.GraphQLString;
 
 import dev.fastgql.common.QualifiedName;
 import dev.fastgql.common.ReferenceType;
@@ -133,9 +134,20 @@ public class GraphQLDatabaseSchema {
    */
   public void applyToGraphQLObjectTypes(List<GraphQLObjectType.Builder> builders) {
     Objects.requireNonNull(builders);
+
+    GraphQLObjectType.Builder sqlInternalObjectTypeBuilder =
+        GraphQLObjectType.newObject().name("__sql_internal");
+
     graph.forEach(
         (tableName, fieldNameToGraphQLField) -> {
+          sqlInternalObjectTypeBuilder.field(
+              GraphQLFieldDefinition.newFieldDefinition()
+                  .name(tableName)
+                  .type(GraphQLString)
+                  .build());
+
           GraphQLObjectType.Builder objectBuilder = GraphQLObjectType.newObject().name(tableName);
+
           fieldNameToGraphQLField.forEach(
               (fieldName, graphQLField) -> {
                 GraphQLFieldDefinition.Builder fieldBuilder =
@@ -166,6 +178,24 @@ public class GraphQLDatabaseSchema {
                           .argument(whereMap.get(tableName))
                           .build()));
         });
+
+    GraphQLObjectType sqlObjectType =
+        GraphQLObjectType.newObject()
+            .name("__sql")
+            .field(
+                GraphQLFieldDefinition.newFieldDefinition()
+                    .name("sql")
+                    .type(sqlInternalObjectTypeBuilder)
+                    .build())
+            .build();
+
+    builders.forEach(
+        builder ->
+            builder.field(
+                GraphQLFieldDefinition.newFieldDefinition()
+                    .name("__meta")
+                    .type(sqlObjectType)
+                    .build()));
   }
 
   private static GraphQLArgument createArgument(String name, GraphQLScalarType type) {
