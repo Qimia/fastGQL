@@ -28,6 +28,7 @@ public interface QueryTestsWithSecurity extends SetupTearDownForAll {
                 client
                     .get(getDeploymentPort(), "localhost", "/v1/update")
                     .bearerTokenAuthentication(getJwtToken())
+                    // .bearerTokenAuthentication("dummy")
                     .rxSend())
         .subscribe(
             response ->

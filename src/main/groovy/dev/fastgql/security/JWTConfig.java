@@ -46,4 +46,31 @@ public class JWTConfig {
     }
     return null;
   }
+
+  public String getAlgorithm() {
+    return algorithm;
+  }
+
+  public String getPublicKey() {
+    return publicKey;
+  }
+
+  public String getSecretKey() {
+    return secretKey;
+  }
+
+  @Override
+  public String toString() {
+    return "JWTConfig{"
+        + "algorithm='"
+        + algorithm
+        + '\''
+        + ", publicKey='"
+        + publicKey
+        + '\''
+        + ", secretKey='"
+        + secretKey
+        + '\''
+        + '}';
+  }
 }

@@ -10,6 +10,7 @@ class Permissions {
                 table ('customers') {
                     ops ([select]) {
                         allow 'id', 'first_name'
+                        check 'id' _eq { it.id }
                         //check 'first_name' _similar 'John'
                         //check 'id' _in 101, 102
                         //check 'id' _eq 1 and {

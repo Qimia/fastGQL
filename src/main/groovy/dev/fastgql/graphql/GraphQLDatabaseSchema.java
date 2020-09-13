@@ -126,14 +126,8 @@ public class GraphQLDatabaseSchema {
             });
   }
 
-  /**
-   * Applies this schema to given {@link GraphQLObjectType} builders (e.g. Query or Subscription
-   * object builders).
-   *
-   * @param builders builders to which this schema will be applied
-   */
-  public void applyToGraphQLObjectTypes(List<GraphQLObjectType.Builder> builders) {
-    Objects.requireNonNull(builders);
+  public void applyToQueryObjectType(GraphQLObjectType.Builder builder) {
+    Objects.requireNonNull(builder);
 
     GraphQLObjectType.Builder sqlInternalObjectTypeBuilder =
         GraphQLObjectType.newObject().name("__sql_internal");
@@ -145,7 +139,38 @@ public class GraphQLDatabaseSchema {
                   .name(tableName)
                   .type(GraphQLString)
                   .build());
+        });
 
+    GraphQLObjectType sqlObjectType =
+        GraphQLObjectType.newObject()
+            .name("__sql")
+            .field(
+                GraphQLFieldDefinition.newFieldDefinition()
+                    .name("sql")
+                    .type(sqlInternalObjectTypeBuilder)
+                    .build())
+            .field(
+                GraphQLFieldDefinition.newFieldDefinition()
+                    .name("user")
+                    .type(GraphQLString)
+                    .build())
+            .build();
+
+    builder.field(
+        GraphQLFieldDefinition.newFieldDefinition().name("__meta").type(sqlObjectType).build());
+  }
+
+  /**
+   * Applies this schema to given {@link GraphQLObjectType} builders (e.g. Query or Subscription
+   * object builders).
+   *
+   * @param builders builders to which this schema will be applied
+   */
+  public void applyToGraphQLObjectTypes(List<GraphQLObjectType.Builder> builders) {
+    Objects.requireNonNull(builders);
+
+    graph.forEach(
+        (tableName, fieldNameToGraphQLField) -> {
           GraphQLObjectType.Builder objectBuilder = GraphQLObjectType.newObject().name(tableName);
 
           fieldNameToGraphQLField.forEach(
@@ -178,24 +203,6 @@ public class GraphQLDatabaseSchema {
                           .argument(whereMap.get(tableName))
                           .build()));
         });
-
-    GraphQLObjectType sqlObjectType =
-        GraphQLObjectType.newObject()
-            .name("__sql")
-            .field(
-                GraphQLFieldDefinition.newFieldDefinition()
-                    .name("sql")
-                    .type(sqlInternalObjectTypeBuilder)
-                    .build())
-            .build();
-
-    builders.forEach(
-        builder ->
-            builder.field(
-                GraphQLFieldDefinition.newFieldDefinition()
-                    .name("__meta")
-                    .type(sqlObjectType)
-                    .build()));
   }
 
   private static GraphQLArgument createArgument(String name, GraphQLScalarType type) {

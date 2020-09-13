@@ -10,7 +10,7 @@ import io.vertx.reactivex.ext.web.codec.BodyCodec;
 
 public class QueryClient extends AbstractVerticle {
 
-  private static final String jwtToken =
+  private static final String JWT_TOKEN =
       "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9."
           + "eyJpYXQiOjE1OTQ3MjA4MTF9."
           + "tCUr0CM_j6ZOiJakW2ODxvxxEJtNnmMWquSTGhJmK1aMu4aeAtHyGJlwpkmLo-"
@@ -20,6 +20,9 @@ public class QueryClient extends AbstractVerticle {
           + "U0n_18G8i_VEtPxmGuv8Z2C-UnOaE5ryiMltXwRt15NDNy77hhzSW2xOGwnttq"
           + "xoHIixWiJuIi1Z0XPurvtf7oymIKRtBg";
 
+  // private static final String QUERY = "query { addresses { id customers_on_address { id } } }";
+  private static final String QUERY = "query { __meta { user } }";
+
   public static void main(String[] args) {
     Launcher.executeCommand("run", QueryClient.class.getName());
   }
@@ -28,12 +31,11 @@ public class QueryClient extends AbstractVerticle {
   public void start(Promise<Void> future) {
     WebClient.create(vertx)
         .post(8080, "localhost", "/v1/graphql")
-        .bearerTokenAuthentication(jwtToken)
+        .bearerTokenAuthentication(JWT_TOKEN)
         .expect(ResponsePredicate.SC_OK)
         .expect(ResponsePredicate.JSON)
         .as(BodyCodec.jsonObject())
-        .rxSendJsonObject(
-            new JsonObject().put("query", "query { addresses { id customers_on_address { id } } }"))
+        .rxSendJsonObject(new JsonObject().put("query", QUERY))
         .subscribe(
             response -> {
               System.out.println(response.body());

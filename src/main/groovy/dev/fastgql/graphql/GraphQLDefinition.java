@@ -30,8 +30,12 @@ import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.User;
+import io.vertx.ext.auth.jwt.impl.JWTUser;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
@@ -130,17 +134,21 @@ public class GraphQLDefinition {
           transaction, databaseSchema, fieldName, rows, returningColumns);
     }
 
+    private ExecutionFunctions createExecutionFunctions(DataFetchingEnvironment env) {
+      Map<String, Object> userParams = createUserParams(env);
+      String role = (String) userParams.getOrDefault("role", "default");
+      return new ExecutionFunctions(
+        graphQLDatabaseSchema,
+        permissionsSpec.getRole(role),
+        userParams,
+        lockQueryFunction,
+        unlockQuery);
+
+    }
+
     private ExecutionDefinition createExecutionDefinition(DataFetchingEnvironment env) {
-      // RoutingContext routingContext = env.getContext();
-      // System.out.println(routingContext.user());
       Field field = env.getField();
-      ExecutionFunctions executionFunctions =
-          new ExecutionFunctions(
-              graphQLDatabaseSchema,
-              permissionsSpec.getRole("default"),
-              Map.of("id", 70),
-              lockQueryFunction,
-              unlockQuery);
+      ExecutionFunctions executionFunctions = createExecutionFunctions(env);
       return executionFunctions.createExecutionDefinition(field, true);
     }
 
@@ -153,7 +161,7 @@ public class GraphQLDefinition {
               .flatMap(result -> transaction.rxCommit().andThen(Maybe.just(result)));
     }
 
-    private Stream<Field> createFieldStream(DataFetchingEnvironment env) {
+    private static Stream<Field> createFieldStream(DataFetchingEnvironment env) {
       return env.getDocument().getDefinitions().stream()
           .filter(definition -> definition instanceof OperationDefinition)
           .map(definition -> (OperationDefinition) definition)
@@ -164,6 +172,13 @@ public class GraphQLDefinition {
           .flatMap(List::stream)
           .filter(selection -> selection instanceof Field)
           .map(selection -> (Field) selection);
+    }
+
+    private static Map<String, Object> createUserParams(DataFetchingEnvironment env) {
+      RoutingContext routingContext = env.getContext();
+      User user = routingContext.getDelegate().user();
+      JWTUser jwtUser = (JWTUser) user;
+      return jwtUser.principal().getMap();
     }
 
     /**
@@ -199,13 +214,7 @@ public class GraphQLDefinition {
       VertxDataFetcher<Map<String, Object>> metaDataFetcher =
           new VertxDataFetcher<>(
               (env, promise) -> {
-                ExecutionFunctions executionFunctions =
-                    new ExecutionFunctions(
-                        graphQLDatabaseSchema,
-                        permissionsSpec.getRole("default"),
-                        Map.of("id", 70),
-                        lockQueryFunction,
-                        unlockQuery);
+                ExecutionFunctions executionFunctions = createExecutionFunctions(env);
 
                 Map<String, String> mockQueries =
                     createFieldStream(env)
@@ -218,7 +227,10 @@ public class GraphQLDefinition {
                                         .strip()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-                promise.complete(Map.of("sql", mockQueries));
+                Map<String, Object> userParams = createUserParams(env);
+
+                promise.complete(
+                    Map.of("sql", mockQueries, "user", userParams.toString()));
               });
 
       databaseSchema
@@ -341,6 +353,7 @@ public class GraphQLDefinition {
       }
       graphQLDatabaseSchema.applyToGraphQLObjectTypes(builders);
       if (queryEnabled) {
+        graphQLDatabaseSchema.applyToQueryObjectType(queryBuilder);
         graphQLSchemaBuilder.query(queryBuilder);
       }
       if (subscriptionEnabled) {

@@ -205,6 +205,7 @@ public class GraphQLTestUtils {
    */
   public static void verifyUnauthorizedRequest(
       int port, String requestURI, Vertx vertx, VertxTestContext context) {
+    System.out.println(requestURI);
     WebClient.create(vertx)
         .post(port, "localhost", requestURI)
         .expect(ResponsePredicate.SC_UNAUTHORIZED)

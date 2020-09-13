@@ -13,4 +13,8 @@ class Annotations {
   @Qualifier
   @Retention(RUNTIME)
   @interface UpdateHandler {}
+
+  @Qualifier
+  @Retention(RUNTIME)
+  @interface JwtToken {}
 }
