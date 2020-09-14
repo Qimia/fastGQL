@@ -5,6 +5,7 @@ import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.graphql.GraphQLDatabaseSchema;
 import dev.fastgql.graphql.GraphQLField;
 import graphql.language.Field;
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.vertx.reactivex.sqlclient.Row;
@@ -39,7 +40,8 @@ public class ExecutionFunctions {
     this.mockQueries = new ArrayList<>();
   }
 
-  private RowExecutor createExecutorForColumn(Table table, GraphQLField graphQLField, Query query) {
+  private RowExecutor createExecutorForColumn(
+      Table table, GraphQLField graphQLField, Query query) {
     String columnName = graphQLField.getQualifiedName().getKeyName();
     if (!table.isColumnAllowed(columnName)) {
       throw new RuntimeException(
@@ -84,8 +86,7 @@ public class ExecutionFunctions {
       Object value = row.getValue(selectColumnReferencing.getResultAlias());
       return value == null
           ? Maybe.empty()
-          : executorListReducerFunction(executors, row)
-              .apply(queryExecutor)
+          : createResponseForRow(queryExecutor, executors, row)
               .map(result -> Map.entry(field.getName(), result));
     };
   }
@@ -194,15 +195,16 @@ public class ExecutionFunctions {
             });
   }
 
-  private Function<QueryExecutor, Maybe<Map<String, Object>>> executorListReducerFunction(
-      List<RowExecutor> executorList, Row row) {
-    return queryExecutor ->
-        Observable.fromIterable(executorList)
-            .flatMapMaybe(executor -> executor.apply(queryExecutor, row))
-            .collectInto(
-                (Map<String, Object>) new HashMap<String, Object>(),
-                (accumulator, newEntry) -> accumulator.put(newEntry.getKey(), newEntry.getValue()))
-            .filter(map -> !map.isEmpty());
+  private Maybe<Map<String, Object>> createResponseForRow(
+      QueryExecutor queryExecutor,
+      List<RowExecutor> executorList,
+      Row row) {
+    return Observable.fromIterable(executorList)
+        .flatMapMaybe(rowExecutor -> rowExecutor.apply(queryExecutor, row))
+        .collectInto(
+            (Map<String, Object>) new HashMap<String, Object>(),
+            (accumulator, newEntry) -> accumulator.put(newEntry.getKey(), newEntry.getValue()))
+        .filter(map -> !map.isEmpty());
   }
 
   private BiFunction<QueryExecutor, Condition, Maybe<List<Map<String, Object>>>>
@@ -231,14 +233,12 @@ public class ExecutionFunctions {
     return (queryExecutor, condition) -> {
       table.setExtraCondition(condition);
       String queryString = query.createQuery();
-      return queryExecutor
-          .apply(
-              queryString,
-              executorList,
-              (executorListInComposer, row) ->
-                  executorListReducerFunction(executorListInComposer, row).apply(queryExecutor))
-          .toList()
-          .filter(list -> !list.isEmpty());
+      return queryExecutor.apply(
+          queryString)
+          .flatMapObservable(Observable::fromIterable)
+                  .flatMapMaybe(row -> createResponseForRow(queryExecutor, executorList, row))
+                  .toList()
+                  .filter(list -> !list.isEmpty());
     };
   }
 
@@ -280,7 +280,8 @@ public class ExecutionFunctions {
     return new HashSet<>(pathInQueryToTableAlias.values());
   }
 
-  public ExecutionDefinition createExecutionDefinition(Field field, boolean lockTables) {
+  public ExecutionDefinition<List<Map<String, Object>>> createExecutionDefinition(
+      Field field, boolean lockTables) {
 
     Map<String, TableAlias> pathInQueryToTableAlias = createPathInQueryToTableAlias(field);
     Map<String, String> pathInQueryToAlias = createPathInQueryToAlias(pathInQueryToTableAlias);
@@ -298,26 +299,21 @@ public class ExecutionFunctions {
 
     Function<QueryExecutor, Maybe<List<Map<String, Object>>>> queryExecutorResponseFunction =
         queryExecutor -> {
-          Observable<Map<String, Object>> tableLockObservable =
-              queryExecutor.justQuery(tableLockQueryString);
-          Observable<Map<String, Object>> tableUnlockObservable =
+          Completable tableLockCompletable =
+              queryExecutor.apply(tableLockQueryString).ignoreElement();
+          Completable tableUnlockCompletable =
               tableUnlockQueryString == null
-                  ? Observable.just(Map.of())
-                  : queryExecutor.justQuery(tableUnlockQueryString);
+                  ? Completable.complete()
+                  : queryExecutor.apply(tableUnlockQueryString).ignoreElement();
 
           Maybe<List<Map<String, Object>>> queryResultSingle =
               queryResultSingleFunction.apply(queryExecutor, null);
 
           return tableLockQueryString == null || !lockTables
               ? queryResultSingle
-              : tableLockObservable
-                  .toList()
-                  .flatMapMaybe(lockResult -> queryResultSingle)
-                  .flatMap(
-                      result ->
-                          tableUnlockObservable
-                              .toList()
-                              .flatMapMaybe(unlockResult -> Maybe.just(result)));
+              : tableLockCompletable
+                  .andThen(queryResultSingle)
+                  .flatMap(result -> tableUnlockCompletable.andThen(Maybe.just(result)));
         };
 
     Set<String> queriedTables =
@@ -325,6 +321,6 @@ public class ExecutionFunctions {
             .map(TableAlias::getTableName)
             .collect(Collectors.toSet());
 
-    return new ExecutionDefinition(queryExecutorResponseFunction, queriedTables);
+    return new ExecutionDefinition<>(queryExecutorResponseFunction, queriedTables);
   }
 }

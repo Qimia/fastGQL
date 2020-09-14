@@ -11,10 +11,10 @@ import dev.fastgql.db.DatabaseSchema;
 import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.db.DebeziumConfig;
 import dev.fastgql.dsl.PermissionsSpec;
+import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.events.EventFlowableFactory;
 import dev.fastgql.sql.*;
-import dev.fastgql.sql.MutationExecution;
 import graphql.GraphQL;
 import graphql.language.Field;
 import graphql.language.OperationDefinition;
@@ -118,53 +118,54 @@ public class GraphQLDefinition {
       this.permissionsSpecSupplier = permissionsSpecSupplier;
     }
 
-    private Single<Map<String, Object>> getResponseMutation(
-        DataFetchingEnvironment env, Transaction transaction) {
-      String fieldName = env.getField().getName();
-      Object rowsObject = env.getArgument("objects");
-      JsonArray rows = rowsObject == null ? null : new JsonArray((List<?>) rowsObject);
-      SelectedField returning = env.getSelectionSet().getField("returning");
-      List<String> returningColumns = new ArrayList<>();
-      if (returning != null) {
-        returning
-            .getSelectionSet()
-            .getFields()
-            .forEach(selectedField -> returningColumns.add(selectedField.getName()));
-      }
-      return MutationExecution.createResponse(
-          transaction, databaseSchema, fieldName, rows, returningColumns);
-    }
+    //private Single<Map<String, Object>> getResponseMutation(
+    //    DataFetchingEnvironment env, Transaction transaction) {
+    //  String fieldName = env.getField().getName();
+    //  Object rowsObject = env.getArgument("objects");
+    //  JsonArray rows = rowsObject == null ? null : new JsonArray((List<?>) rowsObject);
+    //  SelectedField returning = env.getSelectionSet().getField("returning");
+    //  List<String> returningColumns = new ArrayList<>();
+    //  if (returning != null) {
+    //    returning
+    //        .getSelectionSet()
+    //        .getFields()
+    //        .forEach(selectedField -> returningColumns.add(selectedField.getName()));
+    //  }
+    //  return MutationExecution.createResponse(
+    //      transaction, databaseSchema, fieldName, rows, returningColumns);
+    //}
 
-    private ExecutionFunctions createExecutionFunctions(
-        DataFetchingEnvironment env, Map<String, Object> userParams) {
+    private RoleSpec getRoleSpecForUser(Map<String, Object> userParams) {
       String role = (String) userParams.getOrDefault("role", "default");
       PermissionsSpec permissionsSpec = permissionsSpecSupplier.get();
       System.out.println(permissionsSpec);
       if (permissionsSpec == null) {
         throw new RuntimeException("No permissions defined");
       }
+      return permissionsSpec.getRole(role);
+    }
+
+    private ExecutionFunctions createExecutionFunctions(Map<String, Object> userParams) {
       return new ExecutionFunctions(
           graphQLDatabaseSchema,
-          permissionsSpec.getRole(role),
+          getRoleSpecForUser(userParams),
           userParams,
           lockQueryFunction,
           unlockQuery);
     }
 
-    private ExecutionDefinition createExecutionDefinition(
+    private ExecutionDefinition<List<Map<String, Object>>> createQueryExecutionDefinition(
         DataFetchingEnvironment env, Map<String, Object> userParams) {
       Field field = env.getField();
-      ExecutionFunctions executionFunctions = createExecutionFunctions(env, userParams);
+      ExecutionFunctions executionFunctions = createExecutionFunctions(userParams);
       return executionFunctions.createExecutionDefinition(field, true);
     }
 
-    private Function<Transaction, Maybe<List<Map<String, Object>>>>
-        createTransactionQueryResponseFunction(ExecutionDefinition executionDefinition) {
-      return transaction ->
-          executionDefinition
-              .getQueryExecutorResponseFunction()
-              .apply(transactionQueryExecutorFunction.apply(transaction))
-              .flatMap(result -> transaction.rxCommit().andThen(Maybe.just(result)));
+    private ExecutionDefinition<Map<String, Object>> createMutationExecutionDefinition(
+        DataFetchingEnvironment env, Map<String, Object> userParams) {
+      MutationFunctions mutationFunctions =
+          new MutationFunctions(databaseSchema, getRoleSpecForUser(userParams), userParams);
+      return mutationFunctions.createExecutionDefinition(env.getField(), env.getArgument("objects"));
     }
 
     private static Stream<Field> createFieldStream(DataFetchingEnvironment env) {
@@ -191,6 +192,14 @@ public class GraphQLDefinition {
       return Map.of();
     }
 
+    private <T> Maybe<T> executeTransaction(
+        Transaction transaction, ExecutionDefinition<T> executionDefinition) {
+      return executionDefinition
+          .getQueryExecutorResponseFunction()
+          .apply(transactionQueryExecutorFunction.apply(transaction))
+          .flatMap(result -> transaction.rxCommit().andThen(Maybe.just(result)));
+    }
+
     /**
      * Enables query by defining data fetcher using {@link VertxDataFetcher} and adding it to {@link
      * GraphQLCodeRegistry}.
@@ -206,7 +215,6 @@ public class GraphQLDefinition {
               (env, promise) -> {
                 boolean hasMeta =
                     createFieldStream(env).anyMatch(field -> field.getName().equals("__meta"));
-
                 if (hasMeta) {
                   promise.complete(null);
                 } else {
@@ -214,9 +222,9 @@ public class GraphQLDefinition {
                       .rxBegin()
                       .flatMapMaybe(
                           transaction ->
-                              createTransactionQueryResponseFunction(
-                                      createExecutionDefinition(env, createUserParamsQuery(env)))
-                                  .apply(transaction))
+                              executeTransaction(
+                                  transaction,
+                                  createQueryExecutionDefinition(env, createUserParamsQuery(env))))
                       .defaultIfEmpty(List.of())
                       .subscribe(promise::complete, promise::fail);
                 }
@@ -226,7 +234,7 @@ public class GraphQLDefinition {
           new VertxDataFetcher<>(
               (env, promise) -> {
                 Map<String, Object> userParams = createUserParamsQuery(env);
-                ExecutionFunctions executionFunctions = createExecutionFunctions(env, userParams);
+                ExecutionFunctions executionFunctions = createExecutionFunctions(userParams);
 
                 Map<String, String> mockQueries =
                     createFieldStream(env)
@@ -264,19 +272,32 @@ public class GraphQLDefinition {
       if (mutationEnabled) {
         return this;
       }
-
       VertxDataFetcher<Map<String, Object>> mutationDataFetcher =
           new VertxDataFetcher<>(
               (env, promise) ->
                   sqlConnectionPool
                       .rxBegin()
-                      .flatMap(
+                      .flatMapMaybe(
                           transaction ->
-                              getResponseMutation(env, transaction)
-                                  .flatMap(
-                                      result ->
-                                          transaction.rxCommit().andThen(Single.just(result))))
+                              executeTransaction(
+                                  transaction,
+                                  createMutationExecutionDefinition(
+                                      env, createUserParamsQuery(env))))
+                      .defaultIfEmpty(Map.of())
                       .subscribe(promise::complete, promise::fail));
+
+      // VertxDataFetcher<Map<String, Object>> mutationDataFetcher =
+      //  new VertxDataFetcher<>(
+      //    (env, promise) ->
+      //            sqlConnectionPool
+      //                .rxBegin()
+      //                .flatMap(
+      //                    transaction ->
+      //                        getResponseMutation(env, transaction)
+      //                            .flatMap(
+      //                                result ->
+      //                                    transaction.rxCommit().andThen(Single.just(result))))
+      //                .subscribe(promise::complete, promise::fail));
 
       databaseSchema
           .getTableNames()
@@ -317,15 +338,12 @@ public class GraphQLDefinition {
 
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
           env -> {
-            ExecutionDefinition executionDefinition =
-                createExecutionDefinition(env, createUserParamsSubscription(env));
-            Function<Transaction, Maybe<List<Map<String, Object>>>>
-                transactionQueryResponseFunction =
-                    createTransactionQueryResponseFunction(executionDefinition);
+            ExecutionDefinition<List<Map<String, Object>>> executionDefinition =
+                createQueryExecutionDefinition(env, createUserParamsSubscription(env));
             return eventFlowableFactory
                 .create(executionDefinition.getQueriedTables())
                 .flatMapSingle(record -> sqlConnectionPool.rxBegin())
-                .flatMapMaybe(transactionQueryResponseFunction::apply)
+                .flatMapMaybe(transaction -> executeTransaction(transaction, executionDefinition))
                 .defaultIfEmpty(List.of());
           };
 

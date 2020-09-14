@@ -3,7 +3,9 @@ package dev.fastgql.transaction;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.fastgql.sql.QueryExecutor;
-import io.reactivex.Observable;
+import io.reactivex.Single;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.RowSet;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -25,25 +27,10 @@ public class SQLExecutorWithDelayModule extends AbstractModule {
   @Provides
   Function<Transaction, QueryExecutor> provideTransactionQueryExecutorFunction() {
     return transaction ->
-        (query, rowExecutors, queryResponseComposer) ->
-            transaction
-                .rxQuery(query)
-                .doOnSuccess(rows -> log.info("[executing] {}", query))
-                .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
-                .doOnSuccess(result -> log.info("[response] {}", query))
-                .flatMapObservable(Observable::fromIterable)
-                .flatMapMaybe(row -> queryResponseComposer.apply(rowExecutors, row));
+      (QueryExecutor) query -> transaction
+          .rxQuery(query)
+          .doOnSuccess(rows -> log.info("[executing] {}", query))
+          .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
+          .doOnSuccess(result -> log.info("[response] {}", query));
   }
-
-  // @Provides
-  // Function<Transaction, SQLExecutor> provideTransactionSQLExecutorFunction() {
-  //  return transaction ->
-  //      query ->
-  //          transaction
-  //              .rxQuery(query)
-  //              .doOnSuccess(rows -> log.info("[executing] {}", query))
-  //              .map(SQLUtils::rowSetToList)
-  //              .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
-  //              .doOnSuccess(result -> log.info("[response] {}", query));
-  // }
 }

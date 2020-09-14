@@ -1,25 +1,21 @@
 package dev.fastgql.sql;
 
 import io.reactivex.Maybe;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-public class ExecutionDefinition {
-  private final Function<QueryExecutor, Maybe<List<Map<String, Object>>>>
-      queryExecutorResponseFunction;
+public class ExecutionDefinition<T> {
+  private final Function<QueryExecutor, Maybe<T>> queryExecutorResponseFunction;
   private final Set<String> queriedTables;
 
   ExecutionDefinition(
-      Function<QueryExecutor, Maybe<List<Map<String, Object>>>> queryExecutorResponseFunction,
+      Function<QueryExecutor, Maybe<T>> queryExecutorResponseFunction,
       Set<String> queriedTables) {
     this.queryExecutorResponseFunction = queryExecutorResponseFunction;
     this.queriedTables = queriedTables;
   }
 
-  public Function<QueryExecutor, Maybe<List<Map<String, Object>>>>
-      getQueryExecutorResponseFunction() {
+  public Function<QueryExecutor, Maybe<T>> getQueryExecutorResponseFunction() {
     return queryExecutorResponseFunction;
   }
 
