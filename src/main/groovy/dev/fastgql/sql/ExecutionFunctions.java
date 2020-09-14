@@ -181,7 +181,7 @@ public class ExecutionFunctions {
                       || graphQLField.getReferenceType() == ReferenceType.REFERENCED
                   ? createPathInQueryToTableAlias(
                       newPathInQuery,
-                      String.format("%s%d", currentAlias, count.getAndIncrement()),
+                      String.format("%s_%d", currentAlias, count.getAndIncrement()),
                       graphQLField.getForeignName().getTableName(),
                       subField)
                   : new HashMap<String, TableAlias>();
