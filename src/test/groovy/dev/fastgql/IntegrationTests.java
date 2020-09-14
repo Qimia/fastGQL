@@ -50,9 +50,7 @@ public class IntegrationTests {
     @Nested
     @DisplayName("PostgreSQL Subscription Tests with JWT Security and embedded Debezium")
     class PostgresSubscriptionWithSecurity extends ContainerEnvWithDatabase
-        implements WithPostgres,
-            WithEmbeddedDebezium,
-            SubscriptionTestsWithSecurity {}
+        implements WithPostgres, WithEmbeddedDebezium, SubscriptionTestsWithSecurity {}
   }
 
   @Nested

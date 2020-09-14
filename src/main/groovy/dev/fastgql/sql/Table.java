@@ -3,7 +3,6 @@ package dev.fastgql.sql;
 import dev.fastgql.dsl.OpType;
 import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.dsl.TableSpec;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,11 +34,13 @@ public class Table {
     this.tableName = tableName;
     this.tableAlias = tableAlias;
     if (roleSpec == null) {
-      throw new RuntimeException(String.format("User role does not exist on table '%s'", tableName));
+      throw new RuntimeException(
+          String.format("User role does not exist on table '%s'", tableName));
     }
     TableSpec tableSpec = roleSpec.getTable(tableName);
     if (tableSpec == null) {
-      throw new RuntimeException(String.format("User does not have permissions defined for table '%s'",  tableName));
+      throw new RuntimeException(
+          String.format("User does not have permissions defined for table '%s'", tableName));
     }
     this.allowedColumns = roleSpec.getTable(tableName).getOp(OpType.select).getAllowed();
     this.jwtParams = jwtParams;

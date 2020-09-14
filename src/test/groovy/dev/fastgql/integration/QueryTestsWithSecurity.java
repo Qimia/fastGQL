@@ -5,11 +5,9 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import io.vertx.reactivex.sqlclient.Pool;
-
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Map;
-
 import org.junit.jupiter.api.Test;
 
 public interface QueryTestsWithSecurity extends SetupTearDownForAll, WithSecurity {
@@ -26,13 +24,19 @@ public interface QueryTestsWithSecurity extends SetupTearDownForAll, WithSecurit
     System.out.println(String.format("Test: %s", directory));
     Pool poolMultipleQueries = getPoolMultipleQueries(vertx);
 
-    String permissionsScript = ResourcesTestUtils.readResource(Paths.get(directory, "permissions.groovy").toString());
+    String permissionsScript =
+        ResourcesTestUtils.readResource(Paths.get(directory, "permissions.groovy").toString());
     String jwtToken = getJwtToken(vertx, Map.of());
 
     WebClient client = WebClient.create(vertx);
     DBTestUtils.executeSQLQuery(Paths.get(directory, "init.sql").toString(), poolMultipleQueries)
-      .flatMap(rows -> client.post(getDeploymentPort(), "localhost", "/v1/permissions").bearerTokenAuthentication(jwtToken).rxSendBuffer(Buffer.buffer(permissionsScript)))
-      .flatMap(
+        .flatMap(
+            rows ->
+                client
+                    .post(getDeploymentPort(), "localhost", "/v1/permissions")
+                    .bearerTokenAuthentication(jwtToken)
+                    .rxSendBuffer(Buffer.buffer(permissionsScript)))
+        .flatMap(
             rows ->
                 client
                     .get(getDeploymentPort(), "localhost", "/v1/update")

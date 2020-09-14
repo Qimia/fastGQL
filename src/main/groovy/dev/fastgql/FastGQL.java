@@ -31,8 +31,7 @@ public class FastGQL extends AbstractVerticle {
         new DatabaseModule(),
         new SQLExecutorModule(),
         new GraphiQLModule(),
-        new PermissionsSourceCodeModule()
-      );
+        new PermissionsSourceCodeModule());
   }
 
   private void startServer(Injector injector, Promise<Void> promise) {

@@ -8,7 +8,7 @@ permissions {
         }
         table ('addresses') {
             ops([select]) {
-                allow 'id', 'street'
+                allow 'id'
             }
         }
     }

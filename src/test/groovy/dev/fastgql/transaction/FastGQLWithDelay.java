@@ -3,10 +3,8 @@ package dev.fastgql.transaction;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import dev.fastgql.FastGQL;
-import dev.fastgql.modules.DatabaseModule;
-import dev.fastgql.modules.GraphQLModule;
-import dev.fastgql.modules.ServerModule;
-import dev.fastgql.modules.VertxModule;
+import dev.fastgql.integration.NoGraphiQLModule;
+import dev.fastgql.modules.*;
 import java.util.concurrent.TimeUnit;
 
 public class FastGQLWithDelay extends FastGQL {
@@ -17,6 +15,8 @@ public class FastGQLWithDelay extends FastGQL {
         new ServerModule(),
         new GraphQLModule(),
         new DatabaseModule(),
-        new SQLExecutorWithDelayModule(10, TimeUnit.SECONDS));
+        new SQLExecutorWithDelayModule(10, TimeUnit.SECONDS),
+        new NoGraphiQLModule(),
+        new PermissionsAPIModule());
   }
 }

@@ -4,10 +4,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.fastgql.dsl.PermissionsConfig;
 import dev.fastgql.dsl.PermissionsSpec;
-import dev.fastgql.modules.Annotations.JwtToken;
+import dev.fastgql.modules.Annotations.PermissionsUpdateHandler;
 import dev.fastgql.modules.Annotations.ServerPort;
 import dev.fastgql.modules.Annotations.UpdateHandler;
-import dev.fastgql.modules.Annotations.PermissionsUpdateHandler;
 import dev.fastgql.router.ApolloWSHandlerUpdatable;
 import dev.fastgql.router.GraphQLHandlerUpdatable;
 import dev.fastgql.security.JWTConfig;
@@ -17,27 +16,18 @@ import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import io.reactivex.Single;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.auth.PubSecKeyOptions;
-import io.vertx.ext.auth.jwt.JWTAuthOptions;
-import io.vertx.ext.jwt.JWTOptions;
-import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.http.HttpServer;
 import io.vertx.reactivex.core.http.HttpServerResponse;
-import io.vertx.reactivex.ext.auth.jwt.JWTAuth;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import io.vertx.reactivex.ext.web.handler.BodyHandler;
 import io.vertx.reactivex.ext.web.handler.JWTAuthHandler;
 import io.vertx.reactivex.ext.web.handler.graphql.GraphiQLHandler;
-import org.codehaus.groovy.control.CompilerConfiguration;
-
-import java.util.Map;
 import javax.annotation.Nullable;
 import javax.inject.Singleton;
+import org.codehaus.groovy.control.CompilerConfiguration;
 
 public class ServerModule extends AbstractModule {
 
@@ -90,7 +80,6 @@ public class ServerModule extends AbstractModule {
       CompilerConfiguration config = new CompilerConfiguration();
       config.setScriptBaseClass(PermissionsConfig.class.getName());
       GroovyShell shell = new GroovyShell(new Binding(), config);
-      System.out.println(shell);
       PermissionsStore.setPermissionsSpec((PermissionsSpec) shell.evaluate(script));
       HttpServerResponse response = context.response();
       response.putHeader("content-type", "text/html").end("permissions updated");

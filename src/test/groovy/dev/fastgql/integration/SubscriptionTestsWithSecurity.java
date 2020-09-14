@@ -8,12 +8,10 @@ import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.core.http.HttpClient;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import io.vertx.reactivex.sqlclient.Pool;
-
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -50,10 +48,16 @@ public interface SubscriptionTestsWithSecurity extends SetupTearDownForAll, With
             String.format("%s/expected-1.json", directory),
             String.format("%s/expected-2.json", directory));
 
-    String permissionsScript = ResourcesTestUtils.readResource(Paths.get(directory, "permissions.groovy").toString());
+    String permissionsScript =
+        ResourcesTestUtils.readResource(Paths.get(directory, "permissions.groovy").toString());
 
     DBTestUtils.executeSQLQuery(Paths.get(directory, "init.sql").toString(), poolMultipleQueries)
-      .flatMap(rows -> client.post(getDeploymentPort(), "localhost", "/v1/permissions").bearerTokenAuthentication(jwtToken).rxSendBuffer(Buffer.buffer(permissionsScript)))
+        .flatMap(
+            rows ->
+                client
+                    .post(getDeploymentPort(), "localhost", "/v1/permissions")
+                    .bearerTokenAuthentication(jwtToken)
+                    .rxSendBuffer(Buffer.buffer(permissionsScript)))
         .flatMap(
             rows ->
                 client

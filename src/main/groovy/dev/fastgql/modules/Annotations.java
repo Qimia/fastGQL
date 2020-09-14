@@ -21,5 +21,4 @@ class Annotations {
   @Qualifier
   @Retention(RUNTIME)
   @interface JwtToken {}
-
 }

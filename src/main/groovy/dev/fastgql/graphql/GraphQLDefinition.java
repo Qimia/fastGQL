@@ -34,7 +34,6 @@ import io.vertx.ext.auth.jwt.impl.JWTUser;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.ext.web.RoutingContext;
-import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSMessage;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
@@ -136,8 +135,8 @@ public class GraphQLDefinition {
           transaction, databaseSchema, fieldName, rows, returningColumns);
     }
 
-    private ExecutionFunctions createExecutionFunctions(DataFetchingEnvironment env) {
-      Map<String, Object> userParams = createUserParams(env);
+    private ExecutionFunctions createExecutionFunctions(
+        DataFetchingEnvironment env, Map<String, Object> userParams) {
       String role = (String) userParams.getOrDefault("role", "default");
       PermissionsSpec permissionsSpec = permissionsSpecSupplier.get();
       System.out.println(permissionsSpec);
@@ -145,17 +144,17 @@ public class GraphQLDefinition {
         throw new RuntimeException("No permissions defined");
       }
       return new ExecutionFunctions(
-        graphQLDatabaseSchema,
-        permissionsSpec.getRole(role),
-        userParams,
-        lockQueryFunction,
-        unlockQuery);
-
+          graphQLDatabaseSchema,
+          permissionsSpec.getRole(role),
+          userParams,
+          lockQueryFunction,
+          unlockQuery);
     }
 
-    private ExecutionDefinition createExecutionDefinition(DataFetchingEnvironment env) {
+    private ExecutionDefinition createExecutionDefinition(
+        DataFetchingEnvironment env, Map<String, Object> userParams) {
       Field field = env.getField();
-      ExecutionFunctions executionFunctions = createExecutionFunctions(env);
+      ExecutionFunctions executionFunctions = createExecutionFunctions(env, userParams);
       return executionFunctions.createExecutionDefinition(field, true);
     }
 
@@ -181,11 +180,15 @@ public class GraphQLDefinition {
           .map(selection -> (Field) selection);
     }
 
-    private static Map<String, Object> createUserParams(DataFetchingEnvironment env) {
+    private static Map<String, Object> createUserParamsQuery(DataFetchingEnvironment env) {
       RoutingContext routingContext = env.getContext();
       User user = routingContext.getDelegate().user();
       JWTUser jwtUser = (JWTUser) user;
       return jwtUser == null ? Map.of() : jwtUser.principal().getMap();
+    }
+
+    private static Map<String, Object> createUserParamsSubscription(DataFetchingEnvironment env) {
+      return Map.of();
     }
 
     /**
@@ -211,7 +214,8 @@ public class GraphQLDefinition {
                       .rxBegin()
                       .flatMapMaybe(
                           transaction ->
-                              createTransactionQueryResponseFunction(createExecutionDefinition(env))
+                              createTransactionQueryResponseFunction(
+                                      createExecutionDefinition(env, createUserParamsQuery(env)))
                                   .apply(transaction))
                       .defaultIfEmpty(List.of())
                       .subscribe(promise::complete, promise::fail);
@@ -221,7 +225,8 @@ public class GraphQLDefinition {
       VertxDataFetcher<Map<String, Object>> metaDataFetcher =
           new VertxDataFetcher<>(
               (env, promise) -> {
-                ExecutionFunctions executionFunctions = createExecutionFunctions(env);
+                Map<String, Object> userParams = createUserParamsQuery(env);
+                ExecutionFunctions executionFunctions = createExecutionFunctions(env, userParams);
 
                 Map<String, String> mockQueries =
                     createFieldStream(env)
@@ -234,10 +239,7 @@ public class GraphQLDefinition {
                                         .strip()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-                Map<String, Object> userParams = createUserParams(env);
-
-                promise.complete(
-                    Map.of("sql", mockQueries, "user", userParams.toString()));
+                promise.complete(Map.of("sql", mockQueries, "user", userParams.toString()));
               });
 
       databaseSchema
@@ -315,7 +317,8 @@ public class GraphQLDefinition {
 
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
           env -> {
-            ExecutionDefinition executionDefinition = createExecutionDefinition(env);
+            ExecutionDefinition executionDefinition =
+                createExecutionDefinition(env, createUserParamsSubscription(env));
             Function<Transaction, Maybe<List<Map<String, Object>>>>
                 transactionQueryResponseFunction =
                     createTransactionQueryResponseFunction(executionDefinition);

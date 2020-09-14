@@ -8,7 +8,6 @@ import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.core.http.HttpClient;
 import io.vertx.reactivex.ext.web.client.WebClient;
 import io.vertx.reactivex.sqlclient.Pool;
-
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
@@ -28,14 +27,16 @@ public interface SubscriptionTests extends SetupTearDownForEach {
   @ParameterizedTest(name = "{index} => Test: [{arguments}]")
   @MethodSource("dev.fastgql.integration.ResourcesTestUtils#subscriptionDirectories")
   @Timeout(value = 10, timeUnit = TimeUnit.DAYS)
-  default void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context) throws IOException {
+  default void shouldReceiveResponse(String directory, Vertx vertx, VertxTestContext context)
+      throws IOException {
 
     Pool pool = getPool(vertx);
     Pool poolMultipleQueries = getPoolMultipleQueries(vertx);
 
     System.out.println(String.format("Test: %s", directory));
 
-    String permissionsScript = ResourcesTestUtils.readResource(Paths.get(directory, "permissions.groovy").toString());
+    String permissionsScript =
+        ResourcesTestUtils.readResource(Paths.get(directory, "permissions.groovy").toString());
 
     WebClient client = WebClient.create(vertx);
     HttpClient httpClient =
@@ -47,8 +48,12 @@ public interface SubscriptionTests extends SetupTearDownForEach {
             String.format("%s/expected-2.json", directory));
 
     DBTestUtils.executeSQLQuery(Paths.get(directory, "init.sql").toString(), poolMultipleQueries)
-      .flatMap(rows -> client.post(getDeploymentPort(), "localhost", "/v1/permissions").rxSendBuffer(Buffer.buffer(permissionsScript)))
-      .flatMap(
+        .flatMap(
+            rows ->
+                client
+                    .post(getDeploymentPort(), "localhost", "/v1/permissions")
+                    .rxSendBuffer(Buffer.buffer(permissionsScript)))
+        .flatMap(
             rows ->
                 client
                     .get(getDeploymentPort(), "localhost", "/v1/update")
