@@ -2,28 +2,31 @@ package dev.fastgql.dsl
 
 import dev.fastgql.common.RelationalOperator
 import dev.fastgql.sql.Condition
+import dev.fastgql.sql.Preset
 
 import java.util.function.Function
+import java.util.stream.Collectors
 
 class OpSpec {
 
-    static class Preset {
-        final String column
-        Object value
+    static class PresetSpec {
 
-        Preset(String column) {
+        final String column;
+        Function<Map<String, Object>, Object> value;
+
+        PresetSpec(String column) {
             this.column = column
         }
 
         def to(Object value) {
             this.value = value instanceof Closure
-                ? value as Function<Map<String, Object>, Object>
-                : value
+                    ? value as Function<Map<String, Object>, Object>
+                    : { value } as Function<Map<String, Object>, Object>
         }
 
         @Override
         String toString() {
-            "Preset<column: ${column}, value: ${value}>"
+            "PresetSpec<column: ${column}, value: ${value}>"
         }
     }
 
@@ -45,63 +48,63 @@ class OpSpec {
             return new CheckChain(parent)
         }
 
-        def _eq(Object value) {
+        def eq(Object value) {
             return handleOperator(RelationalOperator._eq, value)
         }
 
-        def _neq(Object value) {
+        def neq(Object value) {
             return handleOperator(RelationalOperator._neq, value)
         }
 
-        def _in(Object... value) {
+        def within(Object... value) {
             return handleOperator(RelationalOperator._in, value)
         }
 
-        def _nin(Object... value) {
+        def nin(Object... value) {
             return handleOperator(RelationalOperator._nin, value)
         }
 
-        def _gt(Object value) {
+        def gt(Object value) {
             return handleOperator(RelationalOperator._gt, value)
         }
 
-        def _lt(Object value) {
+        def lt(Object value) {
             return handleOperator(RelationalOperator._lt, value)
         }
 
-        def _gte(Object value) {
+        def gte(Object value) {
             return handleOperator(RelationalOperator._gte, value)
         }
 
-        def _lte(Object value) {
+        def lte(Object value) {
             return handleOperator(RelationalOperator._lte, value)
         }
 
-        def _is_null(boolean value) {
+        def is_null(boolean value) {
             return handleOperator(RelationalOperator._is_null, value)
         }
 
-        def _like(String value) {
+        def like(String value) {
             return handleOperator(RelationalOperator._like, value)
         }
 
-        def _nlike(String value) {
+        def nlike(String value) {
             return handleOperator(RelationalOperator._nlike, value)
         }
 
-        def _ilike(String value) {
+        def ilike(String value) {
             return handleOperator(RelationalOperator._ilike, value)
         }
 
-        def _nilike(String value) {
+        def nilike(String value) {
             return handleOperator(RelationalOperator._nilike, value)
         }
 
-        def _similar(String value) {
+        def similar(String value) {
             return handleOperator(RelationalOperator._similar, value)
         }
 
-        def _nsimilar(String value) {
+        def nsimilar(String value) {
             return handleOperator(RelationalOperator._nsimilar, value)
         }
     }
@@ -163,7 +166,7 @@ class OpSpec {
         }
     }
 
-    final List<Preset> presets
+    final List<PresetSpec> presets
     final List<String> allowed
     final Condition condition
     final String tableName
@@ -175,7 +178,7 @@ class OpSpec {
         this.tableName = tableName
     }
 
-    OpSpec(List<Preset> presets, List<String> allowed, Condition condition) {
+    OpSpec(List<PresetSpec> presets, List<String> allowed, Condition condition) {
         this.presets = presets
         this.allowed = allowed
         this.condition = condition
@@ -210,9 +213,14 @@ class OpSpec {
     }
 
     def preset(String column) {
-        def preset = new Preset(column)
+        def preset = new PresetSpec(column)
         this.presets.add(preset)
         return preset
+    }
+
+    List<Preset> createPresets() {
+        return presets.stream().map { it -> new Preset(it.column, it.value) }
+            .collect(Collectors.toList())
     }
 
     @Override

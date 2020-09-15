@@ -26,8 +26,8 @@ public class SQLExecutorModule extends AbstractModule {
                   : transaction.rxQuery(query);
 
           return result
-              .doOnSuccess(rows -> log.info("[executed] {}", query))
-              .doOnError(error -> log.error("[error executing] {}", query));
+              .doOnSuccess(rows -> log.info("[executed] {} {}", query, params))
+              .doOnError(error -> log.error("[error executing] {} {}", query, params));
         };
   }
 }
