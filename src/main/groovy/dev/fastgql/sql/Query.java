@@ -87,7 +87,13 @@ public class Query {
     return selectColumn;
   }
 
-  private PreparedQuery createQueryInternal(Function<Table, PreparedQuery> tablePreparedQueryFunction) {
+  public List<Object> buildParams() {
+    return queriedTables.stream()
+      .flatMap(table -> table.createParams().stream())
+      .collect(Collectors.toList());
+  }
+
+  public String buildQuery() {
     PreparedQuery preparedQuery = PreparedQuery.create()
       .merge(
         String.format(
@@ -98,7 +104,7 @@ public class Query {
 
     PreparedQuery wherePreparedQuery =
         queriedTables.stream()
-            .map(tablePreparedQueryFunction)
+            .map(Table::getWhere)
             .collect(PreparedQuery.collectorWithAnd());
     String orderBySqlString = table.getOrderBy();
     String limitSqlString = table.getLimit();
@@ -117,14 +123,7 @@ public class Query {
       preparedQuery.merge(" OFFSET ").merge(offsetSqlString);
     }
 
-    return preparedQuery;
+    return preparedQuery.buildQuery();
   }
 
-  public PreparedQuery createMockQuery() {
-    return createQueryInternal(Table::getMockWhere);
-  }
-
-  public PreparedQuery createQuery() {
-    return createQueryInternal(Table::getWhere);
-  }
 }

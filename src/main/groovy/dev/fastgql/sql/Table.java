@@ -20,8 +20,9 @@ public class Table {
   private final List<String> allowedColumns;
   private final PreparedQuery conditionFromPermissions;
   private final PreparedQuery conditionFromArguments;
+  private final List<Object> params;
   private final Map<String, Object> jwtParams;
-  private final PreparedQuery mockExtraCondition;
+  //private final PreparedQuery mockExtraCondition;
   private final String pathInQuery;
   private Condition extraCondition;
 
@@ -30,7 +31,7 @@ public class Table {
       String tableAlias,
       RoleSpec roleSpec,
       Arguments arguments,
-      String mockExtraCondition,
+      Condition extraCondition,
       Map<String, Object> jwtParams,
       String pathInQuery,
       Map<String, String> pathInQueryToAlias) {
@@ -57,13 +58,19 @@ public class Table {
             ? PreparedQuery.create()
             : ConditionUtils.conditionToSQL(
                 arguments.getCondition(), pathInQueryToAlias, jwtParams);
+    this.params = Stream.of(
+      conditionFromPermissions,
+      conditionFromArguments
+    ).flatMap(preparedQuery -> preparedQuery.getParams().stream())
+      .collect(Collectors.toUnmodifiableList());
     this.orderBy =
         arguments.getOrderByList() == null
             ? ""
             : OrderByUtils.orderByToSQL(arguments.getOrderByList(), pathInQueryToAlias);
     this.limit = arguments.getLimit() == null ? "" : arguments.getLimit().toString();
     this.offset = arguments.getOffset() == null ? "" : arguments.getOffset().toString();
-    this.mockExtraCondition = PreparedQuery.create(mockExtraCondition);
+    //this.mockExtraCondition = PreparedQuery.create(mockExtraCondition);
+    this.extraCondition = extraCondition;
     this.pathInQuery = pathInQuery;
   }
 
@@ -83,6 +90,12 @@ public class Table {
     return tableAlias;
   }
 
+  public List<Object> createParams() {
+    return Stream.concat(params.stream(), extraCondition == null ? Stream.of() :
+      ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams).getParams().stream()
+    ).collect(Collectors.toUnmodifiableList());
+  }
+
   public PreparedQuery getWhere() {
     return Stream.of(
             conditionFromPermissions,
@@ -93,10 +106,10 @@ public class Table {
         .collect(PreparedQuery.collectorWithAnd());
   }
 
-  public PreparedQuery getMockWhere() {
-    return Stream.of(conditionFromPermissions, conditionFromArguments, mockExtraCondition)
-        .collect(PreparedQuery.collectorWithAnd());
-  }
+  //public PreparedQuery getMockWhere() {
+  //  return Stream.of(conditionFromPermissions, conditionFromArguments, mockExtraCondition)
+  //      .collect(PreparedQuery.collectorWithAnd());
+  //}
 
   public String getOrderBy() {
     return orderBy;

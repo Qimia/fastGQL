@@ -1,6 +1,7 @@
 package dev.fastgql.sql;
 
 import dev.fastgql.common.ReferenceType;
+import dev.fastgql.common.RelationalOperator;
 import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.graphql.GraphQLDatabaseSchema;
 import dev.fastgql.graphql.GraphQLField;
@@ -74,7 +75,7 @@ public class ExecutionFunctions {
             pathInQueryToAlias.get(newPathInQuery),
             roleSpec,
             new Arguments(),
-            "",
+            null,
             jwtParams,
             newPathInQuery,
             pathInQueryToAlias);
@@ -110,12 +111,13 @@ public class ExecutionFunctions {
         queryExecutorConditionResponseFunction(
             foreignTableName,
             field,
-            String.format(
-                "%s.%s={%s/%s}",
-                pathInQueryToAlias.get(newPathInQuery),
-                foreignColumnName,
-                table.getPathInQuery(),
-                columnName),
+            new Condition(newPathInQuery, foreignColumnName, RelationalOperator._eq, jwtParams -> new Object()),
+            //String.format(
+            //    "%s.%s={%s/%s}",
+            //    pathInQueryToAlias.get(newPathInQuery),
+            //    foreignColumnName,
+            //    table.getPathInQuery(),
+            //    columnName),
             pathInQueryToAlias,
             newPathInQuery);
 
@@ -211,7 +213,7 @@ public class ExecutionFunctions {
       queryExecutorConditionResponseFunction(
           String tableName,
           Field field,
-          String mockExtraCondition,
+          Condition extraCondition,
           Map<String, String> pathInQueryToAlias,
           String pathInQuery) {
     Table table =
@@ -220,7 +222,7 @@ public class ExecutionFunctions {
             pathInQueryToAlias.get(pathInQuery),
             roleSpec,
             new Arguments(field.getArguments(), pathInQuery),
-            mockExtraCondition,
+            extraCondition,
             jwtParams,
             pathInQuery,
             pathInQueryToAlias);
@@ -228,15 +230,15 @@ public class ExecutionFunctions {
     Query query = new Query(table);
     List<RowExecutor> executorList =
         createExecutors(query.getTable(), field, query, pathInQueryToAlias, pathInQuery);
-    mockQueries.add(query.createMockQuery().buildQuery());
 
-    System.out.println("BEFORE: " + query.createQuery().buildQuery());
+    String queryString = query.buildQuery();
+    System.out.println("QUERY BUILT: " + queryString);
+    mockQueries.add(queryString);
 
     return (queryExecutor, condition) -> {
       table.setExtraCondition(condition);
-      System.out.println("AFTER: " + query.createQuery().buildQuery());
-      PreparedQuery preparedQuery = query.createQuery();
-      return queryExecutor.apply(preparedQuery.buildQuery(), preparedQuery.getParams())
+      List<Object> params = query.buildParams();
+      return queryExecutor.apply(queryString, params)
           .flatMapObservable(Observable::fromIterable)
                   .flatMapMaybe(row -> createResponseForRow(queryExecutor, executorList, row))
                   .toList()
@@ -254,7 +256,7 @@ public class ExecutionFunctions {
     mockQueries.clear();
 
     queryExecutorConditionResponseFunction(
-        field.getName(), field, "", pathInQueryToAlias, field.getName());
+        field.getName(), field, null, pathInQueryToAlias, field.getName());
 
     List<String> mockQueriesReversed =
         Stream.of(
@@ -294,7 +296,7 @@ public class ExecutionFunctions {
     BiFunction<QueryExecutor, Condition, Maybe<List<Map<String, Object>>>>
         queryResultSingleFunction =
             queryExecutorConditionResponseFunction(
-                field.getName(), field, "", pathInQueryToAlias, field.getName());
+                field.getName(), field, null, pathInQueryToAlias, field.getName());
 
     String tableLockQueryString = tableListLockQueryFunction.apply(tableAliases);
     String tableUnlockQueryString = unlockQuery;
