@@ -50,7 +50,6 @@ public class MutationFunctions {
   }
 
   private boolean checkCondition(Condition condition, Map<String, Object> columnToValue) {
-    System.out.println(condition);
     String column = condition.getColumn();
     Function<Map<String, Object>, Object> jwtParamsToValue = condition.getFunction();
     boolean valid = true;
@@ -61,19 +60,15 @@ public class MutationFunctions {
       RelationalOperator relationalOperator = condition.getOperator();
 
       if (column == null || valueTarget == null) {
-        System.out.println("NULL: true");
         valid = true;
       } else {
         valid =
             condition.isNegated()
                 ^ relationalOperator.getValidator().apply(valueCurrent, valueTarget);
-        System.out.println(
-            valueCurrent + " " + relationalOperator + " " + valueTarget + " = " + valid);
       }
     }
 
     for (Condition nextCondition : condition.getNext()) {
-      System.out.println("NEXT CONDITION: " + nextCondition);
       if (nextCondition.getConnective() == LogicalConnective.or) {
         valid = valid || checkCondition(nextCondition, columnToValue);
       } else {
