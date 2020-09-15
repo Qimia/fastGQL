@@ -8,6 +8,8 @@ import io.vertx.reactivex.sqlclient.Row;
 import io.vertx.reactivex.sqlclient.RowSet;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.util.function.Function;
+
+import io.vertx.reactivex.sqlclient.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +19,8 @@ public class SQLExecutorModule extends AbstractModule {
 
   @Provides
   Function<Transaction, QueryExecutor> provideTransactionQueryExecutorFunction() {
-    return transaction ->
-      (QueryExecutor) query -> transaction.rxQuery(query).doOnSuccess(rows -> log.info("[executing] {}", query));
+    return transaction -> (query, params) -> transaction
+      .rxPreparedQuery(query, Tuple.wrap(params))
+      .doOnSuccess(rows -> log.info("[executed] {}", query));
   }
 }

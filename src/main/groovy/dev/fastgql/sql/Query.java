@@ -87,46 +87,44 @@ public class Query {
     return selectColumn;
   }
 
-  private String createQueryInternal(Function<Table, String> tableStringFunction) {
-    StringBuilder sqlStringBuilder = new StringBuilder();
-    sqlStringBuilder.append(
+  private PreparedQuery createQueryInternal(Function<Table, PreparedQuery> tablePreparedQueryFunction) {
+    PreparedQuery preparedQuery = PreparedQuery.create()
+      .merge(
         String.format(
             "SELECT %s FROM %s %s",
             selectColumns.stream().map(SelectColumn::sqlString).collect(Collectors.joining(", ")),
             table.sqlString(),
             leftJoins.stream().map(LeftJoin::sqlString).collect(Collectors.joining(" "))));
 
-    String whereSqlString =
+    PreparedQuery wherePreparedQuery =
         queriedTables.stream()
-            .map(tableStringFunction)
-            .filter(where -> !where.isEmpty())
-            .map(sqlString -> String.format("(%s)", sqlString))
-            .collect(Collectors.joining(" AND "));
+            .map(tablePreparedQueryFunction)
+            .collect(PreparedQuery.collectorWithAnd());
     String orderBySqlString = table.getOrderBy();
     String limitSqlString = table.getLimit();
     String offsetSqlString = table.getOffset();
 
-    if (!whereSqlString.isEmpty()) {
-      sqlStringBuilder.append(String.format(" WHERE %s", whereSqlString));
+    if (!wherePreparedQuery.isEmpty()) {
+      preparedQuery.merge(" WHERE ").merge(wherePreparedQuery);
     }
     if (!orderBySqlString.isEmpty()) {
-      sqlStringBuilder.append(String.format(" ORDER BY %s", orderBySqlString));
+      preparedQuery.merge(" ORDER BY ").merge(orderBySqlString);
     }
     if (!limitSqlString.isEmpty()) {
-      sqlStringBuilder.append(String.format(" LIMIT %s", limitSqlString));
+      preparedQuery.merge(" LIMIT ").merge(limitSqlString);
     }
     if (!offsetSqlString.isEmpty()) {
-      sqlStringBuilder.append(String.format(" OFFSET %s", offsetSqlString));
+      preparedQuery.merge(" OFFSET ").merge(offsetSqlString);
     }
 
-    return sqlStringBuilder.toString();
+    return preparedQuery;
   }
 
-  public String createMockQuery() {
+  public PreparedQuery createMockQuery() {
     return createQueryInternal(Table::getMockWhere);
   }
 
-  public String createQuery() {
+  public PreparedQuery createQuery() {
     return createQueryInternal(Table::getWhere);
   }
 }

@@ -9,6 +9,8 @@ import io.vertx.reactivex.sqlclient.RowSet;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+
+import io.vertx.reactivex.sqlclient.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +28,8 @@ public class SQLExecutorWithDelayModule extends AbstractModule {
 
   @Provides
   Function<Transaction, QueryExecutor> provideTransactionQueryExecutorFunction() {
-    return transaction ->
-      (QueryExecutor) query -> transaction
-          .rxQuery(query)
+    return transaction -> (query, params) -> transaction
+          .rxPreparedQuery(query, Tuple.wrap(params))
           .doOnSuccess(rows -> log.info("[executing] {}", query))
           .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
           .doOnSuccess(result -> log.info("[response] {}", query));

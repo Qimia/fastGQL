@@ -228,13 +228,15 @@ public class ExecutionFunctions {
     Query query = new Query(table);
     List<RowExecutor> executorList =
         createExecutors(query.getTable(), field, query, pathInQueryToAlias, pathInQuery);
-    mockQueries.add(query.createMockQuery());
+    mockQueries.add(query.createMockQuery().buildQuery());
+
+    System.out.println("BEFORE: " + query.createQuery().buildQuery());
 
     return (queryExecutor, condition) -> {
       table.setExtraCondition(condition);
-      String queryString = query.createQuery();
-      return queryExecutor.apply(
-          queryString)
+      System.out.println("AFTER: " + query.createQuery().buildQuery());
+      PreparedQuery preparedQuery = query.createQuery();
+      return queryExecutor.apply(preparedQuery.buildQuery(), preparedQuery.getParams())
           .flatMapObservable(Observable::fromIterable)
                   .flatMapMaybe(row -> createResponseForRow(queryExecutor, executorList, row))
                   .toList()

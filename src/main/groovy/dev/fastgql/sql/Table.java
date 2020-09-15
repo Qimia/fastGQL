@@ -3,6 +3,9 @@ package dev.fastgql.sql;
 import dev.fastgql.dsl.OpType;
 import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.dsl.TableSpec;
+import io.vertx.core.json.JsonArray;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,10 +18,10 @@ public class Table {
   private final String limit;
   private final String offset;
   private final List<String> allowedColumns;
-  private final String conditionFromPermissions;
-  private final String conditionFromArguments;
+  private final PreparedQuery conditionFromPermissions;
+  private final PreparedQuery conditionFromArguments;
   private final Map<String, Object> jwtParams;
-  private final String mockExtraCondition;
+  private final PreparedQuery mockExtraCondition;
   private final String pathInQuery;
   private Condition extraCondition;
 
@@ -51,7 +54,7 @@ public class Table {
             jwtParams);
     this.conditionFromArguments =
         arguments.getCondition() == null
-            ? ""
+            ? PreparedQuery.create()
             : ConditionUtils.conditionToSQL(
                 arguments.getCondition(), pathInQueryToAlias, jwtParams);
     this.orderBy =
@@ -60,7 +63,7 @@ public class Table {
             : OrderByUtils.orderByToSQL(arguments.getOrderByList(), pathInQueryToAlias);
     this.limit = arguments.getLimit() == null ? "" : arguments.getLimit().toString();
     this.offset = arguments.getOffset() == null ? "" : arguments.getOffset().toString();
-    this.mockExtraCondition = mockExtraCondition;
+    this.mockExtraCondition = PreparedQuery.create(mockExtraCondition);
     this.pathInQuery = pathInQuery;
   }
 
@@ -80,23 +83,19 @@ public class Table {
     return tableAlias;
   }
 
-  public String getWhere() {
+  public PreparedQuery getWhere() {
     return Stream.of(
             conditionFromPermissions,
             conditionFromArguments,
             extraCondition == null
-                ? ""
+                ? PreparedQuery.create()
                 : ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams))
-        .filter(sqlString -> !sqlString.isEmpty())
-        .map(sqlString -> String.format("(%s)", sqlString))
-        .collect(Collectors.joining(" AND "));
+        .collect(PreparedQuery.collectorWithAnd());
   }
 
-  public String getMockWhere() {
+  public PreparedQuery getMockWhere() {
     return Stream.of(conditionFromPermissions, conditionFromArguments, mockExtraCondition)
-        .filter(sqlString -> !sqlString.isEmpty())
-        .map(sqlString -> String.format("(%s)", sqlString))
-        .collect(Collectors.joining(" AND "));
+        .collect(PreparedQuery.collectorWithAnd());
   }
 
   public String getOrderBy() {
