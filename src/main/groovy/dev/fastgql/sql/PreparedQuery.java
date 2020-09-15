@@ -1,5 +1,7 @@
 package dev.fastgql.sql;
 
+import dev.fastgql.db.DatasourceConfig;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,7 +77,7 @@ public class PreparedQuery {
     return this;
   }
 
-  public String buildQuery() {
+  public String buildQuery(DatasourceConfig.DBType dbType) {
     StringBuilder builder = new StringBuilder();
     AtomicInteger counter = new AtomicInteger(1);
     elements.forEach(element -> {
@@ -84,7 +86,16 @@ public class PreparedQuery {
           builder.append(element.content);
           break;
         case placeholder:
-          builder.append("$").append(counter.getAndIncrement());
+          switch (dbType) {
+            case postgresql:
+              builder.append("$").append(counter.getAndIncrement());
+              break;
+            case mysql:
+              builder.append("?");
+              break;
+            case other:
+              throw new RuntimeException("DB type not supported");
+          }
       }
     });
     return builder.toString();
@@ -126,22 +137,14 @@ public class PreparedQuery {
         first.addAll(second);
         return first;
       },
-      array -> {
-        return array
-          .stream()
-          .filter(preparedQuery -> !preparedQuery.isEmpty())
-          .map(preparedQuery -> PreparedQuery.create("(").merge(preparedQuery).merge(")"))
-          .reduce((first, second) -> {
-            first.merge(PreparedQuery.create(" AND ").merge(second));
-            return first;
-          }).orElse(PreparedQuery.create());
-        //List<Object> params = array
-        //  .stream()
-        //  .map(preparedQuery -> preparedQuery.params)
-        //  .flatMap(List::stream)
-        //  .collect(Collectors.toList());
-        //return new PreparedQuery(query, params);
-      }
+      array -> array
+        .stream()
+        .filter(preparedQuery -> !preparedQuery.isEmpty())
+        .map(preparedQuery -> PreparedQuery.create("(").merge(preparedQuery).merge(")"))
+        .reduce((first, second) -> {
+          first.merge(PreparedQuery.create(" AND ").merge(second));
+          return first;
+        }).orElse(PreparedQuery.create())
     );
   }
 }

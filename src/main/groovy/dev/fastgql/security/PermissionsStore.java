@@ -6,7 +6,6 @@ public class PermissionsStore {
   private static PermissionsSpec permissionsSpec = null;
 
   public static synchronized void setPermissionsSpec(PermissionsSpec permissionsSpec) {
-    System.out.println("SETTING: " + permissionsSpec);
     PermissionsStore.permissionsSpec = permissionsSpec;
   }
 

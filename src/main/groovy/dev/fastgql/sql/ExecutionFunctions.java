@@ -2,6 +2,7 @@ package dev.fastgql.sql;
 
 import dev.fastgql.common.ReferenceType;
 import dev.fastgql.common.RelationalOperator;
+import dev.fastgql.db.DatasourceConfig;
 import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.graphql.GraphQLDatabaseSchema;
 import dev.fastgql.graphql.GraphQLField;
@@ -24,21 +25,24 @@ public class ExecutionFunctions {
   private final Map<String, Object> jwtParams;
   private final Function<Set<TableAlias>, String> tableListLockQueryFunction;
   private final String unlockQuery;
-  private final List<String> mockQueries;
+  private final List<String> queriesToExecute;
+  private final DatasourceConfig.DBType dbType;
 
   public ExecutionFunctions(
-      GraphQLDatabaseSchema graphQLDatabaseSchema,
-      RoleSpec roleSpec,
-      Map<String, Object> jwtParams,
-      Function<Set<TableAlias>, String> tableListLockQueryFunction,
-      String unlockQuery) {
+    GraphQLDatabaseSchema graphQLDatabaseSchema,
+    RoleSpec roleSpec,
+    Map<String, Object> jwtParams,
+    Function<Set<TableAlias>, String> tableListLockQueryFunction,
+    String unlockQuery,
+    DatasourceConfig.DBType dbType) {
 
     this.graphQLDatabaseSchema = graphQLDatabaseSchema;
     this.roleSpec = roleSpec;
     this.jwtParams = jwtParams;
     this.tableListLockQueryFunction = tableListLockQueryFunction;
     this.unlockQuery = unlockQuery;
-    this.mockQueries = new ArrayList<>();
+    this.queriesToExecute = new ArrayList<>();
+    this.dbType = dbType;
   }
 
   private RowExecutor createExecutorForColumn(
@@ -112,12 +116,6 @@ public class ExecutionFunctions {
             foreignTableName,
             field,
             new Condition(newPathInQuery, foreignColumnName, RelationalOperator._eq, jwtParams -> new Object()),
-            //String.format(
-            //    "%s.%s={%s/%s}",
-            //    pathInQueryToAlias.get(newPathInQuery),
-            //    foreignColumnName,
-            //    table.getPathInQuery(),
-            //    columnName),
             pathInQueryToAlias,
             newPathInQuery);
 
@@ -231,9 +229,8 @@ public class ExecutionFunctions {
     List<RowExecutor> executorList =
         createExecutors(query.getTable(), field, query, pathInQueryToAlias, pathInQuery);
 
-    String queryString = query.buildQuery();
-    System.out.println("QUERY BUILT: " + queryString);
-    mockQueries.add(queryString);
+    String queryString = query.buildQuery(dbType);
+    queriesToExecute.add(queryString);
 
     return (queryExecutor, condition) -> {
       table.setExtraCondition(condition);
@@ -246,14 +243,14 @@ public class ExecutionFunctions {
     };
   }
 
-  public List<String> createMockQueries(Field field) {
+  public List<String> createQueriesToExecute(Field field) {
     Map<String, TableAlias> pathInQueryToTableAlias = createPathInQueryToTableAlias(field);
     Map<String, String> pathInQueryToAlias = createPathInQueryToAlias(pathInQueryToTableAlias);
     Set<TableAlias> tableAliases = createTableAliases(pathInQueryToTableAlias);
 
     String tableLockQueryString = tableListLockQueryFunction.apply(tableAliases);
 
-    mockQueries.clear();
+    queriesToExecute.clear();
 
     queryExecutorConditionResponseFunction(
         field.getName(), field, null, pathInQueryToAlias, field.getName());
@@ -261,7 +258,7 @@ public class ExecutionFunctions {
     List<String> mockQueriesReversed =
         Stream.of(
                 List.of(unlockQuery == null ? "" : unlockQuery),
-                mockQueries,
+          queriesToExecute,
                 List.of(tableLockQueryString))
             .flatMap(List::stream)
             .filter(query -> !query.isEmpty())
@@ -291,7 +288,7 @@ public class ExecutionFunctions {
     Map<String, String> pathInQueryToAlias = createPathInQueryToAlias(pathInQueryToTableAlias);
     Set<TableAlias> tableAliases = createTableAliases(pathInQueryToTableAlias);
 
-    mockQueries.clear();
+    queriesToExecute.clear();
 
     BiFunction<QueryExecutor, Condition, Maybe<List<Map<String, Object>>>>
         queryResultSingleFunction =

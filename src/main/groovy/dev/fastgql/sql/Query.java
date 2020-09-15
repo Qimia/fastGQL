@@ -1,8 +1,9 @@
 package dev.fastgql.sql;
 
+import dev.fastgql.db.DatasourceConfig;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Query {
@@ -93,7 +94,7 @@ public class Query {
       .collect(Collectors.toList());
   }
 
-  public String buildQuery() {
+  public String buildQuery(DatasourceConfig.DBType dbType) {
     PreparedQuery preparedQuery = PreparedQuery.create()
       .merge(
         String.format(
@@ -123,7 +124,7 @@ public class Query {
       preparedQuery.merge(" OFFSET ").merge(offsetSqlString);
     }
 
-    return preparedQuery.buildQuery();
+    return preparedQuery.buildQuery(dbType);
   }
 
 }

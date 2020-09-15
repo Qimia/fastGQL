@@ -3,9 +3,7 @@ package dev.fastgql.sql;
 import dev.fastgql.dsl.OpType;
 import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.dsl.TableSpec;
-import io.vertx.core.json.JsonArray;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -22,7 +20,6 @@ public class Table {
   private final PreparedQuery conditionFromArguments;
   private final List<Object> params;
   private final Map<String, Object> jwtParams;
-  //private final PreparedQuery mockExtraCondition;
   private final String pathInQuery;
   private Condition extraCondition;
 
@@ -105,11 +102,6 @@ public class Table {
                 : ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams))
         .collect(PreparedQuery.collectorWithAnd());
   }
-
-  //public PreparedQuery getMockWhere() {
-  //  return Stream.of(conditionFromPermissions, conditionFromArguments, mockExtraCondition)
-  //      .collect(PreparedQuery.collectorWithAnd());
-  //}
 
   public String getOrderBy() {
     return orderBy;

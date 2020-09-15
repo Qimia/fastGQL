@@ -28,10 +28,15 @@ public class SQLExecutorWithDelayModule extends AbstractModule {
 
   @Provides
   Function<Transaction, QueryExecutor> provideTransactionQueryExecutorFunction() {
-    return transaction -> (query, params) -> transaction
-          .rxPreparedQuery(query, Tuple.wrap(params))
-          .doOnSuccess(rows -> log.info("[executing] {}", query))
-          .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
-          .doOnSuccess(result -> log.info("[response] {}", query));
+    return transaction -> (query, params) -> {
+      Single<RowSet<Row>> resultSingle = params != null && params.size() > 0
+        ? transaction.rxPreparedQuery(query, Tuple.wrap(params))
+        : transaction.rxQuery(query);
+
+      return resultSingle
+        .doOnSuccess(rows -> log.info("[executing] {}", query))
+        .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
+        .doOnSuccess(result -> log.info("[response] {}", query));
+    };
   }
 }

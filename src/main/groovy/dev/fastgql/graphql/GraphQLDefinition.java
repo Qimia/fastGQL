@@ -24,11 +24,8 @@ import graphql.schema.FieldCoordinates;
 import graphql.schema.GraphQLCodeRegistry;
 import graphql.schema.GraphQLObjectType;
 import graphql.schema.GraphQLSchema;
-import graphql.schema.SelectedField;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
-import io.reactivex.Single;
-import io.vertx.core.json.JsonArray;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.auth.jwt.impl.JWTUser;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
@@ -82,6 +79,7 @@ public class GraphQLDefinition {
     private final Function<Set<TableAlias>, String> lockQueryFunction;
     private final String unlockQuery;
     private final Supplier<PermissionsSpec> permissionsSpecSupplier;
+    private final DatasourceConfig.DBType dbType;
     private boolean queryEnabled = false;
     private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
@@ -107,15 +105,16 @@ public class GraphQLDefinition {
       this.sqlConnectionPool = sqlConnectionPool;
       this.graphQLSchemaBuilder = GraphQLSchema.newSchema();
       this.graphQLCodeRegistryBuilder = GraphQLCodeRegistry.newCodeRegistry();
-      if (datasourceConfig.getDbType().equals(DatasourceConfig.DBType.postgresql)) {
-        returningStatementEnabled = true;
-      }
+      //if (datasourceConfig.getDbType().equals(DatasourceConfig.DBType.postgresql)) {
+      //  returningStatementEnabled = true;
+      //}
       this.transactionQueryExecutorFunction = transactionQueryExecutorFunction;
       this.debeziumEngineSingleton = debeziumEngineSingleton;
       this.eventFlowableFactory = eventFlowableFactory;
       this.lockQueryFunction = datasourceConfig.tableListLockQueryFunction();
       this.unlockQuery = datasourceConfig.getUnlockQuery();
       this.permissionsSpecSupplier = permissionsSpecSupplier;
+      this.dbType = datasourceConfig.getDbType();
     }
 
     //private Single<Map<String, Object>> getResponseMutation(
@@ -151,7 +150,9 @@ public class GraphQLDefinition {
           getRoleSpecForUser(userParams),
           userParams,
           lockQueryFunction,
-          unlockQuery);
+          unlockQuery,
+          dbType
+        );
     }
 
     private ExecutionDefinition<List<Map<String, Object>>> createQueryExecutionDefinition(
@@ -243,7 +244,7 @@ public class GraphQLDefinition {
                             field ->
                                 Map.entry(
                                     field.getName(),
-                                    String.join("; ", executionFunctions.createMockQueries(field))
+                                    String.join("; ", executionFunctions.createQueriesToExecute(field))
                                         .strip()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

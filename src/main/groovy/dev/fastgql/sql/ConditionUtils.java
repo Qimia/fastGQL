@@ -2,9 +2,14 @@ package dev.fastgql.sql;
 
 import dev.fastgql.common.RelationalOperator;
 import dev.fastgql.dsl.LogicalConnective;
-import graphql.language.*;
-
-import java.util.ArrayList;
+import graphql.language.Argument;
+import graphql.language.ArrayValue;
+import graphql.language.FloatValue;
+import graphql.language.IntValue;
+import graphql.language.ObjectField;
+import graphql.language.ObjectValue;
+import graphql.language.StringValue;
+import graphql.language.Value;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

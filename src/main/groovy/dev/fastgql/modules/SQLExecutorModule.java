@@ -19,8 +19,14 @@ public class SQLExecutorModule extends AbstractModule {
 
   @Provides
   Function<Transaction, QueryExecutor> provideTransactionQueryExecutorFunction() {
-    return transaction -> (query, params) -> transaction
-      .rxPreparedQuery(query, Tuple.wrap(params))
-      .doOnSuccess(rows -> log.info("[executed] {}", query));
+    return transaction -> (query, params) -> {
+      Single<RowSet<Row>> result = params != null && params.size() > 0
+        ? transaction.rxPreparedQuery(query, Tuple.wrap(params))
+        : transaction.rxQuery(query);
+
+      return result
+        .doOnSuccess(rows -> log.info("[executed] {}", query))
+        .doOnError(error -> log.error("[error executing] {}", query));
+    };
   }
 }
