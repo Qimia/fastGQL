@@ -2,7 +2,14 @@ package dev.fastgql.sql;
 
 import dev.fastgql.common.RelationalOperator;
 import dev.fastgql.dsl.LogicalConnective;
-import graphql.language.*;
+import graphql.language.Argument;
+import graphql.language.ArrayValue;
+import graphql.language.FloatValue;
+import graphql.language.IntValue;
+import graphql.language.ObjectField;
+import graphql.language.ObjectValue;
+import graphql.language.StringValue;
+import graphql.language.Value;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -15,53 +22,54 @@ class ConditionUtils {
     return new Condition(null, columnName, RelationalOperator._eq, params -> value);
   }
 
-  private static String conditionToSQLInternal(
+  private static PreparedQuery conditionToSQLInternal(
       Condition condition,
-      Function<Condition, String> conditionStringFunction,
+      Function<Condition, String> conditionTableAliasFunction,
       Map<String, Object> jwtParams) {
-    String nextDescription =
+    PreparedQuery nextPreparedQuery =
         condition.getNext().stream()
-            .map(it -> conditionToSQLInternal(it, conditionStringFunction, jwtParams))
-            .collect(Collectors.joining(" "));
+            .map(it -> conditionToSQLInternal(it, conditionTableAliasFunction, jwtParams))
+            .collect(PreparedQuery.collector());
 
-    String connectiveDescription =
+    PreparedQuery connective =
         condition.getConnective() != null
-            ? String.format("%s ", condition.getConnective().toString().toUpperCase())
-            : "";
+            ? PreparedQuery.create(condition.getConnective().toString().toUpperCase()).merge(" ")
+            : PreparedQuery.create();
 
     if (condition.getColumn() != null
         && condition.getOperator() != null
         && condition.getFunction() != null) {
-      String tableAlias = conditionStringFunction.apply(condition);
-      String nextDescriptionWithSpace =
-          !nextDescription.isEmpty() ? String.format(" %s", nextDescription) : "";
+      String tableAlias = conditionTableAliasFunction.apply(condition);
+      PreparedQuery nextPreparedQueryWithSpace =
+          !nextPreparedQuery.isEmpty()
+              ? PreparedQuery.create(" ").merge(nextPreparedQuery)
+              : nextPreparedQuery;
       Object value = condition.getFunction().apply(jwtParams);
-      String valueDescription = objectToSql(value);
-      String relationalOperatorString = condition.getOperator().getSql();
-      String rootConditionDescription =
-          String.format(
-              "%s.%s%s%s",
-              tableAlias, condition.getColumn(), relationalOperatorString, valueDescription);
-      String notDescription = condition.isNegated() ? "NOT " : "";
-      return notDescription.isEmpty() && connectiveDescription.isEmpty()
-          ? rootConditionDescription + nextDescriptionWithSpace
-          : nextDescriptionWithSpace.isEmpty()
-              ? String.format(
-                  "%s%s%s", notDescription, connectiveDescription, rootConditionDescription)
-              : String.format(
-                  "%s%s(%s%s)",
-                  notDescription,
-                  connectiveDescription,
-                  rootConditionDescription,
-                  nextDescriptionWithSpace);
+
+      PreparedQuery rootConditionPrepared =
+          PreparedQuery.create(tableAlias)
+              .merge(".")
+              .merge(condition.getColumn())
+              .merge(condition.getOperator().getSql())
+              .addParam(value);
+
+      PreparedQuery not =
+          condition.isNegated() ? PreparedQuery.create("NOT ") : PreparedQuery.create();
+      return not.isEmpty() && connective.isEmpty()
+          ? rootConditionPrepared.merge(nextPreparedQueryWithSpace)
+          : nextPreparedQueryWithSpace.isEmpty()
+              ? not.merge(connective).merge(rootConditionPrepared)
+              : not.merge(connective)
+                  .merge(PreparedQuery.create("("))
+                  .merge(rootConditionPrepared)
+                  .merge(nextPreparedQueryWithSpace)
+                  .merge(PreparedQuery.create(")"));
     } else {
-      return connectiveDescription.isEmpty()
-          ? nextDescription
-          : String.format("%s%s", connectiveDescription, nextDescription);
+      return connective.isEmpty() ? nextPreparedQuery : connective.merge(nextPreparedQuery);
     }
   }
 
-  static String conditionToSQL(
+  static PreparedQuery conditionToSQL(
       Condition condition, Map<String, String> pathInQueryToAlias, Map<String, Object> jwtParams) {
     return conditionToSQLInternal(
         condition,
@@ -69,7 +77,8 @@ class ConditionUtils {
         jwtParams);
   }
 
-  static String conditionToSQL(Condition condition, String alias, Map<String, Object> jwtParams) {
+  static PreparedQuery conditionToSQL(
+      Condition condition, String alias, Map<String, Object> jwtParams) {
     return conditionToSQLInternal(condition, conditionArg -> alias, jwtParams);
   }
 

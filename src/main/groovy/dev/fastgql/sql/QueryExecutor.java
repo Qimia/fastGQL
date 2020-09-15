@@ -1,16 +1,15 @@
 package dev.fastgql.sql;
 
-import io.reactivex.Maybe;
-import io.reactivex.Observable;
+import io.reactivex.Single;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.RowSet;
 import java.util.List;
-import java.util.Map;
 
 @FunctionalInterface
 public interface QueryExecutor {
-  Observable<Map<String, Object>> apply(
-      String query, List<RowExecutor> rowExecutors, QueryResponseComposer queryResponseComposer);
+  Single<RowSet<Row>> apply(String query, List<Object> params);
 
-  default Observable<Map<String, Object>> justQuery(String query) {
-    return apply(query, List.of(), (rowExecutors, row) -> Maybe.just(Map.of()));
+  default Single<RowSet<Row>> apply(String query) {
+    return apply(query, List.of());
   }
 }

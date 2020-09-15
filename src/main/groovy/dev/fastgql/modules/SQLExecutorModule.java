@@ -3,8 +3,11 @@ package dev.fastgql.modules;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import dev.fastgql.sql.QueryExecutor;
-import io.reactivex.Observable;
+import io.reactivex.Single;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.RowSet;
 import io.vertx.reactivex.sqlclient.Transaction;
+import io.vertx.reactivex.sqlclient.Tuple;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,11 +19,15 @@ public class SQLExecutorModule extends AbstractModule {
   @Provides
   Function<Transaction, QueryExecutor> provideTransactionQueryExecutorFunction() {
     return transaction ->
-        (query, rowExecutors, queryResponseComposer) ->
-            transaction
-                .rxQuery(query)
-                .doOnSuccess(rows -> log.info("[executed] {}", query))
-                .flatMapObservable(Observable::fromIterable)
-                .flatMapMaybe(row -> queryResponseComposer.apply(rowExecutors, row));
+        (query, params) -> {
+          Single<RowSet<Row>> result =
+              params != null && params.size() > 0
+                  ? transaction.rxPreparedQuery(query, Tuple.wrap(params))
+                  : transaction.rxQuery(query);
+
+          return result
+              .doOnSuccess(rows -> log.info("[executed] {}", query))
+              .doOnError(error -> log.error("[error executing] {}", query));
+        };
   }
 }

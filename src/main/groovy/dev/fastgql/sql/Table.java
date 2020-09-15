@@ -15,10 +15,10 @@ public class Table {
   private final String limit;
   private final String offset;
   private final List<String> allowedColumns;
-  private final String conditionFromPermissions;
-  private final String conditionFromArguments;
+  private final PreparedQuery conditionFromPermissions;
+  private final PreparedQuery conditionFromArguments;
+  private final List<Object> params;
   private final Map<String, Object> jwtParams;
-  private final String mockExtraCondition;
   private final String pathInQuery;
   private Condition extraCondition;
 
@@ -27,7 +27,7 @@ public class Table {
       String tableAlias,
       RoleSpec roleSpec,
       Arguments arguments,
-      String mockExtraCondition,
+      Condition extraCondition,
       Map<String, Object> jwtParams,
       String pathInQuery,
       Map<String, String> pathInQueryToAlias) {
@@ -51,16 +51,21 @@ public class Table {
             jwtParams);
     this.conditionFromArguments =
         arguments.getCondition() == null
-            ? ""
+            ? PreparedQuery.create()
             : ConditionUtils.conditionToSQL(
                 arguments.getCondition(), pathInQueryToAlias, jwtParams);
+    this.params =
+        Stream.of(conditionFromPermissions, conditionFromArguments)
+            .flatMap(preparedQuery -> preparedQuery.getParams().stream())
+            .collect(Collectors.toUnmodifiableList());
     this.orderBy =
         arguments.getOrderByList() == null
             ? ""
             : OrderByUtils.orderByToSQL(arguments.getOrderByList(), pathInQueryToAlias);
     this.limit = arguments.getLimit() == null ? "" : arguments.getLimit().toString();
     this.offset = arguments.getOffset() == null ? "" : arguments.getOffset().toString();
-    this.mockExtraCondition = mockExtraCondition;
+    // this.mockExtraCondition = PreparedQuery.create(mockExtraCondition);
+    this.extraCondition = extraCondition;
     this.pathInQuery = pathInQuery;
   }
 
@@ -80,23 +85,25 @@ public class Table {
     return tableAlias;
   }
 
-  public String getWhere() {
+  public List<Object> createParams() {
+    return Stream.concat(
+            params.stream(),
+            extraCondition == null
+                ? Stream.of()
+                : ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams)
+                    .getParams()
+                    .stream())
+        .collect(Collectors.toUnmodifiableList());
+  }
+
+  public PreparedQuery getWhere() {
     return Stream.of(
             conditionFromPermissions,
             conditionFromArguments,
             extraCondition == null
-                ? ""
+                ? PreparedQuery.create()
                 : ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams))
-        .filter(sqlString -> !sqlString.isEmpty())
-        .map(sqlString -> String.format("(%s)", sqlString))
-        .collect(Collectors.joining(" AND "));
-  }
-
-  public String getMockWhere() {
-    return Stream.of(conditionFromPermissions, conditionFromArguments, mockExtraCondition)
-        .filter(sqlString -> !sqlString.isEmpty())
-        .map(sqlString -> String.format("(%s)", sqlString))
-        .collect(Collectors.joining(" AND "));
+        .collect(PreparedQuery.collectorWithAnd());
   }
 
   public String getOrderBy() {

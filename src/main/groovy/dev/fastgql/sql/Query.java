@@ -1,8 +1,8 @@
 package dev.fastgql.sql;
 
+import dev.fastgql.db.DatasourceConfig;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Query {
@@ -87,46 +87,43 @@ public class Query {
     return selectColumn;
   }
 
-  private String createQueryInternal(Function<Table, String> tableStringFunction) {
-    StringBuilder sqlStringBuilder = new StringBuilder();
-    sqlStringBuilder.append(
-        String.format(
-            "SELECT %s FROM %s %s",
-            selectColumns.stream().map(SelectColumn::sqlString).collect(Collectors.joining(", ")),
-            table.sqlString(),
-            leftJoins.stream().map(LeftJoin::sqlString).collect(Collectors.joining(" "))));
+  public List<Object> buildParams() {
+    return queriedTables.stream()
+        .flatMap(table -> table.createParams().stream())
+        .collect(Collectors.toList());
+  }
 
-    String whereSqlString =
-        queriedTables.stream()
-            .map(tableStringFunction)
-            .filter(where -> !where.isEmpty())
-            .map(sqlString -> String.format("(%s)", sqlString))
-            .collect(Collectors.joining(" AND "));
+  public String buildQuery(DatasourceConfig.DBType dbType) {
+    PreparedQuery preparedQuery =
+        PreparedQuery.create()
+            .merge(
+                String.format(
+                    "SELECT %s FROM %s %s",
+                    selectColumns.stream()
+                        .map(SelectColumn::sqlString)
+                        .collect(Collectors.joining(", ")),
+                    table.sqlString(),
+                    leftJoins.stream().map(LeftJoin::sqlString).collect(Collectors.joining(" "))));
+
+    PreparedQuery wherePreparedQuery =
+        queriedTables.stream().map(Table::getWhere).collect(PreparedQuery.collectorWithAnd());
     String orderBySqlString = table.getOrderBy();
     String limitSqlString = table.getLimit();
     String offsetSqlString = table.getOffset();
 
-    if (!whereSqlString.isEmpty()) {
-      sqlStringBuilder.append(String.format(" WHERE %s", whereSqlString));
+    if (!wherePreparedQuery.isEmpty()) {
+      preparedQuery.merge(" WHERE ").merge(wherePreparedQuery);
     }
     if (!orderBySqlString.isEmpty()) {
-      sqlStringBuilder.append(String.format(" ORDER BY %s", orderBySqlString));
+      preparedQuery.merge(" ORDER BY ").merge(orderBySqlString);
     }
     if (!limitSqlString.isEmpty()) {
-      sqlStringBuilder.append(String.format(" LIMIT %s", limitSqlString));
+      preparedQuery.merge(" LIMIT ").merge(limitSqlString);
     }
     if (!offsetSqlString.isEmpty()) {
-      sqlStringBuilder.append(String.format(" OFFSET %s", offsetSqlString));
+      preparedQuery.merge(" OFFSET ").merge(offsetSqlString);
     }
 
-    return sqlStringBuilder.toString();
-  }
-
-  public String createMockQuery() {
-    return createQueryInternal(Table::getMockWhere);
-  }
-
-  public String createQuery() {
-    return createQueryInternal(Table::getWhere);
+    return preparedQuery.buildQuery(dbType);
   }
 }
