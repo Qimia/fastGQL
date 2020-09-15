@@ -7,7 +7,7 @@ permissions {
             }
         }
         table ('addresses') {
-            ops([select]) {
+            ops([select, insert]) {
                 allow 'id'
             }
         }

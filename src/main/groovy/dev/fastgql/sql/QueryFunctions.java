@@ -18,7 +18,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ExecutionFunctions {
+public class QueryFunctions {
 
   private final GraphQLDatabaseSchema graphQLDatabaseSchema;
   private final RoleSpec roleSpec;
@@ -28,7 +28,7 @@ public class ExecutionFunctions {
   private final List<String> queriesToExecute;
   private final DatasourceConfig.DBType dbType;
 
-  public ExecutionFunctions(
+  public QueryFunctions(
       GraphQLDatabaseSchema graphQLDatabaseSchema,
       RoleSpec roleSpec,
       Map<String, Object> jwtParams,

@@ -143,8 +143,8 @@ public class GraphQLDefinition {
       return permissionsSpec.getRole(role);
     }
 
-    private ExecutionFunctions createExecutionFunctions(Map<String, Object> userParams) {
-      return new ExecutionFunctions(
+    private QueryFunctions createExecutionFunctions(Map<String, Object> userParams) {
+      return new QueryFunctions(
           graphQLDatabaseSchema,
           getRoleSpecForUser(userParams),
           userParams,
@@ -156,14 +156,14 @@ public class GraphQLDefinition {
     private ExecutionDefinition<List<Map<String, Object>>> createQueryExecutionDefinition(
         DataFetchingEnvironment env, Map<String, Object> userParams) {
       Field field = env.getField();
-      ExecutionFunctions executionFunctions = createExecutionFunctions(userParams);
-      return executionFunctions.createExecutionDefinition(field, true);
+      QueryFunctions queryFunctions = createExecutionFunctions(userParams);
+      return queryFunctions.createExecutionDefinition(field, true);
     }
 
     private ExecutionDefinition<Map<String, Object>> createMutationExecutionDefinition(
         DataFetchingEnvironment env, Map<String, Object> userParams) {
       MutationFunctions mutationFunctions =
-          new MutationFunctions(databaseSchema, getRoleSpecForUser(userParams), userParams);
+          new MutationFunctions(getRoleSpecForUser(userParams), userParams);
       return mutationFunctions.createExecutionDefinition(
           env.getField(), env.getArgument("objects"), dbType);
     }
@@ -234,7 +234,7 @@ public class GraphQLDefinition {
           new VertxDataFetcher<>(
               (env, promise) -> {
                 Map<String, Object> userParams = createUserParamsQuery(env);
-                ExecutionFunctions executionFunctions = createExecutionFunctions(userParams);
+                QueryFunctions queryFunctions = createExecutionFunctions(userParams);
 
                 Map<String, String> mockQueries =
                     createFieldStream(env)
@@ -244,7 +244,7 @@ public class GraphQLDefinition {
                                 Map.entry(
                                     field.getName(),
                                     String.join(
-                                            "; ", executionFunctions.createQueriesToExecute(field))
+                                            "; ", queryFunctions.createQueriesToExecute(field))
                                         .strip()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

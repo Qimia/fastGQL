@@ -9,28 +9,22 @@ class Permissions {
             role ('default') {
                 table ('customers') {
                     ops ([select, insert]) {
-                        allow 'first_name'
-                        check 'id' _eq { it.id }
-                        preset 'id' to { it.id }
-                        //check 'first_name' _similar 'John'
-                        //check 'id' _in 101, 102
-                        //check 'id' _eq 1 and {
-                        //    check 'id' _lt 200 and {
-                        //        check 'id' _gt 0 or 'id' _lt 200
-                        //    }
-                        //}
+                        allow 'id', 'first_name'
+                        check 'id' eq 1000 or 'id' eq 3003 or {
+                            check 'first_name' eq 'bob' and 'id' eq 3333
+                        }
                     }
                 }
                 table ('addresses') {
                     ops ([select]) {
                         allow 'id'
-                        //check 'id' _gt { it.id }
+                        //check 'id' gt { it.id }
                     }
                 }
                 table ('phones') {
                     ops ([select]) {
                         allow 'id'
-                        //check 'id' _gt { it.id / 2 }
+                        //check 'id' gt { it.id / 2 }
                     }
                 }
             }

@@ -1,11 +1,8 @@
 package dev.fastgql.sql;
 
-import dev.fastgql.db.DatabaseSchema;
+import dev.fastgql.common.RelationalOperator;
 import dev.fastgql.db.DatasourceConfig;
-import dev.fastgql.dsl.OpSpec;
-import dev.fastgql.dsl.OpType;
-import dev.fastgql.dsl.RoleSpec;
-import dev.fastgql.dsl.TableSpec;
+import dev.fastgql.dsl.*;
 import graphql.language.Argument;
 import graphql.language.Field;
 import io.reactivex.Maybe;
@@ -31,25 +28,57 @@ public class MutationFunctions {
     }
   }
 
-  static class ValueAlias {
-    private final Object value;
-    private final String alias;
+  static class Pair<L, R> {
+    private final L left;
+    private final R right;
 
-    ValueAlias(Object value, String alias) {
-      this.value = value;
-      this.alias = alias;
+    Pair(L value, R alias) {
+      this.left = value;
+      this.right = alias;
+    }
+
+    static <L, R> Pair<L, R> of(L left, R right) {
+      return new Pair<>(left, right);
     }
   }
 
-  private final DatabaseSchema databaseSchema;
   private final RoleSpec roleSpec;
   private final Map<String, Object> jwtParams;
 
   public MutationFunctions(
-      DatabaseSchema databaseSchema, RoleSpec roleSpec, Map<String, Object> jwtParams) {
-    this.databaseSchema = databaseSchema;
+      RoleSpec roleSpec, Map<String, Object> jwtParams) {
     this.roleSpec = roleSpec;
     this.jwtParams = jwtParams;
+  }
+
+  private boolean checkCondition(Condition condition, Map<String, Object> columnToValue) {
+    System.out.println(condition);
+    String column = condition.getColumn();
+    Function<Map<String, Object>, Object> jwtParamsToValue = condition.getFunction();
+    boolean valid = true;
+    if (jwtParamsToValue != null) {
+      Object valueTarget = jwtParams != null ? jwtParamsToValue.apply(jwtParams) : jwtParamsToValue.apply(Map.of());
+      Object valueCurrent = columnToValue.get(column);
+      RelationalOperator relationalOperator = condition.getOperator();
+
+      if (column == null || valueTarget == null) {
+        System.out.println("NULL: true");
+        valid = true;
+      } else {
+        valid = condition.isNegated() ^ relationalOperator.getValidator().apply(valueCurrent, valueTarget);
+        System.out.println(valueCurrent + " " + relationalOperator + " " + valueTarget + " = " + valid);
+      }
+    }
+
+    for (Condition nextCondition: condition.getNext()) {
+      System.out.println("NEXT CONDITION: " + nextCondition);
+      if (nextCondition.getConnective() == LogicalConnective.or) {
+        valid = valid || checkCondition(nextCondition, columnToValue);
+      } else {
+        valid = valid && checkCondition(nextCondition, columnToValue);
+      }
+    }
+    return valid;
   }
 
   private QueryParams buildMutationQueryFromRow(
@@ -79,7 +108,7 @@ public class MutationFunctions {
       .collect(Collectors.toUnmodifiableList());
 
     if (!allowedColumns.containsAll(columnsSqlListArguments)) {
-      throw new RuntimeException("User does not have permissions to insert into table " + tableName);
+      throw new RuntimeException("Insert query violates server-side permissions");
     }
 
     List<Preset> presets = opSpec.createPresets();
@@ -88,7 +117,7 @@ public class MutationFunctions {
       .map(preset -> Map.entry(preset.getColumn(), preset.getFunction().apply(jwtParams)))
       .collect(Collectors.toList());
 
-    Map<String, ValueAlias> columnNameToValueAlias = Stream.concat(
+    Map<String, Pair<Object, String>> columnNameToValueAlias = Stream.concat(
       columnNameToValuePresets.stream(), columnNameToValueArguments.stream()
     ).collect(
       (Supplier<HashMap<String, Object>>) HashMap::new,
@@ -96,18 +125,27 @@ public class MutationFunctions {
       Map::putAll
     ).entrySet().stream().collect(
       LinkedHashMap::new,
-      (accumulator, next) -> accumulator.put(next.getKey(), new ValueAlias(next.getValue(), placeholderCounter.next())),
+      (accumulator, next) -> accumulator.put(next.getKey(), Pair.of(next.getValue(), placeholderCounter.next())),
       Map::putAll
     );
+
+    Map<String, Object> columnNameToValue = columnNameToValueAlias.entrySet().stream()
+      .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> entry.getValue().left));
+
+    Condition condition = opSpec.getCondition() == null ? new Condition(null) : opSpec.getCondition();
+
+    if (!checkCondition(condition, columnNameToValue)) {
+      throw new RuntimeException("Insert query violates server-side permissions");
+    }
 
     String columnsSql = String.join(", ", columnNameToValueAlias.keySet());
 
     String valuesSql = columnNameToValueAlias.values().stream()
-      .map(valueAlias -> valueAlias.alias)
+      .map(valueAlias -> valueAlias.right)
       .collect(Collectors.joining(", "));
 
     List<Object> params = columnNameToValueAlias.values().stream()
-      .map(valueAlias -> valueAlias.value)
+      .map(valueAlias -> valueAlias.left)
       .collect(Collectors.toUnmodifiableList());
 
     return new QueryParams(String.format(
