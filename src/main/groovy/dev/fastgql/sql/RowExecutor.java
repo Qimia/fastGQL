@@ -2,7 +2,6 @@ package dev.fastgql.sql;
 
 import io.reactivex.Maybe;
 import io.vertx.reactivex.sqlclient.Row;
-
 import java.util.Map;
 
 @FunctionalInterface

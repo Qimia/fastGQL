@@ -29,12 +29,12 @@ public class ExecutionFunctions {
   private final DatasourceConfig.DBType dbType;
 
   public ExecutionFunctions(
-    GraphQLDatabaseSchema graphQLDatabaseSchema,
-    RoleSpec roleSpec,
-    Map<String, Object> jwtParams,
-    Function<Set<TableAlias>, String> tableListLockQueryFunction,
-    String unlockQuery,
-    DatasourceConfig.DBType dbType) {
+      GraphQLDatabaseSchema graphQLDatabaseSchema,
+      RoleSpec roleSpec,
+      Map<String, Object> jwtParams,
+      Function<Set<TableAlias>, String> tableListLockQueryFunction,
+      String unlockQuery,
+      DatasourceConfig.DBType dbType) {
 
     this.graphQLDatabaseSchema = graphQLDatabaseSchema;
     this.roleSpec = roleSpec;
@@ -45,8 +45,7 @@ public class ExecutionFunctions {
     this.dbType = dbType;
   }
 
-  private RowExecutor createExecutorForColumn(
-      Table table, GraphQLField graphQLField, Query query) {
+  private RowExecutor createExecutorForColumn(Table table, GraphQLField graphQLField, Query query) {
     String columnName = graphQLField.getQualifiedName().getKeyName();
     if (!table.isColumnAllowed(columnName)) {
       throw new RuntimeException(
@@ -115,7 +114,11 @@ public class ExecutionFunctions {
         queryExecutorConditionResponseFunction(
             foreignTableName,
             field,
-            new Condition(newPathInQuery, foreignColumnName, RelationalOperator._eq, jwtParams -> new Object()),
+            new Condition(
+                newPathInQuery,
+                foreignColumnName,
+                RelationalOperator._eq,
+                jwtParams -> new Object()),
             pathInQueryToAlias,
             newPathInQuery);
 
@@ -196,9 +199,7 @@ public class ExecutionFunctions {
   }
 
   private Maybe<Map<String, Object>> createResponseForRow(
-      QueryExecutor queryExecutor,
-      List<RowExecutor> executorList,
-      Row row) {
+      QueryExecutor queryExecutor, List<RowExecutor> executorList, Row row) {
     return Observable.fromIterable(executorList)
         .flatMapMaybe(rowExecutor -> rowExecutor.apply(queryExecutor, row))
         .collectInto(
@@ -235,11 +236,12 @@ public class ExecutionFunctions {
     return (queryExecutor, condition) -> {
       table.setExtraCondition(condition);
       List<Object> params = query.buildParams();
-      return queryExecutor.apply(queryString, params)
+      return queryExecutor
+          .apply(queryString, params)
           .flatMapObservable(Observable::fromIterable)
-                  .flatMapMaybe(row -> createResponseForRow(queryExecutor, executorList, row))
-                  .toList()
-                  .filter(list -> !list.isEmpty());
+          .flatMapMaybe(row -> createResponseForRow(queryExecutor, executorList, row))
+          .toList()
+          .filter(list -> !list.isEmpty());
     };
   }
 
@@ -258,7 +260,7 @@ public class ExecutionFunctions {
     List<String> mockQueriesReversed =
         Stream.of(
                 List.of(unlockQuery == null ? "" : unlockQuery),
-          queriesToExecute,
+                queriesToExecute,
                 List.of(tableLockQueryString))
             .flatMap(List::stream)
             .filter(query -> !query.isEmpty())

@@ -9,8 +9,7 @@ public class ExecutionDefinition<T> {
   private final Set<String> queriedTables;
 
   ExecutionDefinition(
-      Function<QueryExecutor, Maybe<T>> queryExecutorResponseFunction,
-      Set<String> queriedTables) {
+      Function<QueryExecutor, Maybe<T>> queryExecutorResponseFunction, Set<String> queriedTables) {
     this.queryExecutorResponseFunction = queryExecutorResponseFunction;
     this.queriedTables = queriedTables;
   }

@@ -3,7 +3,6 @@ package dev.fastgql.sql;
 import dev.fastgql.dsl.OpType;
 import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.dsl.TableSpec;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -55,18 +54,17 @@ public class Table {
             ? PreparedQuery.create()
             : ConditionUtils.conditionToSQL(
                 arguments.getCondition(), pathInQueryToAlias, jwtParams);
-    this.params = Stream.of(
-      conditionFromPermissions,
-      conditionFromArguments
-    ).flatMap(preparedQuery -> preparedQuery.getParams().stream())
-      .collect(Collectors.toUnmodifiableList());
+    this.params =
+        Stream.of(conditionFromPermissions, conditionFromArguments)
+            .flatMap(preparedQuery -> preparedQuery.getParams().stream())
+            .collect(Collectors.toUnmodifiableList());
     this.orderBy =
         arguments.getOrderByList() == null
             ? ""
             : OrderByUtils.orderByToSQL(arguments.getOrderByList(), pathInQueryToAlias);
     this.limit = arguments.getLimit() == null ? "" : arguments.getLimit().toString();
     this.offset = arguments.getOffset() == null ? "" : arguments.getOffset().toString();
-    //this.mockExtraCondition = PreparedQuery.create(mockExtraCondition);
+    // this.mockExtraCondition = PreparedQuery.create(mockExtraCondition);
     this.extraCondition = extraCondition;
     this.pathInQuery = pathInQuery;
   }
@@ -88,9 +86,14 @@ public class Table {
   }
 
   public List<Object> createParams() {
-    return Stream.concat(params.stream(), extraCondition == null ? Stream.of() :
-      ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams).getParams().stream()
-    ).collect(Collectors.toUnmodifiableList());
+    return Stream.concat(
+            params.stream(),
+            extraCondition == null
+                ? Stream.of()
+                : ConditionUtils.conditionToSQL(extraCondition, tableAlias, jwtParams)
+                    .getParams()
+                    .stream())
+        .collect(Collectors.toUnmodifiableList());
   }
 
   public PreparedQuery getWhere() {

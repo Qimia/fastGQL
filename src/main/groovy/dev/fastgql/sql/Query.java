@@ -1,7 +1,6 @@
 package dev.fastgql.sql;
 
 import dev.fastgql.db.DatasourceConfig;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -90,23 +89,24 @@ public class Query {
 
   public List<Object> buildParams() {
     return queriedTables.stream()
-      .flatMap(table -> table.createParams().stream())
-      .collect(Collectors.toList());
+        .flatMap(table -> table.createParams().stream())
+        .collect(Collectors.toList());
   }
 
   public String buildQuery(DatasourceConfig.DBType dbType) {
-    PreparedQuery preparedQuery = PreparedQuery.create()
-      .merge(
-        String.format(
-            "SELECT %s FROM %s %s",
-            selectColumns.stream().map(SelectColumn::sqlString).collect(Collectors.joining(", ")),
-            table.sqlString(),
-            leftJoins.stream().map(LeftJoin::sqlString).collect(Collectors.joining(" "))));
+    PreparedQuery preparedQuery =
+        PreparedQuery.create()
+            .merge(
+                String.format(
+                    "SELECT %s FROM %s %s",
+                    selectColumns.stream()
+                        .map(SelectColumn::sqlString)
+                        .collect(Collectors.joining(", ")),
+                    table.sqlString(),
+                    leftJoins.stream().map(LeftJoin::sqlString).collect(Collectors.joining(" "))));
 
     PreparedQuery wherePreparedQuery =
-        queriedTables.stream()
-            .map(Table::getWhere)
-            .collect(PreparedQuery.collectorWithAnd());
+        queriedTables.stream().map(Table::getWhere).collect(PreparedQuery.collectorWithAnd());
     String orderBySqlString = table.getOrderBy();
     String limitSqlString = table.getLimit();
     String offsetSqlString = table.getOffset();
@@ -126,5 +126,4 @@ public class Query {
 
     return preparedQuery.buildQuery(dbType);
   }
-
 }

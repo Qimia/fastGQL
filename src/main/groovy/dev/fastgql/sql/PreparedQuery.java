@@ -1,7 +1,6 @@
 package dev.fastgql.sql;
 
 import dev.fastgql.db.DatasourceConfig;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,10 +24,7 @@ public class PreparedQuery {
 
     @Override
     public String toString() {
-      return "Element{" +
-        "type=" + type +
-        ", content='" + content + '\'' +
-        '}';
+      return "Element{" + "type=" + type + ", content='" + content + '\'' + '}';
     }
   }
 
@@ -80,24 +76,25 @@ public class PreparedQuery {
   public String buildQuery(DatasourceConfig.DBType dbType) {
     StringBuilder builder = new StringBuilder();
     AtomicInteger counter = new AtomicInteger(1);
-    elements.forEach(element -> {
-      switch (element.type) {
-        case normal:
-          builder.append(element.content);
-          break;
-        case placeholder:
-          switch (dbType) {
-            case postgresql:
-              builder.append("$").append(counter.getAndIncrement());
+    elements.forEach(
+        element -> {
+          switch (element.type) {
+            case normal:
+              builder.append(element.content);
               break;
-            case mysql:
-              builder.append("?");
-              break;
-            case other:
-              throw new RuntimeException("DB type not supported");
+            case placeholder:
+              switch (dbType) {
+                case postgresql:
+                  builder.append("$").append(counter.getAndIncrement());
+                  break;
+                case mysql:
+                  builder.append("?");
+                  break;
+                case other:
+                  throw new RuntimeException("DB type not supported");
+              }
           }
-      }
-    });
+        });
     return builder.toString();
   }
 
@@ -107,10 +104,7 @@ public class PreparedQuery {
 
   @Override
   public String toString() {
-    return "PreparedQuery{" +
-      "queryBuilder=" + elements +
-      ", params=" + params +
-      '}';
+    return "PreparedQuery{" + "queryBuilder=" + elements + ", params=" + params + '}';
   }
 
   private static void accumulator(PreparedQuery first, PreparedQuery second) {
@@ -120,31 +114,32 @@ public class PreparedQuery {
 
   public static Collector<PreparedQuery, PreparedQuery, PreparedQuery> collector() {
     return Collector.of(
-      PreparedQuery::new,
-      PreparedQuery::accumulator,
-      (first, second) -> {
-        accumulator(first, second);
-        return first;
-      }
-    );
+        PreparedQuery::new,
+        PreparedQuery::accumulator,
+        (first, second) -> {
+          accumulator(first, second);
+          return first;
+        });
   }
 
-  public static Collector<PreparedQuery, ArrayList<PreparedQuery>, PreparedQuery> collectorWithAnd() {
+  public static Collector<PreparedQuery, ArrayList<PreparedQuery>, PreparedQuery>
+      collectorWithAnd() {
     return Collector.of(
-      ArrayList::new,
-      ArrayList::add,
-      (first, second) -> {
-        first.addAll(second);
-        return first;
-      },
-      array -> array
-        .stream()
-        .filter(preparedQuery -> !preparedQuery.isEmpty())
-        .map(preparedQuery -> PreparedQuery.create("(").merge(preparedQuery).merge(")"))
-        .reduce((first, second) -> {
-          first.merge(PreparedQuery.create(" AND ").merge(second));
+        ArrayList::new,
+        ArrayList::add,
+        (first, second) -> {
+          first.addAll(second);
           return first;
-        }).orElse(PreparedQuery.create())
-    );
+        },
+        array ->
+            array.stream()
+                .filter(preparedQuery -> !preparedQuery.isEmpty())
+                .map(preparedQuery -> PreparedQuery.create("(").merge(preparedQuery).merge(")"))
+                .reduce(
+                    (first, second) -> {
+                      first.merge(PreparedQuery.create(" AND ").merge(second));
+                      return first;
+                    })
+                .orElse(PreparedQuery.create()));
   }
 }

@@ -41,31 +41,31 @@ class ConditionUtils {
         && condition.getFunction() != null) {
       String tableAlias = conditionTableAliasFunction.apply(condition);
       PreparedQuery nextPreparedQueryWithSpace =
-          !nextPreparedQuery.isEmpty() ? PreparedQuery.create(" ").merge(nextPreparedQuery) : nextPreparedQuery;
+          !nextPreparedQuery.isEmpty()
+              ? PreparedQuery.create(" ").merge(nextPreparedQuery)
+              : nextPreparedQuery;
       Object value = condition.getFunction().apply(jwtParams);
 
-      PreparedQuery rootConditionPrepared = PreparedQuery
-        .create(tableAlias)
-        .merge(".")
-        .merge(condition.getColumn())
-        .merge(condition.getOperator().getSql())
-        .addParam(value);
+      PreparedQuery rootConditionPrepared =
+          PreparedQuery.create(tableAlias)
+              .merge(".")
+              .merge(condition.getColumn())
+              .merge(condition.getOperator().getSql())
+              .addParam(value);
 
-      PreparedQuery not = condition.isNegated() ? PreparedQuery.create("NOT ") : PreparedQuery.create();
+      PreparedQuery not =
+          condition.isNegated() ? PreparedQuery.create("NOT ") : PreparedQuery.create();
       return not.isEmpty() && connective.isEmpty()
           ? rootConditionPrepared.merge(nextPreparedQueryWithSpace)
           : nextPreparedQueryWithSpace.isEmpty()
               ? not.merge(connective).merge(rootConditionPrepared)
-              : not
-                .merge(connective)
-                .merge(PreparedQuery.create("("))
-                .merge(rootConditionPrepared)
-                .merge(nextPreparedQueryWithSpace)
-                .merge(PreparedQuery.create(")"));
+              : not.merge(connective)
+                  .merge(PreparedQuery.create("("))
+                  .merge(rootConditionPrepared)
+                  .merge(nextPreparedQueryWithSpace)
+                  .merge(PreparedQuery.create(")"));
     } else {
-      return connective.isEmpty()
-          ? nextPreparedQuery
-          : connective.merge(nextPreparedQuery);
+      return connective.isEmpty() ? nextPreparedQuery : connective.merge(nextPreparedQuery);
     }
   }
 
@@ -77,7 +77,8 @@ class ConditionUtils {
         jwtParams);
   }
 
-  static PreparedQuery conditionToSQL(Condition condition, String alias, Map<String, Object> jwtParams) {
+  static PreparedQuery conditionToSQL(
+      Condition condition, String alias, Map<String, Object> jwtParams) {
     return conditionToSQLInternal(condition, conditionArg -> alias, jwtParams);
   }
 

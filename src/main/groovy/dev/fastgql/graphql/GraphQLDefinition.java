@@ -105,9 +105,9 @@ public class GraphQLDefinition {
       this.sqlConnectionPool = sqlConnectionPool;
       this.graphQLSchemaBuilder = GraphQLSchema.newSchema();
       this.graphQLCodeRegistryBuilder = GraphQLCodeRegistry.newCodeRegistry();
-      //if (datasourceConfig.getDbType().equals(DatasourceConfig.DBType.postgresql)) {
+      // if (datasourceConfig.getDbType().equals(DatasourceConfig.DBType.postgresql)) {
       //  returningStatementEnabled = true;
-      //}
+      // }
       this.transactionQueryExecutorFunction = transactionQueryExecutorFunction;
       this.debeziumEngineSingleton = debeziumEngineSingleton;
       this.eventFlowableFactory = eventFlowableFactory;
@@ -117,7 +117,7 @@ public class GraphQLDefinition {
       this.dbType = datasourceConfig.getDbType();
     }
 
-    //private Single<Map<String, Object>> getResponseMutation(
+    // private Single<Map<String, Object>> getResponseMutation(
     //    DataFetchingEnvironment env, Transaction transaction) {
     //  String fieldName = env.getField().getName();
     //  Object rowsObject = env.getArgument("objects");
@@ -132,12 +132,11 @@ public class GraphQLDefinition {
     //  }
     //  return MutationExecution.createResponse(
     //      transaction, databaseSchema, fieldName, rows, returningColumns);
-    //}
+    // }
 
     private RoleSpec getRoleSpecForUser(Map<String, Object> userParams) {
       String role = (String) userParams.getOrDefault("role", "default");
       PermissionsSpec permissionsSpec = permissionsSpecSupplier.get();
-      System.out.println(permissionsSpec);
       if (permissionsSpec == null) {
         throw new RuntimeException("No permissions defined");
       }
@@ -151,8 +150,7 @@ public class GraphQLDefinition {
           userParams,
           lockQueryFunction,
           unlockQuery,
-          dbType
-        );
+          dbType);
     }
 
     private ExecutionDefinition<List<Map<String, Object>>> createQueryExecutionDefinition(
@@ -166,7 +164,8 @@ public class GraphQLDefinition {
         DataFetchingEnvironment env, Map<String, Object> userParams) {
       MutationFunctions mutationFunctions =
           new MutationFunctions(databaseSchema, getRoleSpecForUser(userParams), userParams);
-      return mutationFunctions.createExecutionDefinition(env.getField(), env.getArgument("objects"));
+      return mutationFunctions.createExecutionDefinition(
+          env.getField(), env.getArgument("objects"));
     }
 
     private static Stream<Field> createFieldStream(DataFetchingEnvironment env) {
@@ -244,7 +243,8 @@ public class GraphQLDefinition {
                             field ->
                                 Map.entry(
                                     field.getName(),
-                                    String.join("; ", executionFunctions.createQueriesToExecute(field))
+                                    String.join(
+                                            "; ", executionFunctions.createQueriesToExecute(field))
                                         .strip()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

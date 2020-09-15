@@ -7,10 +7,9 @@ import io.reactivex.Single;
 import io.vertx.reactivex.sqlclient.Row;
 import io.vertx.reactivex.sqlclient.RowSet;
 import io.vertx.reactivex.sqlclient.Transaction;
+import io.vertx.reactivex.sqlclient.Tuple;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-
-import io.vertx.reactivex.sqlclient.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,15 +27,17 @@ public class SQLExecutorWithDelayModule extends AbstractModule {
 
   @Provides
   Function<Transaction, QueryExecutor> provideTransactionQueryExecutorFunction() {
-    return transaction -> (query, params) -> {
-      Single<RowSet<Row>> resultSingle = params != null && params.size() > 0
-        ? transaction.rxPreparedQuery(query, Tuple.wrap(params))
-        : transaction.rxQuery(query);
+    return transaction ->
+        (query, params) -> {
+          Single<RowSet<Row>> resultSingle =
+              params != null && params.size() > 0
+                  ? transaction.rxPreparedQuery(query, Tuple.wrap(params))
+                  : transaction.rxQuery(query);
 
-      return resultSingle
-        .doOnSuccess(rows -> log.info("[executing] {}", query))
-        .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
-        .doOnSuccess(result -> log.info("[response] {}", query));
-    };
+          return resultSingle
+              .doOnSuccess(rows -> log.info("[executing] {}", query))
+              .delay(query.startsWith("SELECT") ? delay : 0, timeUnit)
+              .doOnSuccess(result -> log.info("[response] {}", query));
+        };
   }
 }
