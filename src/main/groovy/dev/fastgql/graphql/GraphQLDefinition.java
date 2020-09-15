@@ -243,8 +243,7 @@ public class GraphQLDefinition {
                             field ->
                                 Map.entry(
                                     field.getName(),
-                                    String.join(
-                                            "; ", queryFunctions.createQueriesToExecute(field))
+                                    String.join("; ", queryFunctions.createQueriesToExecute(field))
                                         .strip()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

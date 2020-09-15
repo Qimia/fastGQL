@@ -3,7 +3,6 @@ package dev.fastgql.sql;
 import dev.fastgql.db.DatasourceConfig;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collector;
 
 public class PreparedQuery {

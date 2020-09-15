@@ -1,7 +1,6 @@
 package dev.fastgql.sql;
 
 import dev.fastgql.db.DatasourceConfig;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class PlaceholderCounter {

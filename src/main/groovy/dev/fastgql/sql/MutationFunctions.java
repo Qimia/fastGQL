@@ -9,7 +9,6 @@ import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -45,8 +44,7 @@ public class MutationFunctions {
   private final RoleSpec roleSpec;
   private final Map<String, Object> jwtParams;
 
-  public MutationFunctions(
-      RoleSpec roleSpec, Map<String, Object> jwtParams) {
+  public MutationFunctions(RoleSpec roleSpec, Map<String, Object> jwtParams) {
     this.roleSpec = roleSpec;
     this.jwtParams = jwtParams;
   }
@@ -57,7 +55,8 @@ public class MutationFunctions {
     Function<Map<String, Object>, Object> jwtParamsToValue = condition.getFunction();
     boolean valid = true;
     if (jwtParamsToValue != null) {
-      Object valueTarget = jwtParams != null ? jwtParamsToValue.apply(jwtParams) : jwtParamsToValue.apply(Map.of());
+      Object valueTarget =
+          jwtParams != null ? jwtParamsToValue.apply(jwtParams) : jwtParamsToValue.apply(Map.of());
       Object valueCurrent = columnToValue.get(column);
       RelationalOperator relationalOperator = condition.getOperator();
 
@@ -65,12 +64,15 @@ public class MutationFunctions {
         System.out.println("NULL: true");
         valid = true;
       } else {
-        valid = condition.isNegated() ^ relationalOperator.getValidator().apply(valueCurrent, valueTarget);
-        System.out.println(valueCurrent + " " + relationalOperator + " " + valueTarget + " = " + valid);
+        valid =
+            condition.isNegated()
+                ^ relationalOperator.getValidator().apply(valueCurrent, valueTarget);
+        System.out.println(
+            valueCurrent + " " + relationalOperator + " " + valueTarget + " = " + valid);
       }
     }
 
-    for (Condition nextCondition: condition.getNext()) {
+    for (Condition nextCondition : condition.getNext()) {
       System.out.println("NEXT CONDITION: " + nextCondition);
       if (nextCondition.getConnective() == LogicalConnective.or) {
         valid = valid || checkCondition(nextCondition, columnToValue);
@@ -82,7 +84,7 @@ public class MutationFunctions {
   }
 
   private QueryParams buildMutationQueryFromRow(
-    String tableName, Object row, DatasourceConfig.DBType dbType) {
+      String tableName, Object row, DatasourceConfig.DBType dbType) {
     JsonObject rowObject = JsonObject.mapFrom(row);
 
     PlaceholderCounter placeholderCounter = new PlaceholderCounter(dbType);
@@ -99,13 +101,15 @@ public class MutationFunctions {
 
     List<String> allowedColumns = opSpec.getAllowed();
 
-    List<Map.Entry<String, Object>> columnNameToValueArguments = rowObject.stream()
-      .map(entry -> Map.entry(entry.getKey(), entry.getValue()))
-      .collect(Collectors.toList());
+    List<Map.Entry<String, Object>> columnNameToValueArguments =
+        rowObject.stream()
+            .map(entry -> Map.entry(entry.getKey(), entry.getValue()))
+            .collect(Collectors.toList());
 
-    List<String> columnsSqlListArguments = columnNameToValueArguments.stream()
-      .map(Map.Entry::getKey)
-      .collect(Collectors.toUnmodifiableList());
+    List<String> columnsSqlListArguments =
+        columnNameToValueArguments.stream()
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toUnmodifiableList());
 
     if (!allowedColumns.containsAll(columnsSqlListArguments)) {
       throw new RuntimeException("Insert query violates server-side permissions");
@@ -113,26 +117,35 @@ public class MutationFunctions {
 
     List<Preset> presets = opSpec.createPresets();
 
-    List<Map.Entry<String, Object>> columnNameToValuePresets = presets == null ? List.of() : presets.stream()
-      .map(preset -> Map.entry(preset.getColumn(), preset.getFunction().apply(jwtParams)))
-      .collect(Collectors.toList());
+    List<Map.Entry<String, Object>> columnNameToValuePresets =
+        presets == null
+            ? List.of()
+            : presets.stream()
+                .map(preset -> Map.entry(preset.getColumn(), preset.getFunction().apply(jwtParams)))
+                .collect(Collectors.toList());
 
-    Map<String, Pair<Object, String>> columnNameToValueAlias = Stream.concat(
-      columnNameToValuePresets.stream(), columnNameToValueArguments.stream()
-    ).collect(
-      (Supplier<HashMap<String, Object>>) HashMap::new,
-      (accumulator, next) -> accumulator.put(next.getKey(), next.getValue()),
-      Map::putAll
-    ).entrySet().stream().collect(
-      LinkedHashMap::new,
-      (accumulator, next) -> accumulator.put(next.getKey(), Pair.of(next.getValue(), placeholderCounter.next())),
-      Map::putAll
-    );
+    Map<String, Pair<Object, String>> columnNameToValueAlias =
+        Stream.concat(columnNameToValuePresets.stream(), columnNameToValueArguments.stream())
+            .collect(
+                (Supplier<HashMap<String, Object>>) HashMap::new,
+                (accumulator, next) -> accumulator.put(next.getKey(), next.getValue()),
+                Map::putAll)
+            .entrySet()
+            .stream()
+            .collect(
+                LinkedHashMap::new,
+                (accumulator, next) ->
+                    accumulator.put(
+                        next.getKey(), Pair.of(next.getValue(), placeholderCounter.next())),
+                Map::putAll);
 
-    Map<String, Object> columnNameToValue = columnNameToValueAlias.entrySet().stream()
-      .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> entry.getValue().left));
+    Map<String, Object> columnNameToValue =
+        columnNameToValueAlias.entrySet().stream()
+            .collect(
+                Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> entry.getValue().left));
 
-    Condition condition = opSpec.getCondition() == null ? new Condition(null) : opSpec.getCondition();
+    Condition condition =
+        opSpec.getCondition() == null ? new Condition(null) : opSpec.getCondition();
 
     if (!checkCondition(condition, columnNameToValue)) {
       throw new RuntimeException("Insert query violates server-side permissions");
@@ -140,21 +153,25 @@ public class MutationFunctions {
 
     String columnsSql = String.join(", ", columnNameToValueAlias.keySet());
 
-    String valuesSql = columnNameToValueAlias.values().stream()
-      .map(valueAlias -> valueAlias.right)
-      .collect(Collectors.joining(", "));
+    String valuesSql =
+        columnNameToValueAlias.values().stream()
+            .map(valueAlias -> valueAlias.right)
+            .collect(Collectors.joining(", "));
 
-    List<Object> params = columnNameToValueAlias.values().stream()
-      .map(valueAlias -> valueAlias.left)
-      .collect(Collectors.toUnmodifiableList());
+    List<Object> params =
+        columnNameToValueAlias.values().stream()
+            .map(valueAlias -> valueAlias.left)
+            .collect(Collectors.toUnmodifiableList());
 
-    return new QueryParams(String.format(
-        "INSERT INTO %s (%s) VALUES (%s)",
-        tableName, String.join(", ", columnsSql), String.join(", ", valuesSql)), params);
+    return new QueryParams(
+        String.format(
+            "INSERT INTO %s (%s) VALUES (%s)",
+            tableName, String.join(", ", columnsSql), String.join(", ", valuesSql)),
+        params);
   }
 
   public ExecutionDefinition<Map<String, Object>> createExecutionDefinition(
-    Field field, Object rowsObject, DatasourceConfig.DBType dbType) {
+      Field field, Object rowsObject, DatasourceConfig.DBType dbType) {
     String fieldName = field.getName();
     String insertPrefix = "insert_";
 
@@ -183,7 +200,8 @@ public class MutationFunctions {
     Function<QueryExecutor, Maybe<Map<String, Object>>> queryExecutorFunction =
         queryExecutor ->
             Observable.fromIterable(queries)
-                .flatMapSingle(queryParams -> queryExecutor.apply(queryParams.sql, queryParams.params))
+                .flatMapSingle(
+                    queryParams -> queryExecutor.apply(queryParams.sql, queryParams.params))
                 .reduce(0, (count, rowSet) -> count + rowSet.rowCount())
                 .map(value -> Map.of("affected_rows", (Object) value))
                 .toMaybe();
