@@ -165,7 +165,7 @@ public class GraphQLDefinition {
       MutationFunctions mutationFunctions =
           new MutationFunctions(databaseSchema, getRoleSpecForUser(userParams), userParams);
       return mutationFunctions.createExecutionDefinition(
-          env.getField(), env.getArgument("objects"));
+          env.getField(), env.getArgument("objects"), dbType);
     }
 
     private static Stream<Field> createFieldStream(DataFetchingEnvironment env) {

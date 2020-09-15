@@ -8,9 +8,10 @@ class Permissions {
         PermissionsConfig.create().permissions {
             role ('default') {
                 table ('customers') {
-                    ops ([select]) {
-                        allow 'id', 'first_name'
+                    ops ([select, insert]) {
+                        allow 'first_name'
                         check 'id' _eq { it.id }
+                        preset 'id' to { it.id }
                         //check 'first_name' _similar 'John'
                         //check 'id' _in 101, 102
                         //check 'id' _eq 1 and {

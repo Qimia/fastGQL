@@ -75,7 +75,7 @@ public class PreparedQuery {
 
   public String buildQuery(DatasourceConfig.DBType dbType) {
     StringBuilder builder = new StringBuilder();
-    AtomicInteger counter = new AtomicInteger(1);
+    PlaceholderCounter placeholderCounter = new PlaceholderCounter(dbType);
     elements.forEach(
         element -> {
           switch (element.type) {
@@ -83,16 +83,7 @@ public class PreparedQuery {
               builder.append(element.content);
               break;
             case placeholder:
-              switch (dbType) {
-                case postgresql:
-                  builder.append("$").append(counter.getAndIncrement());
-                  break;
-                case mysql:
-                  builder.append("?");
-                  break;
-                case other:
-                  throw new RuntimeException("DB type not supported");
-              }
+              builder.append(placeholderCounter.next());
           }
         });
     return builder.toString();

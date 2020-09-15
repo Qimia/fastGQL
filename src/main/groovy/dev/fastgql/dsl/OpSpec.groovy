@@ -2,28 +2,31 @@ package dev.fastgql.dsl
 
 import dev.fastgql.common.RelationalOperator
 import dev.fastgql.sql.Condition
+import dev.fastgql.sql.Preset
 
 import java.util.function.Function
+import java.util.stream.Collectors
 
 class OpSpec {
 
-    static class Preset {
-        final String column
-        Object value
+    static class PresetSpec {
 
-        Preset(String column) {
+        final String column;
+        Function<Map<String, Object>, Object> value;
+
+        PresetSpec(String column) {
             this.column = column
         }
 
         def to(Object value) {
             this.value = value instanceof Closure
-                ? value as Function<Map<String, Object>, Object>
-                : value
+                    ? value as Function<Map<String, Object>, Object>
+                    : { value } as Function<Map<String, Object>, Object>
         }
 
         @Override
         String toString() {
-            "Preset<column: ${column}, value: ${value}>"
+            "PresetSpec<column: ${column}, value: ${value}>"
         }
     }
 
@@ -163,7 +166,7 @@ class OpSpec {
         }
     }
 
-    final List<Preset> presets
+    final List<PresetSpec> presets
     final List<String> allowed
     final Condition condition
     final String tableName
@@ -175,7 +178,7 @@ class OpSpec {
         this.tableName = tableName
     }
 
-    OpSpec(List<Preset> presets, List<String> allowed, Condition condition) {
+    OpSpec(List<PresetSpec> presets, List<String> allowed, Condition condition) {
         this.presets = presets
         this.allowed = allowed
         this.condition = condition
@@ -210,9 +213,14 @@ class OpSpec {
     }
 
     def preset(String column) {
-        def preset = new Preset(column)
+        def preset = new PresetSpec(column)
         this.presets.add(preset)
         return preset
+    }
+
+    List<Preset> createPresets() {
+        return presets.stream().map { it -> new Preset(it.column, it.value) }
+            .collect(Collectors.toList())
     }
 
     @Override
