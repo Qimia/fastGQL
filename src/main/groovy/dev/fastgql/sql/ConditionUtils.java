@@ -49,10 +49,10 @@ class ConditionUtils {
       RelationalOperator operator = condition.getOperator();
 
       PreparedQuery rootConditionPrepared =
-        PreparedQuery.create(tableAlias)
-          .merge(".")
-          .merge(condition.getColumn())
-          .merge(condition.getOperator().getSql());
+          PreparedQuery.create(tableAlias)
+              .merge(".")
+              .merge(condition.getColumn())
+              .merge(condition.getOperator().getSql());
 
       switch (operator) {
         case _in:
@@ -60,7 +60,7 @@ class ConditionUtils {
           rootConditionPrepared.merge("(");
           if (value instanceof List) {
             List<?> valueList = (List<?>) value;
-            for (int i=0; i<valueList.size(); i++) {
+            for (int i = 0; i < valueList.size(); i++) {
               rootConditionPrepared.addParam(valueList.get(i));
               if (i < valueList.size() - 1) {
                 rootConditionPrepared.merge(", ");
