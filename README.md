@@ -53,16 +53,15 @@ INSERT INTO customers VALUES (1, 'John', 0);
 INSERT INTO customers VALUES (2, 'Daniele', 1);
 ```
 
-#### Query with simple permissions
-
-##### Server-side permissions
+#### Simple query
 
 <table style="width:100%">
   <tr>
-    <th colspan="2">Permissions</th>
+    <th>Permissions</th>
+    <th>JWT token data</th>
   </tr>
   <tr>
-    <td colspan="2"><pre lang="groovy">permissions {
+    <td><pre lang="groovy">permissions {
   role ('default') {
     table ('customers') {
       ops ([select]) {
@@ -77,7 +76,13 @@ INSERT INTO customers VALUES (2, 'Daniele', 1);
   }
 }</pre>
     </td>
+    <td>
+      <pre lang="json">{
+  "role": "default"
+}</pre>
+    </td>
   </tr>
+  
   <tr>
     <th>Query</th>
     <th>Response</th>
@@ -99,7 +104,7 @@ INSERT INTO customers VALUES (2, 'Daniele', 1);
   }
 }</pre>
     </td>
-    <td><pre lang="json">{
+  <td><pre lang="json">{
   "data": {
     "customers": [
       {
@@ -157,15 +162,275 @@ INSERT INTO customers VALUES (2, 'Daniele', 1);
   </tr>
 </table>
 
-| b
+#### Query with arguments
+
+<table style="width:100%">
+  <tr>
+    <th>Permissions</th>
+    <th>JWT token data</th>
+  </tr>
+  <tr>
+    <td><pre lang="groovy">permissions {
+  role ('default') {
+    table ('customers') {
+      ops ([select]) {
+          allow 'id', 'name', 'address'
+      }
+    }
+    table ('addresses') {
+      ops ([select]) {
+          allow 'id', 'street'
+      }
+    }
+  }
+}</pre>
+    </td>
+    <td>
+      <pre lang="json">{
+  "role": "default"
+}</pre>
+    </td>
+  </tr>
+  <tr>
+    <th>Query</th>
+    <th>Response</th>
+  </tr>
+  <tr>
+    <td>
+      <pre lang="graphql">
+query {
+  customers (
+    where:{
+      name:{_in:["John", "Daniele"]},
+      _or:[
+        {id:{_eq:3}},
+        {address:{_lt:10}}
+      ]
+    },
+    order_by:{address_ref:{street:desc}}
+  ) {
+    id
+    name
+    address
+    address_ref {
+      id
+      street
+      customers_on_address (limit:1) {
+        id
+      }
+    }
+  }
+}</pre>
+    </td>
+    <td><pre lang="json">{
+  "data": {
+    "customers": [
+      {
+        "id": 2,
+        "name": "Daniele",
+        "address": 1,
+        "address_ref": {
+          "id": 1,
+          "street": "Rangewood Road",
+          "customers_on_address": [
+            {
+              "id": 2
+            }
+          ]
+        }
+      },
+      {
+        "id": 1,
+        "name": "John",
+        "address": 0,
+        "address_ref": {
+          "id": 0,
+          "street": "Danes Hill",
+          "customers_on_address": [
+            {
+              "id": 0
+            }
+          ]
+        }
+      }
+    ]
+  }
+}</pre>
+    </td>
+  </tr>
+</table>
+
+#### Query with row access restrictions
+
+`{ it.id }` in this example is a closure which accepts JWT token data, it is equivalent to Java lambda:
+
+```java
+@FunctionalInterface
+interface ValueGetter {
+  Object getValue(Map<String, Object> jwtData);
+}
+
+class C {
+  ValueGetter valueGetter = it -> it.get("id");
+}
+```
+
+<table style="width:100%">
+  <tr>
+    <th>Permissions</th>
+    <th>JWT token data</th>
+  </tr>
+  <tr>
+    <td><pre lang="groovy">permissions {
+  role ('default') {
+    table ('customers') {
+      ops ([select]) {
+          allow 'id', 'name', 'address'
+          check 'id' eq { it.id }
+      }
+    }
+    table ('addresses') {
+      ops ([select]) {
+          allow 'id', 'street'
+      }
+    }
+  }
+}</pre>
+    </td>
+    <td>
+      <pre lang="json">{
+  "role": "default",
+  "id": 0
+}</pre>
+  </tr>
+  <tr>
+    <th>Query</th>
+    <th>Response</th>
+  </tr>
+  <tr>
+    <td>
+      <pre lang="graphql">query {
+  customers {
+    id
+    name
+    address_ref {
+      customers_on_address {
+        id
+      }
+    }
+  }
+}</pre>
+    </td>
+    <td><pre lang="json">{
+  "data": {
+    "customers": [
+      {
+        "id": 0,
+        "name": "Stacey",
+        "address_ref": {
+          "customers_on_address": [
+            {
+              "id": 0
+            }
+          ]
+        }
+      }
+    ]
+  }
+}</pre>
+    </td>
+  </tr>
+</table>
+
+#### Mutation with preset and validity check
+
+<table style="width:100%">
+  <tr>
+    <th>Permissions</th>
+    <th>JWT token data</th>
+  </tr>
+  <tr>
+    <td><pre lang="groovy">permissions {
+  role ('default') {
+    table ('customers') {
+      ops ([select]) {
+          allow 'id', 'name', 'address'
+          check 'id' eq { it.id }
+      }
+      ops ([insert]) {
+          allow 'name', 'address'
+          preset 'id' to { it.id }
+          check 'address' lt 100
+      }
+    }
+  }
+}</pre>
+    </td>
+    <td>
+      <pre lang="json">{
+  "role": "default",
+  "id": 3
+}</pre>
+  </tr>
+  <tr>
+    <th>Mutation</th>
+    <th>Response</th>
+  </tr>
+  <tr>
+    <td>
+      <pre lang="graphql">mutation {
+  insert_customers (
+    objects:{
+      name:"Oscar",
+      address:0
+    }
+  ) {
+    affected_rows
+  }
+}</pre>
+    </td>
+    <td><pre lang="json">{
+  "data": {
+    "insert_customers": {
+      "affected_rows": 1
+    }
+  }
+}</pre>
+    </td>
+  </tr>
+  <tr>
+    <th>Query</th> 
+    <th>Response</th> 
+  </tr>
+  <tr>
+    <td>
+      <pre lang="graphql">query {
+  customers {
+    id
+    name
+    address
+  }
+}</pre>
+    </td>
+    <td><pre lang="json">{
+  "data": {
+    "customers": [
+      {
+        "id": 3,
+        "name": "Oscar",
+        "address": 0
+      }
+    ]
+  }
+}</pre>
+    </td>
+  </tr>
+  
+</table>
+
+### Building and running
 
 #### Development
-
-Check style:
-
-```shell script
-./gradlew clean checkstyleMain
-```
 
 Start Postgres container:
 

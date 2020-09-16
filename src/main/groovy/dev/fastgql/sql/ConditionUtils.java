@@ -46,12 +46,34 @@ class ConditionUtils {
               : nextPreparedQuery;
       Object value = condition.getFunction().apply(jwtParams);
 
+      RelationalOperator operator = condition.getOperator();
+
       PreparedQuery rootConditionPrepared =
-          PreparedQuery.create(tableAlias)
-              .merge(".")
-              .merge(condition.getColumn())
-              .merge(condition.getOperator().getSql())
-              .addParam(value);
+        PreparedQuery.create(tableAlias)
+          .merge(".")
+          .merge(condition.getColumn())
+          .merge(condition.getOperator().getSql());
+
+      switch (operator) {
+        case _in:
+        case _nin:
+          rootConditionPrepared.merge("(");
+          if (value instanceof List) {
+            List<?> valueList = (List<?>) value;
+            for (int i=0; i<valueList.size(); i++) {
+              rootConditionPrepared.addParam(valueList.get(i));
+              if (i < valueList.size() - 1) {
+                rootConditionPrepared.merge(", ");
+              }
+            }
+          } else {
+            rootConditionPrepared.addParam(value);
+          }
+          rootConditionPrepared.merge(")");
+          break;
+        default:
+          rootConditionPrepared.addParam(value);
+      }
 
       PreparedQuery not =
           condition.isNegated() ? PreparedQuery.create("NOT ") : PreparedQuery.create();
