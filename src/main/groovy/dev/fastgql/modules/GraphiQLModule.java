@@ -31,7 +31,7 @@ public class GraphiQLModule extends AbstractModule {
                         .setSecretKey(jwtConfig.getSecretKey())));
 
     return jwtAuth.generateToken(
-        JsonObject.mapFrom(Map.of("id", 101)),
+        JsonObject.mapFrom(Map.of("id", 3, "role", "default")),
         new JWTOptions().setAlgorithm(jwtConfig.getAlgorithm()));
   }
 
