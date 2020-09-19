@@ -25,7 +25,8 @@ public class Arguments {
     this.offset = null;
   }
 
-  public Arguments(List<Argument> arguments, String pathInQuery, GraphQLDatabaseSchema graphQLDatabaseSchema) {
+  public Arguments(
+      List<Argument> arguments, String pathInQuery, GraphQLDatabaseSchema graphQLDatabaseSchema) {
     Condition condition = null;
     List<OrderBy> orderByList = null;
     BigInteger limit = null;

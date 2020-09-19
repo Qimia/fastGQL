@@ -111,18 +111,11 @@ public class QueryFunctions {
     String newPathInQuery = String.format("%s/%s", pathInQuery, field.getName());
 
     Condition placeholderExtraCondition =
-      new Condition(
-        foreignColumnName,
-        RelationalOperator._eq,
-        jwtParams -> new Object());
+        new Condition(foreignColumnName, RelationalOperator._eq, jwtParams -> new Object());
 
     BiFunction<QueryExecutor, Condition, Maybe<List<Map<String, Object>>>> conditionSingleFunction =
         queryExecutorConditionResponseFunction(
-            foreignTableName,
-            field,
-            placeholderExtraCondition,
-            pathInQueryToAlias,
-            newPathInQuery);
+            foreignTableName, field, placeholderExtraCondition, pathInQueryToAlias, newPathInQuery);
 
     return (queryExecutor, row) -> {
       Object value = row.getValue(selectColumn.getResultAlias());
@@ -222,8 +215,8 @@ public class QueryFunctions {
           String pathInQuery) {
 
     Arguments arguments = new Arguments(field.getArguments(), pathInQuery, graphQLDatabaseSchema);
-    //Condition condition = arguments.getCondition();
-    //List<OrderBy> orderByList = arguments.getOrderByList();
+    // Condition condition = arguments.getCondition();
+    // List<OrderBy> orderByList = arguments.getOrderByList();
 
     Table table =
         new Table(
@@ -286,7 +279,9 @@ public class QueryFunctions {
   private Map<String, String> createPathInQueryToAlias(
       Map<String, TableAlias> pathInQueryToTableAlias) {
     return pathInQueryToTableAlias.entrySet().stream()
-        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> entry.getValue().getTableAlias()));
+        .collect(
+            Collectors.toUnmodifiableMap(
+                Map.Entry::getKey, entry -> entry.getValue().getTableAlias()));
   }
 
   private Set<TableAlias> createTableAliases(Map<String, TableAlias> pathInQueryToTableAlias) {

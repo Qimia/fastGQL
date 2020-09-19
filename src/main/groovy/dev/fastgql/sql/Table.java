@@ -52,8 +52,7 @@ public class Table {
     this.conditionFromArguments =
         arguments.getCondition() == null
             ? PreparedQuery.create()
-            : ConditionUtils.conditionToSQL(
-                arguments.getCondition(), tableAlias, jwtParams);
+            : ConditionUtils.conditionToSQL(arguments.getCondition(), tableAlias, jwtParams);
     this.params =
         Stream.of(conditionFromPermissions, conditionFromArguments)
             .flatMap(preparedQuery -> preparedQuery.getParams().stream())

@@ -15,7 +15,8 @@ public class Condition {
     private final String column;
     private final Condition condition;
 
-    public Referencing(String foreignTable, String foreignColumn, String column, Condition condition) {
+    public Referencing(
+        String foreignTable, String foreignColumn, String column, Condition condition) {
       this.foreignTable = foreignTable;
       this.foreignColumn = foreignColumn;
       this.column = column;
@@ -40,12 +41,19 @@ public class Condition {
 
     @Override
     public String toString() {
-      return "Referencing<" +
-        "foreignTable: '" + foreignTable + '\'' +
-        ", foreignColumn: '" + foreignColumn + '\'' +
-        ", column: '" + column + '\'' +
-        ", condition: " + condition +
-        '>';
+      return "Referencing<"
+          + "foreignTable: '"
+          + foreignTable
+          + '\''
+          + ", foreignColumn: '"
+          + foreignColumn
+          + '\''
+          + ", column: '"
+          + column
+          + '\''
+          + ", condition: "
+          + condition
+          + '>';
     }
   }
 
@@ -62,13 +70,19 @@ public class Condition {
   }
 
   public Condition(
-      String column,
-      RelationalOperator operator,
-      Function<Map<String, Object>, Object> function) {
+      String column, RelationalOperator operator, Function<Map<String, Object>, Object> function) {
     this.column = column;
     this.operator = operator;
     this.function = function;
     this.negated = false;
+  }
+
+  public static Condition createReferencing(
+      String foreignTable, String foreignColumn, String column, Condition condition) {
+    Referencing referencing = new Referencing(foreignTable, foreignColumn, column, condition);
+    Condition retCondition = new Condition();
+    retCondition.setReferencing(referencing);
+    return retCondition;
   }
 
   public String getColumn() {
@@ -115,12 +129,12 @@ public class Condition {
     this.negated = negated;
   }
 
-  public void setReferencing(Referencing referencing) {
-    this.referencing = referencing;
-  }
-
   public Referencing getReferencing() {
     return referencing;
+  }
+
+  public void setReferencing(Referencing referencing) {
+    this.referencing = referencing;
   }
 
   @Override

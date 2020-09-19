@@ -139,8 +139,7 @@ public class MutationFunctions {
             .collect(
                 Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> entry.getValue().left));
 
-    Condition condition =
-        opSpec.getCondition() == null ? new Condition() : opSpec.getCondition();
+    Condition condition = opSpec.getCondition() == null ? new Condition() : opSpec.getCondition();
 
     if (!checkCondition(condition, columnNameToValue)) {
       throw new RuntimeException("Insert query violates server-side permissions");

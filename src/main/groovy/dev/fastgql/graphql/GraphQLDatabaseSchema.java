@@ -336,14 +336,15 @@ public class GraphQLDatabaseSchema {
                               .build());
                     } else if (node.getReferencedBy() != null) {
                       for (QualifiedName qualifiedName : node.getReferencedBy()) {
-                        String referencedByName = GraphQLNaming.getNameForReferencedByField(qualifiedName);
-                        String referencedByTypeName = GraphQLNaming.getNameBoolType(qualifiedName.getTableName());
+                        String referencedByName =
+                            GraphQLNaming.getNameForReferencedByField(qualifiedName);
+                        String referencedByTypeName =
+                            GraphQLNaming.getNameBoolType(qualifiedName.getTableName());
                         builder.field(
-                          GraphQLInputObjectField.newInputObjectField()
-                            .name(referencedByName)
-                            .type(GraphQLTypeReference.typeRef(referencedByTypeName))
-                            .build()
-                        );
+                            GraphQLInputObjectField.newInputObjectField()
+                                .name(referencedByName)
+                                .type(GraphQLTypeReference.typeRef(referencedByTypeName))
+                                .build());
                       }
                     }
                   });
