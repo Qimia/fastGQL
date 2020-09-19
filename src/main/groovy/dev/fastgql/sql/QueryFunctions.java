@@ -110,15 +110,17 @@ public class QueryFunctions {
 
     String newPathInQuery = String.format("%s/%s", pathInQuery, field.getName());
 
+    Condition placeholderExtraCondition =
+      new Condition(
+        foreignColumnName,
+        RelationalOperator._eq,
+        jwtParams -> new Object());
+
     BiFunction<QueryExecutor, Condition, Maybe<List<Map<String, Object>>>> conditionSingleFunction =
         queryExecutorConditionResponseFunction(
             foreignTableName,
             field,
-            new Condition(
-                newPathInQuery,
-                foreignColumnName,
-                RelationalOperator._eq,
-                jwtParams -> new Object()),
+            placeholderExtraCondition,
             pathInQueryToAlias,
             newPathInQuery);
 
@@ -195,7 +197,10 @@ public class QueryFunctions {
             (accumulated, current) -> {
               accumulated.putAll(current);
               return accumulated;
-            });
+            })
+        .entrySet()
+        .stream()
+        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private Maybe<Map<String, Object>> createResponseForRow(
@@ -212,16 +217,21 @@ public class QueryFunctions {
       queryExecutorConditionResponseFunction(
           String tableName,
           Field field,
-          Condition extraCondition,
+          Condition extraConditionPlaceholder,
           Map<String, String> pathInQueryToAlias,
           String pathInQuery) {
+
+    Arguments arguments = new Arguments(field.getArguments(), pathInQuery, graphQLDatabaseSchema);
+    //Condition condition = arguments.getCondition();
+    //List<OrderBy> orderByList = arguments.getOrderByList();
+
     Table table =
         new Table(
             tableName,
             pathInQueryToAlias.get(pathInQuery),
             roleSpec,
-            new Arguments(field.getArguments(), pathInQuery),
-            extraCondition,
+            arguments,
+            extraConditionPlaceholder,
             jwtParams,
             pathInQuery,
             pathInQueryToAlias);
@@ -233,8 +243,8 @@ public class QueryFunctions {
     String queryString = query.buildQuery(dbType);
     queriesToExecute.add(queryString);
 
-    return (queryExecutor, condition) -> {
-      table.setExtraCondition(condition);
+    return (queryExecutor, extraCondition) -> {
+      table.setExtraCondition(extraCondition);
       List<Object> params = query.buildParams();
       return queryExecutor
           .apply(queryString, params)
@@ -276,11 +286,11 @@ public class QueryFunctions {
   private Map<String, String> createPathInQueryToAlias(
       Map<String, TableAlias> pathInQueryToTableAlias) {
     return pathInQueryToTableAlias.entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getTableAlias()));
+        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, entry -> entry.getValue().getTableAlias()));
   }
 
   private Set<TableAlias> createTableAliases(Map<String, TableAlias> pathInQueryToTableAlias) {
-    return new HashSet<>(pathInQueryToTableAlias.values());
+    return pathInQueryToTableAlias.values().stream().collect(Collectors.toUnmodifiableSet());
   }
 
   public ExecutionDefinition<List<Map<String, Object>>> createExecutionDefinition(

@@ -1,5 +1,11 @@
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS addresses;
+DROP TABLE IF EXISTS phones;
+
+CREATE TABLE phones(
+  id INT PRIMARY KEY,
+  phone INT
+);
 
 CREATE TABLE addresses(
   id INT PRIMARY KEY,
@@ -9,7 +15,8 @@ CREATE TABLE addresses(
 CREATE TABLE customers(
   id INT PRIMARY KEY,
   name VARCHAR(255),
-  address INT REFERENCES addresses(id)
+  address INT REFERENCES addresses(id),
+  phone INT REFERENCES phones(id)
 );
 
 INSERT INTO addresses VALUES (0, 'Danes Hill');

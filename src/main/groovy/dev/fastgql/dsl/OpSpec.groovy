@@ -117,7 +117,7 @@ class OpSpec {
         }
 
         def handleLogicalConnective(LogicalConnective logicalConnective, String column) {
-            Condition newCondition = new Condition(condition.getPathInQuery())
+            Condition newCondition = new Condition()
             newCondition.setColumn(column)
             newCondition.setConnective(logicalConnective)
             condition.getNext().add(newCondition)
@@ -125,7 +125,7 @@ class OpSpec {
         }
 
         def handleLogicalConnective(LogicalConnective logicalConnective, Closure cl) {
-            Condition newCondition = new Condition(condition.getPathInQuery())
+            Condition newCondition = new Condition()
             newCondition.setConnective(logicalConnective)
             condition.getNext().add(newCondition)
             def checkSpec = new CheckSpec(newCondition)
@@ -174,7 +174,7 @@ class OpSpec {
     OpSpec(String tableName) {
         this.presets = new ArrayList<>()
         this.allowed = new ArrayList<>()
-        this.condition = new Condition(tableName)
+        this.condition = new Condition()
         this.tableName = tableName
     }
 
@@ -190,7 +190,7 @@ class OpSpec {
     }
 
     def check(String column) {
-        Condition newCondition = new Condition(tableName)
+        Condition newCondition = new Condition()
         if (condition.getNext().size() > 0) {
             newCondition.setConnective(LogicalConnective.and)
         }
@@ -200,7 +200,7 @@ class OpSpec {
     }
 
     def check(@DelegatesTo(strategy=Closure.DELEGATE_ONLY, value=CheckSpec) Closure cl) {
-        Condition newCondition = new Condition(tableName)
+        Condition newCondition = new Condition()
         if (condition.getNext().size() > 0) {
             newCondition.setConnective(LogicalConnective.and)
         }
