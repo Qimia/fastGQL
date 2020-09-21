@@ -31,4 +31,12 @@ public class TableAlias {
   public int hashCode() {
     return Objects.hash(tableName, tableAlias);
   }
+
+  @Override
+  public String toString() {
+    return "TableAlias{" +
+      "tableName='" + tableName + '\'' +
+      ", tableAlias='" + tableAlias + '\'' +
+      '}';
+  }
 }

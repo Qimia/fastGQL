@@ -27,6 +27,7 @@ public class QueryFunctions {
   private final String unlockQuery;
   private final List<String> queriesToExecute;
   private final DatasourceConfig.DBType dbType;
+  private final Set<TableAlias> tableAliasesFromArguments = new HashSet<>();
 
   public QueryFunctions(
       GraphQLDatabaseSchema graphQLDatabaseSchema,
@@ -217,6 +218,9 @@ public class QueryFunctions {
     Arguments arguments = new Arguments(field.getArguments(), pathInQuery, graphQLDatabaseSchema);
     // Condition condition = arguments.getCondition();
     // List<OrderBy> orderByList = arguments.getOrderByList();
+    if (arguments.getCondition() != null) {
+      tableAliasesFromArguments.addAll(ConditionUtils.conditionToTableAliasSet(arguments.getCondition(), pathInQueryToAlias.get(pathInQuery)));
+    }
 
     Table table =
         new Table(
@@ -285,7 +289,7 @@ public class QueryFunctions {
   }
 
   private Set<TableAlias> createTableAliases(Map<String, TableAlias> pathInQueryToTableAlias) {
-    return pathInQueryToTableAlias.values().stream().collect(Collectors.toUnmodifiableSet());
+    return new HashSet<>(pathInQueryToTableAlias.values());
   }
 
   public ExecutionDefinition<List<Map<String, Object>>> createExecutionDefinition(
@@ -296,11 +300,14 @@ public class QueryFunctions {
     Set<TableAlias> tableAliases = createTableAliases(pathInQueryToTableAlias);
 
     queriesToExecute.clear();
+    tableAliasesFromArguments.clear();
 
     BiFunction<QueryExecutor, Condition, Maybe<List<Map<String, Object>>>>
         queryResultSingleFunction =
             queryExecutorConditionResponseFunction(
                 field.getName(), field, null, pathInQueryToAlias, field.getName());
+
+    tableAliases.addAll(tableAliasesFromArguments);
 
     String tableLockQueryString = tableListLockQueryFunction.apply(tableAliases);
     String tableUnlockQueryString = unlockQuery;

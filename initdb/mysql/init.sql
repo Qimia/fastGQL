@@ -3,12 +3,6 @@ USE test;
 
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS addresses;
-DROP TABLE IF EXISTS phones;
-
-CREATE TABLE phones(
-  id INT PRIMARY KEY,
-  phone INT
-)
 
 CREATE TABLE addresses(
   id INT PRIMARY KEY,
@@ -19,9 +13,7 @@ CREATE TABLE customers(
   id INT PRIMARY KEY,
   name VARCHAR(255),
   address INT,
-  phone INT,
-  FOREIGN KEY (address) REFERENCES addresses(id),
-  FOREIGN KEY (phone) REFERENCES phones(id)
+  FOREIGN KEY (address) REFERENCES addresses(id)
 );
 
 INSERT INTO addresses VALUES (0, 'Danes Hill');

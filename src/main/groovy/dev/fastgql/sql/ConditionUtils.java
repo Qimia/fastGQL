@@ -12,15 +12,31 @@ import graphql.language.ObjectField;
 import graphql.language.ObjectValue;
 import graphql.language.StringValue;
 import graphql.language.Value;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 class ConditionUtils {
   static Condition checkColumnIsEqValue(String columnName, Object value) {
     return new Condition(columnName, RelationalOperator._eq, params -> value);
+  }
+
+  public static Set<TableAlias> conditionToTableAliasSet(Condition condition, String tableAlias) {
+    Set<TableAlias> ret = condition.getNext().stream()
+      .map(it -> conditionToTableAliasSet(it, tableAlias))
+      .flatMap(Collection::stream)
+      .collect(Collectors.toSet());
+
+    Condition.Referencing referencing = condition.getReferencing();
+
+    if (referencing != null) {
+      String table = referencing.getForeignTable();
+      String alias = String.format("%sr", tableAlias);
+      ret.add(new TableAlias(table, alias));
+      ret.addAll(conditionToTableAliasSet(referencing.getCondition(), alias));
+    }
+    return ret;
   }
 
   private static PreparedQuery conditionToSQLInternal(
