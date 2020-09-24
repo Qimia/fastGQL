@@ -34,9 +34,13 @@ public class TableAlias {
 
   @Override
   public String toString() {
-    return "TableAlias{" +
-      "tableName='" + tableName + '\'' +
-      ", tableAlias='" + tableAlias + '\'' +
-      '}';
+    return "TableAlias{"
+        + "tableName='"
+        + tableName
+        + '\''
+        + ", tableAlias='"
+        + tableAlias
+        + '\''
+        + '}';
   }
 }

@@ -12,7 +12,6 @@ import graphql.language.ObjectField;
 import graphql.language.ObjectValue;
 import graphql.language.StringValue;
 import graphql.language.Value;
-
 import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
@@ -23,10 +22,11 @@ class ConditionUtils {
   }
 
   public static Set<TableAlias> conditionToTableAliasSet(Condition condition, String tableAlias) {
-    Set<TableAlias> ret = condition.getNext().stream()
-      .map(it -> conditionToTableAliasSet(it, tableAlias))
-      .flatMap(Collection::stream)
-      .collect(Collectors.toSet());
+    Set<TableAlias> ret =
+        condition.getNext().stream()
+            .map(it -> conditionToTableAliasSet(it, tableAlias))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
 
     Condition.Referencing referencing = condition.getReferencing();
 

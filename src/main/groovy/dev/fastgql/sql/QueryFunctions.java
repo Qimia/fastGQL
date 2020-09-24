@@ -28,6 +28,7 @@ public class QueryFunctions {
   private final List<String> queriesToExecute;
   private final DatasourceConfig.DBType dbType;
   private final Set<TableAlias> tableAliasesFromArguments = new HashSet<>();
+  private final Set<TableAlias> tableAliasesFromQuery = new HashSet<>();
 
   public QueryFunctions(
       GraphQLDatabaseSchema graphQLDatabaseSchema,
@@ -53,7 +54,7 @@ public class QueryFunctions {
           String.format(
               "No permission to access column %s of table %s", columnName, table.getTableName()));
     }
-    Query.SelectColumn selectColumn = query.addSelectColumn(table, columnName);
+    SelectColumn selectColumn = query.addSelectColumn(table, columnName);
     return (queryExecutor, row) -> {
       Object value = row == null ? null : row.getValue(selectColumn.getResultAlias());
       return value == null ? Maybe.empty() : Maybe.just(Map.entry(columnName, value));
@@ -81,9 +82,8 @@ public class QueryFunctions {
             new Arguments(),
             null,
             jwtParams,
-            newPathInQuery,
-            pathInQueryToAlias);
-    Query.SelectColumn selectColumnReferencing =
+            newPathInQuery);
+    SelectColumn selectColumnReferencing =
         query.addLeftJoin(table, columnName, foreignTable, foreignColumnName);
     List<RowExecutor> executors =
         createExecutors(foreignTable, field, query, pathInQueryToAlias, newPathInQuery);
@@ -107,7 +107,7 @@ public class QueryFunctions {
     String columnName = graphQLField.getQualifiedName().getKeyName();
     String foreignTableName = graphQLField.getForeignName().getTableName();
     String foreignColumnName = graphQLField.getForeignName().getKeyName();
-    Query.SelectColumn selectColumn = query.addSelectColumn(table, columnName);
+    SelectColumn selectColumn = query.addSelectColumn(table, columnName);
 
     String newPathInQuery = String.format("%s/%s", pathInQuery, field.getName());
 
@@ -134,6 +134,7 @@ public class QueryFunctions {
       Query query,
       Map<String, String> pathInQueryToAlias,
       String pathInQuery) {
+    AtomicInteger count = new AtomicInteger();
     return field.getSelectionSet().getSelections().stream()
         .filter(selection -> selection instanceof Field)
         .map(selection -> (Field) selection)
@@ -215,23 +216,26 @@ public class QueryFunctions {
           Map<String, String> pathInQueryToAlias,
           String pathInQuery) {
 
-    Arguments arguments = new Arguments(field.getArguments(), pathInQuery, graphQLDatabaseSchema);
+    String tableAlias = pathInQueryToAlias.get(pathInQuery);
+
+    Arguments arguments = new Arguments(field.getArguments(), tableName, tableAlias, graphQLDatabaseSchema);
     // Condition condition = arguments.getCondition();
     // List<OrderBy> orderByList = arguments.getOrderByList();
     if (arguments.getCondition() != null) {
-      tableAliasesFromArguments.addAll(ConditionUtils.conditionToTableAliasSet(arguments.getCondition(), pathInQueryToAlias.get(pathInQuery)));
+      tableAliasesFromArguments.addAll(
+          ConditionUtils.conditionToTableAliasSet(
+              arguments.getCondition(), pathInQueryToAlias.get(pathInQuery)));
     }
 
     Table table =
         new Table(
             tableName,
-            pathInQueryToAlias.get(pathInQuery),
+            tableAlias,
             roleSpec,
             arguments,
             extraConditionPlaceholder,
             jwtParams,
-            pathInQuery,
-            pathInQueryToAlias);
+            pathInQuery);
 
     Query query = new Query(table);
     List<RowExecutor> executorList =

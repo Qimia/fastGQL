@@ -29,8 +29,7 @@ public class Table {
       Arguments arguments,
       Condition extraCondition,
       Map<String, Object> jwtParams,
-      String pathInQuery,
-      Map<String, String> pathInQueryToAlias) {
+      String pathInQuery) {
     this.tableName = tableName;
     this.tableAlias = tableAlias;
     if (roleSpec == null) {
@@ -60,7 +59,7 @@ public class Table {
     this.orderBy =
         arguments.getOrderByList() == null
             ? ""
-            : OrderByUtils.orderByToSQL(arguments.getOrderByList(), pathInQueryToAlias);
+            : OrderByUtils.orderByToSQL(arguments.getOrderByList());
     this.limit = arguments.getLimit() == null ? "" : arguments.getLimit().toString();
     this.offset = arguments.getOffset() == null ? "" : arguments.getOffset().toString();
     // this.mockExtraCondition = PreparedQuery.create(mockExtraCondition);

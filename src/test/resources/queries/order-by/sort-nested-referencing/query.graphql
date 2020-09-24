@@ -1,0 +1,5 @@
+{
+  customers (order_by: {address_ref: {street_ref: {name: asc}}}) {
+    id
+  }
+}
