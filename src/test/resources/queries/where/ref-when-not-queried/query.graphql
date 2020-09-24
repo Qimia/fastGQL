@@ -1,0 +1,5 @@
+{
+  customers (where:{address_ref:{id:{_eq:0}}}) {
+    id
+  }
+}

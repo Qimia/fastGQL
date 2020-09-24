@@ -1,0 +1,5 @@
+{
+  customers (order_by: [{address_ref: {id: desc}}, {id: asc}]) {
+    id
+  }
+}

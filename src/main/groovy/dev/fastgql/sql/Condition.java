@@ -8,29 +8,81 @@ import java.util.Map;
 import java.util.function.Function;
 
 public class Condition {
+
+  static class Referencing {
+    private final String foreignTable;
+    private final String foreignColumn;
+    private final String column;
+    private final Condition condition;
+
+    public Referencing(
+        String foreignTable, String foreignColumn, String column, Condition condition) {
+      this.foreignTable = foreignTable;
+      this.foreignColumn = foreignColumn;
+      this.column = column;
+      this.condition = condition;
+    }
+
+    public String getForeignTable() {
+      return foreignTable;
+    }
+
+    public String getColumn() {
+      return column;
+    }
+
+    public String getForeignColumn() {
+      return foreignColumn;
+    }
+
+    public Condition getCondition() {
+      return condition;
+    }
+
+    @Override
+    public String toString() {
+      return "Referencing<"
+          + "foreignTable: '"
+          + foreignTable
+          + '\''
+          + ", foreignColumn: '"
+          + foreignColumn
+          + '\''
+          + ", column: '"
+          + column
+          + '\''
+          + ", condition: "
+          + condition
+          + '>';
+    }
+  }
+
   private String column;
   private RelationalOperator operator;
   private Function<Map<String, Object>, Object> function;
   private LogicalConnective connective;
+  private Referencing referencing;
   private boolean negated;
-  private final String pathInQuery;
   private final List<Condition> next = new ArrayList<>();
 
-  public Condition(String pathInQuery) {
-    this.pathInQuery = pathInQuery;
+  public Condition() {
     this.negated = false;
   }
 
   public Condition(
-      String pathInQuery,
-      String column,
-      RelationalOperator operator,
-      Function<Map<String, Object>, Object> function) {
-    this.pathInQuery = pathInQuery;
+      String column, RelationalOperator operator, Function<Map<String, Object>, Object> function) {
     this.column = column;
     this.operator = operator;
     this.function = function;
     this.negated = false;
+  }
+
+  public static Condition createReferencing(
+      String foreignTable, String foreignColumn, String column, Condition condition) {
+    Referencing referencing = new Referencing(foreignTable, foreignColumn, column, condition);
+    Condition retCondition = new Condition();
+    retCondition.setReferencing(referencing);
+    return retCondition;
   }
 
   public String getColumn() {
@@ -47,10 +99,6 @@ public class Condition {
 
   public LogicalConnective getConnective() {
     return connective;
-  }
-
-  public String getPathInQuery() {
-    return pathInQuery;
   }
 
   public boolean isNegated() {
@@ -81,10 +129,18 @@ public class Condition {
     this.negated = negated;
   }
 
+  public Referencing getReferencing() {
+    return referencing;
+  }
+
+  public void setReferencing(Referencing referencing) {
+    this.referencing = referencing;
+  }
+
   @Override
   public String toString() {
     return String.format(
-        "Condition<pathInQuery: %s, negated: %s, column: %s, operator: %s, function: %s, connective: %s, next: %s>",
-        pathInQuery, negated, column, operator, function, connective, next);
+        "Condition<referencing: %s, negated: %s, column: %s, operator: %s, function: %s, connective: %s, next: %s>",
+        referencing, negated, column, operator, function, connective, next);
   }
 }

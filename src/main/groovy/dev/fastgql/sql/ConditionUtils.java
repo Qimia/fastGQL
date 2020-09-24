@@ -2,6 +2,8 @@ package dev.fastgql.sql;
 
 import dev.fastgql.common.RelationalOperator;
 import dev.fastgql.dsl.LogicalConnective;
+import dev.fastgql.graphql.GraphQLDatabaseSchema;
+import dev.fastgql.graphql.GraphQLField;
 import graphql.language.Argument;
 import graphql.language.ArrayValue;
 import graphql.language.FloatValue;
@@ -10,25 +12,38 @@ import graphql.language.ObjectField;
 import graphql.language.ObjectValue;
 import graphql.language.StringValue;
 import graphql.language.Value;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BinaryOperator;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 class ConditionUtils {
   static Condition checkColumnIsEqValue(String columnName, Object value) {
-    return new Condition(null, columnName, RelationalOperator._eq, params -> value);
+    return new Condition(columnName, RelationalOperator._eq, params -> value);
+  }
+
+  public static Set<TableAlias> conditionToTableAliasSet(Condition condition, String tableAlias) {
+    Set<TableAlias> ret =
+        condition.getNext().stream()
+            .map(it -> conditionToTableAliasSet(it, tableAlias))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
+
+    Condition.Referencing referencing = condition.getReferencing();
+
+    if (referencing != null) {
+      String table = referencing.getForeignTable();
+      String alias = String.format("%sr", tableAlias);
+      ret.add(new TableAlias(table, alias));
+      ret.addAll(conditionToTableAliasSet(referencing.getCondition(), alias));
+    }
+    return ret;
   }
 
   private static PreparedQuery conditionToSQLInternal(
-      Condition condition,
-      Function<Condition, String> conditionTableAliasFunction,
-      Map<String, Object> jwtParams) {
+      Condition condition, String tableAlias, Map<String, Object> jwtParams) {
     PreparedQuery nextPreparedQuery =
         condition.getNext().stream()
-            .map(it -> conditionToSQLInternal(it, conditionTableAliasFunction, jwtParams))
+            .map(it -> conditionToSQLInternal(it, tableAlias, jwtParams))
             .collect(PreparedQuery.collector());
 
     PreparedQuery connective =
@@ -36,23 +51,44 @@ class ConditionUtils {
             ? PreparedQuery.create(condition.getConnective().toString().toUpperCase()).merge(" ")
             : PreparedQuery.create();
 
-    if (condition.getColumn() != null
+    PreparedQuery nextPreparedQueryWithSpace =
+        !nextPreparedQuery.isEmpty()
+            ? PreparedQuery.create(" ").merge(nextPreparedQuery)
+            : nextPreparedQuery;
+
+    Condition.Referencing referencing = condition.getReferencing();
+
+    PreparedQuery not =
+        condition.isNegated() ? PreparedQuery.create("NOT ") : PreparedQuery.create();
+
+    PreparedQuery rootConditionPrepared = PreparedQuery.create();
+
+    if (referencing != null) {
+      String referencingAlias = String.format("%sr", tableAlias);
+      rootConditionPrepared.merge(
+          String.format(
+              "EXISTS (SELECT 1 FROM %s %s WHERE %s.%s=%s.%s AND (",
+              referencing.getForeignTable(),
+              referencingAlias,
+              referencingAlias,
+              referencing.getForeignColumn(),
+              tableAlias,
+              referencing.getColumn()));
+      rootConditionPrepared.merge(
+          conditionToSQLInternal(referencing.getCondition(), referencingAlias, jwtParams));
+      rootConditionPrepared.merge("))");
+    } else if (condition.getColumn() != null
         && condition.getOperator() != null
         && condition.getFunction() != null) {
-      String tableAlias = conditionTableAliasFunction.apply(condition);
-      PreparedQuery nextPreparedQueryWithSpace =
-          !nextPreparedQuery.isEmpty()
-              ? PreparedQuery.create(" ").merge(nextPreparedQuery)
-              : nextPreparedQuery;
       Object value = condition.getFunction().apply(jwtParams);
 
       RelationalOperator operator = condition.getOperator();
 
-      PreparedQuery rootConditionPrepared =
-          PreparedQuery.create(tableAlias)
-              .merge(".")
-              .merge(condition.getColumn())
-              .merge(condition.getOperator().getSql());
+      rootConditionPrepared
+          .merge(tableAlias)
+          .merge(".")
+          .merge(condition.getColumn())
+          .merge(condition.getOperator().getSql());
 
       switch (operator) {
         case _in:
@@ -74,9 +110,9 @@ class ConditionUtils {
         default:
           rootConditionPrepared.addParam(value);
       }
+    }
 
-      PreparedQuery not =
-          condition.isNegated() ? PreparedQuery.create("NOT ") : PreparedQuery.create();
+    if (!rootConditionPrepared.isEmpty()) {
       return not.isEmpty() && connective.isEmpty()
           ? rootConditionPrepared.merge(nextPreparedQueryWithSpace)
           : nextPreparedQueryWithSpace.isEmpty()
@@ -86,22 +122,14 @@ class ConditionUtils {
                   .merge(rootConditionPrepared)
                   .merge(nextPreparedQueryWithSpace)
                   .merge(PreparedQuery.create(")"));
-    } else {
-      return connective.isEmpty() ? nextPreparedQuery : connective.merge(nextPreparedQuery);
     }
+
+    return connective.isEmpty() ? nextPreparedQuery : connective.merge(nextPreparedQuery);
   }
 
   static PreparedQuery conditionToSQL(
-      Condition condition, Map<String, String> pathInQueryToAlias, Map<String, Object> jwtParams) {
-    return conditionToSQLInternal(
-        condition,
-        conditionArg -> pathInQueryToAlias.get(conditionArg.getPathInQuery()),
-        jwtParams);
-  }
-
-  static PreparedQuery conditionToSQL(
-      Condition condition, String alias, Map<String, Object> jwtParams) {
-    return conditionToSQLInternal(condition, conditionArg -> alias, jwtParams);
+      Condition condition, String tableAlias, Map<String, Object> jwtParams) {
+    return conditionToSQLInternal(condition, tableAlias, jwtParams);
   }
 
   private static String listToSql(List<?> list) {
@@ -145,66 +173,100 @@ class ConditionUtils {
   }
 
   private static Condition createBasicCondition(
-      String name, ObjectValue objectValue, String pathInQuery) {
+      String name,
+      ObjectValue objectValue,
+      String pathInQuery,
+      GraphQLDatabaseSchema graphQLDatabaseSchema) {
     return objectValue.getObjectFields().stream()
         .map(
-            objectField ->
-                objectField.getValue() instanceof ObjectValue
-                        || List.of("_and", "_or", "_not").contains(objectField.getName())
-                    ? createConditionFromObjectField(
-                        objectField, String.format("%s/%s", pathInQuery, name))
-                    : new Condition(
-                        pathInQuery,
-                        name,
-                        RelationalOperator.valueOf(objectField.getName()),
-                        params -> valueToObject(objectField.getValue())))
+            objectField -> {
+              if (List.of("_and", "_or", "_not").contains(objectField.getName())
+                  || objectField.getValue() instanceof ObjectValue) {
+                GraphQLField graphQLField = graphQLDatabaseSchema.fieldAt(pathInQuery, name);
+                String foreignTable = graphQLField.getForeignName().getTableName();
+                String foreignColumn = graphQLField.getForeignName().getKeyName();
+                String column = graphQLField.getQualifiedName().getKeyName();
+                Condition innerConditionReferencing =
+                    createConditionFromObjectField(
+                        objectField, foreignTable, graphQLDatabaseSchema);
+                return Condition.createReferencing(
+                    foreignTable, foreignColumn, column, innerConditionReferencing);
+              } else {
+                return new Condition(
+                    name,
+                    RelationalOperator.valueOf(objectField.getName()),
+                    params -> valueToObject(objectField.getValue()));
+              }
+            })
         .reduce(conditionReducer(LogicalConnective.and))
         .orElseThrow();
   }
 
   private static Condition createArrayCondition(
-      ArrayValue arrayValue, LogicalConnective logicalConnective, String pathInQuery) {
+      ArrayValue arrayValue,
+      LogicalConnective logicalConnective,
+      String pathInQuery,
+      GraphQLDatabaseSchema graphQLDatabaseSchema) {
     return arrayValue.getValues().stream()
-        .map(node -> createConditionFromObjectValue((ObjectValue) node, pathInQuery))
+        .map(
+            node ->
+                createConditionFromObjectValue(
+                    (ObjectValue) node, pathInQuery, graphQLDatabaseSchema))
         .reduce(conditionReducer(logicalConnective))
         .orElseThrow();
   }
 
   private static Condition createConditionFromObjectField(
-      ObjectField objectField, String pathInQuery) {
+      ObjectField objectField, String pathInQuery, GraphQLDatabaseSchema graphQLDatabaseSchema) {
     switch (objectField.getName()) {
       case "_and":
         return objectField.getValue() instanceof ArrayValue
             ? createArrayCondition(
-                (ArrayValue) objectField.getValue(), LogicalConnective.and, pathInQuery)
-            : createConditionFromObjectValue((ObjectValue) objectField.getValue(), pathInQuery);
+                (ArrayValue) objectField.getValue(),
+                LogicalConnective.and,
+                pathInQuery,
+                graphQLDatabaseSchema)
+            : createConditionFromObjectValue(
+                (ObjectValue) objectField.getValue(), pathInQuery, graphQLDatabaseSchema);
       case "_or":
         return objectField.getValue() instanceof ArrayValue
             ? createArrayCondition(
-                (ArrayValue) objectField.getValue(), LogicalConnective.or, pathInQuery)
-            : createConditionFromObjectValue((ObjectValue) objectField.getValue(), pathInQuery);
+                (ArrayValue) objectField.getValue(),
+                LogicalConnective.or,
+                pathInQuery,
+                graphQLDatabaseSchema)
+            : createConditionFromObjectValue(
+                (ObjectValue) objectField.getValue(), pathInQuery, graphQLDatabaseSchema);
       case "_not":
-        Condition notCondition = new Condition(pathInQuery);
+        Condition notCondition = new Condition();
         Condition condition =
-            createConditionFromObjectValue((ObjectValue) objectField.getValue(), pathInQuery);
+            createConditionFromObjectValue(
+                (ObjectValue) objectField.getValue(), pathInQuery, graphQLDatabaseSchema);
         condition.setNegated(true);
         notCondition.getNext().add(condition);
         return notCondition;
       default:
         return createBasicCondition(
-            objectField.getName(), (ObjectValue) objectField.getValue(), pathInQuery);
+            objectField.getName(),
+            (ObjectValue) objectField.getValue(),
+            pathInQuery,
+            graphQLDatabaseSchema);
     }
   }
 
   private static Condition createConditionFromObjectValue(
-      ObjectValue objectValue, String pathInQuery) {
+      ObjectValue objectValue, String pathInQuery, GraphQLDatabaseSchema graphQLDatabaseSchema) {
     return objectValue.getObjectFields().stream()
-        .map(objectField -> createConditionFromObjectField(objectField, pathInQuery))
+        .map(
+            objectField ->
+                createConditionFromObjectField(objectField, pathInQuery, graphQLDatabaseSchema))
         .reduce(conditionReducer(LogicalConnective.and))
         .orElseThrow();
   }
 
-  static Condition createCondition(Argument argument, String tableName) {
-    return createConditionFromObjectValue((ObjectValue) argument.getValue(), tableName);
+  static Condition createCondition(
+      Argument argument, String tableName, GraphQLDatabaseSchema graphQLDatabaseSchema) {
+    return createConditionFromObjectValue(
+        (ObjectValue) argument.getValue(), tableName, graphQLDatabaseSchema);
   }
 }

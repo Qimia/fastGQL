@@ -6,50 +6,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Query {
-  static class SelectColumn {
-
-    private final String tableAlias;
-    private final String columnName;
-    private final String resultAlias;
-
-    private SelectColumn(Table table, String columnName, String resultAlias) {
-      this.tableAlias = table.getTableAlias();
-      this.columnName = columnName;
-      this.resultAlias = resultAlias;
-    }
-
-    private String sqlString() {
-      return String.format("%s.%s AS %s", tableAlias, columnName, resultAlias);
-    }
-
-    public String getResultAlias() {
-      return resultAlias;
-    }
-  }
-
-  static class LeftJoin {
-    private final Table table;
-    private final String columnName;
-    private final Table foreignTable;
-    private final String foreignColumnName;
-
-    LeftJoin(Table table, String columnName, Table foreignTable, String foreignColumnName) {
-      this.table = table;
-      this.columnName = columnName;
-      this.foreignTable = foreignTable;
-      this.foreignColumnName = foreignColumnName;
-    }
-
-    private String sqlString() {
-      return String.format(
-          "LEFT JOIN %s ON %s.%s = %s.%s",
-          foreignTable.sqlString(),
-          table.getTableAlias(),
-          columnName,
-          foreignTable.getTableAlias(),
-          foreignColumnName);
-    }
-  }
 
   private int resultAliasCount = 0;
   private final Table table;
