@@ -26,7 +26,10 @@ public class Arguments {
   }
 
   public Arguments(
-      List<Argument> arguments, String tableName, String tableAlias, GraphQLDatabaseSchema graphQLDatabaseSchema) {
+      List<Argument> arguments,
+      String tableName,
+      String tableAlias,
+      GraphQLDatabaseSchema graphQLDatabaseSchema) {
     Condition condition = null;
     List<OrderBy> orderByList = null;
     BigInteger limit = null;
@@ -38,7 +41,8 @@ public class Arguments {
           condition = ConditionUtils.createCondition(argument, tableName, graphQLDatabaseSchema);
           break;
         case ORDER_BY:
-          orderByList = OrderByUtils.createOrderBy(argument, tableName, tableAlias, graphQLDatabaseSchema);
+          orderByList =
+              OrderByUtils.createOrderBy(argument, tableName, tableAlias, graphQLDatabaseSchema);
           break;
         case LIMIT:
           limit = ((IntValue) argument.getValue()).getValue();

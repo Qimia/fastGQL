@@ -4,20 +4,24 @@ import dev.fastgql.graphql.GraphQLDatabaseSchema;
 import dev.fastgql.graphql.GraphQLField;
 import graphql.language.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collector;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class OrderByUtils {
 
-  public static String orderByToSQL(
-      List<OrderBy> orderByList) {
+  public static String orderByToSQL(List<OrderBy> orderByList) {
     System.out.println(orderByList);
+    return orderByList.stream().map(OrderBy::sqlString).collect(Collectors.joining(", "));
+  }
+
+  public static Set<TableAlias> orderByListToTableAliasSet(List<OrderBy> orderByList) {
     return orderByList.stream()
-      .map(OrderBy::sqlString)
-      .collect(Collectors.joining(", "));
+        .map(OrderBy::createTableAliasSet)
+        .flatMap(Collection::stream)
+        .collect(Collectors.toUnmodifiableSet());
   }
 
   private static Stream<OrderBy> createOrderByStream(
@@ -65,7 +69,10 @@ public class OrderByUtils {
   }
 
   static List<OrderBy> createOrderBy(
-      Argument argument, String tableName, String tableAlias, GraphQLDatabaseSchema graphQLDatabaseSchema) {
+      Argument argument,
+      String tableName,
+      String tableAlias,
+      GraphQLDatabaseSchema graphQLDatabaseSchema) {
     Stream<OrderBy> orderByStream =
         argument.getValue() instanceof ArrayValue
             ? ((ArrayValue) argument.getValue())

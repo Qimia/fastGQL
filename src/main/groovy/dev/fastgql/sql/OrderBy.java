@@ -1,6 +1,7 @@
 package dev.fastgql.sql;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class OrderBy {
@@ -19,18 +20,28 @@ public class OrderBy {
       return String.format("%s %s", selectColumn.sqlString(), order);
     } else {
       LeftJoin firstLeftJoin = leftJoins.get(0);
-      String nextLeftJoinsSql = leftJoins.stream().skip(1).map(LeftJoin::sqlString).collect(Collectors.joining(" "));
-      return String.format("(SELECT %s FROM %s %s %s WHERE %s.%s = %s.%s) %s",
-        selectColumn.sqlString(),
-        firstLeftJoin.getForeignTableName(),
-        firstLeftJoin.getForeignTableAlias(),
-        nextLeftJoinsSql,
-        firstLeftJoin.getTableAlias(),
-        firstLeftJoin.getColumnName(),
-        firstLeftJoin.getForeignTableAlias(),
-        firstLeftJoin.getForeignColumnName(),
-        order);
+      String nextLeftJoinsSql =
+          leftJoins.stream().skip(1).map(LeftJoin::sqlString).collect(Collectors.joining(" "));
+      return String.format(
+          "(SELECT %s FROM %s %s %s WHERE %s.%s = %s.%s) %s",
+          selectColumn.sqlString(),
+          firstLeftJoin.getForeignTableName(),
+          firstLeftJoin.getForeignTableAlias(),
+          nextLeftJoinsSql,
+          firstLeftJoin.getTableAlias(),
+          firstLeftJoin.getColumnName(),
+          firstLeftJoin.getForeignTableAlias(),
+          firstLeftJoin.getForeignColumnName(),
+          order);
     }
+  }
+
+  public Set<TableAlias> createTableAliasSet() {
+    return leftJoins.stream()
+        .map(
+            leftJoin ->
+                new TableAlias(leftJoin.getForeignTableName(), leftJoin.getForeignTableAlias()))
+        .collect(Collectors.toUnmodifiableSet());
   }
 
   @Override

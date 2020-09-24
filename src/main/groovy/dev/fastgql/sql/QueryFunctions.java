@@ -218,13 +218,18 @@ public class QueryFunctions {
 
     String tableAlias = pathInQueryToAlias.get(pathInQuery);
 
-    Arguments arguments = new Arguments(field.getArguments(), tableName, tableAlias, graphQLDatabaseSchema);
+    Arguments arguments =
+        new Arguments(field.getArguments(), tableName, tableAlias, graphQLDatabaseSchema);
     // Condition condition = arguments.getCondition();
     // List<OrderBy> orderByList = arguments.getOrderByList();
     if (arguments.getCondition() != null) {
       tableAliasesFromArguments.addAll(
-          ConditionUtils.conditionToTableAliasSet(
-              arguments.getCondition(), pathInQueryToAlias.get(pathInQuery)));
+          ConditionUtils.conditionToTableAliasSet(arguments.getCondition(), tableAlias));
+    }
+
+    if (arguments.getOrderByList() != null) {
+      tableAliasesFromArguments.addAll(
+          OrderByUtils.orderByListToTableAliasSet(arguments.getOrderByList()));
     }
 
     Table table =
