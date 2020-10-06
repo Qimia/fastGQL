@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import dev.fastgql.common.KeyType;
 import dev.fastgql.common.QualifiedName;
 import dev.fastgql.common.ReferenceType;
+import graphql.schema.GraphQLNamedType;
 import org.junit.jupiter.api.Test;
 
 public class GraphQLFieldTest {
@@ -35,7 +36,7 @@ public class GraphQLFieldTest {
     assertEquals(qualifiedName, actual.getQualifiedName());
     assertEquals(foreignName, actual.getForeignName());
     assertEquals(ReferenceType.REFERENCING, actual.getReferenceType());
-    assertEquals("foreignTableName", actual.getGraphQLType().toString());
+    assertEquals("foreignTableName", ((GraphQLNamedType) actual.getGraphQLType()).getName());
   }
 
   @Test
