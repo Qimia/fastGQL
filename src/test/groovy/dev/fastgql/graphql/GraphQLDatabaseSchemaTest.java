@@ -12,8 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import dev.fastgql.common.KeyType;
 import dev.fastgql.db.DatabaseSchema;
-import graphql.schema.GraphQLFieldDefinition;
-import graphql.schema.GraphQLObjectType;
+import graphql.schema.*;
 import graphql.schema.GraphQLObjectType.Builder;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,15 +60,19 @@ public class GraphQLDatabaseSchemaTest {
       GraphQLObjectType graphQLObjectType, String name, String typeName) {
     GraphQLFieldDefinition graphQLFieldDefinition = graphQLObjectType.getFieldDefinition(name);
     assertNotNull(graphQLFieldDefinition);
-    assertEquals(typeName, graphQLFieldDefinition.getType().getChildren().get(0).getName());
+    assertEquals(
+        typeName,
+        ((GraphQLNamedType) graphQLFieldDefinition.getType().getChildren().get(0)).getName());
     assertEquals(4, graphQLFieldDefinition.getArguments().size());
     assertEquals(GraphQLInt, graphQLFieldDefinition.getArgument("limit").getType());
     assertEquals(GraphQLInt, graphQLFieldDefinition.getArgument("offset").getType());
     assertEquals(
         String.format("%s_order_by", typeName),
-        graphQLFieldDefinition.getArgument("order_by").getType().getChildren().get(0).getName());
+        ((GraphQLNamedType)
+                graphQLFieldDefinition.getArgument("order_by").getType().getChildren().get(0))
+            .getName());
     assertEquals(
         String.format("%s_bool_exp", typeName),
-        graphQLFieldDefinition.getArgument("where").getType().getName());
+        ((GraphQLNamedType) graphQLFieldDefinition.getArgument("where").getType()).getName());
   }
 }

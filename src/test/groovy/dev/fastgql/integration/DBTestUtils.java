@@ -35,13 +35,8 @@ public class DBTestUtils {
         .subscribeOn(Schedulers.io())
         .flatMap(
             sqlQuery ->
-                pool.rxBegin()
-                    .doOnSuccess(transaction -> log.info("[executing] {}", sqlQuery))
-                    .flatMap(
-                        transaction ->
-                            transaction
-                                .rxQuery(sqlQuery)
-                                .flatMap(rows -> transaction.rxCommit().andThen(Single.just(rows)))
-                                .doOnSuccess(result -> log.info("[response] {}", sqlQuery))));
+                pool.query(sqlQuery)
+                    .rxExecute()
+                    .doOnSuccess(result -> log.info("[response] {}", sqlQuery)));
   }
 }

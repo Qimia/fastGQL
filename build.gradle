@@ -33,7 +33,7 @@ spotless {
 
 vertx {
     mainVerticle = 'dev.fastgql.FastGQL'
-    vertxVersion = '3.8.3'
+    vertxVersion = '3.9.3'
     config = 'src/main/resources/conf-postgres.json'
 }
 
@@ -41,7 +41,7 @@ dependencies {
     implementation 'org.codehaus.groovy:groovy-all:3.0.5'
     implementation 'io.vertx:vertx-core'
     implementation 'io.vertx:vertx-web'
-    implementation 'io.vertx:vertx-web-graphql'
+    implementation 'io.vertx:vertx-web-graphql-qimia:3.9.3'
     implementation 'io.vertx:vertx-rx-java2'
     implementation 'io.vertx:vertx-pg-client'
     implementation 'io.vertx:vertx-mysql-client'
