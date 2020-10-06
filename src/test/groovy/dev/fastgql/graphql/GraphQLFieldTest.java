@@ -35,7 +35,7 @@ public class GraphQLFieldTest {
     assertEquals(qualifiedName, actual.getQualifiedName());
     assertEquals(foreignName, actual.getForeignName());
     assertEquals(ReferenceType.REFERENCING, actual.getReferenceType());
-    assertEquals("foreignTableName", actual.getGraphQLType().getName());
+    assertEquals("foreignTableName", actual.getGraphQLType().toString());
   }
 
   @Test
