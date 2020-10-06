@@ -5,7 +5,6 @@ import com.google.inject.Provides;
 import dev.fastgql.sql.QueryExecutor;
 import io.reactivex.Single;
 import io.vertx.reactivex.sqlclient.*;
-
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -28,9 +27,9 @@ public class SQLExecutorWithDelayModule extends AbstractModule {
     return transaction ->
         (query, params) -> {
           Single<RowSet<Row>> resultSingle =
-            params != null && params.size() > 0
-              ? transaction.preparedQuery(query).rxExecute(Tuple.wrap(params))
-              : transaction.query(query).rxExecute();
+              params != null && params.size() > 0
+                  ? transaction.preparedQuery(query).rxExecute(Tuple.wrap(params))
+                  : transaction.query(query).rxExecute();
 
           return resultSingle
               .doOnSuccess(rows -> log.info("[executing] {}", query))

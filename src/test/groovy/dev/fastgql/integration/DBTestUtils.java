@@ -8,7 +8,6 @@ package dev.fastgql.integration;
 
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
-import io.vertx.reactivex.pgclient.PgPool;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.Row;
 import io.vertx.reactivex.sqlclient.RowSet;
@@ -36,7 +35,8 @@ public class DBTestUtils {
         .subscribeOn(Schedulers.io())
         .flatMap(
             sqlQuery ->
-                pool.query(sqlQuery).rxExecute()
-                  .doOnSuccess(result -> log.info("[response] {}", sqlQuery)));
+                pool.query(sqlQuery)
+                    .rxExecute()
+                    .doOnSuccess(result -> log.info("[response] {}", sqlQuery)));
   }
 }

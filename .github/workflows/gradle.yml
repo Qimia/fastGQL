@@ -21,7 +21,7 @@ jobs:
       with:
         java-version: 11
     - name: Checkout patched vertx
-      run: git clone -b feature/connection-params-subscription-3.9.3-backport https://github.com/Qimia/vertx-web.git && cd vertx-web && mvn clean install -pl io.vertx:vertx-web-graphql-qimia && cd ..
+      run: git clone -b feature/connection-params-subscription-3.9.3-backport https://github.com/Qimia/vertx-web.git && cd vertx-web && mvn clean install -q -pl io.vertx:vertx-web-graphql-qimia && cd ..
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Build MySQL container for tests
