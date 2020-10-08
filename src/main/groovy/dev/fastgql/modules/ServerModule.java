@@ -34,7 +34,7 @@ public class ServerModule extends AbstractModule {
   @Provides
   @Singleton
   HttpServerOptions provideHttpServerOptions() {
-    return new HttpServerOptions().setWebsocketSubProtocols("graphql-ws");
+    return new HttpServerOptions().addWebSocketSubProtocol("graphql-ws");
   }
 
   @Provides
@@ -45,8 +45,8 @@ public class ServerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  ApolloWSHandlerUpdatable provideApolloWSHandlerUpdatable() {
-    return ApolloWSHandlerUpdatable.create();
+  ApolloWSHandlerUpdatable provideApolloWSHandlerUpdatable(Vertx vertx, JWTConfig jwtConfig) {
+    return ApolloWSHandlerUpdatable.create(jwtConfig, vertx);
   }
 
   @Provides
@@ -105,12 +105,12 @@ public class ServerModule extends AbstractModule {
     return graphQLSingle.map(
         graphQL -> {
           Router router = Router.router(vertx);
-          if (jwtAuthHandler != null) {
-            router.route("/v1/*").handler(jwtAuthHandler);
-          }
           if (apolloWSHandlerUpdatable != null) {
             apolloWSHandlerUpdatable.updateGraphQL(graphQL);
             router.route("/v1/graphql").handler(apolloWSHandlerUpdatable);
+          }
+          if (jwtAuthHandler != null) {
+            router.route("/v1/*").handler(jwtAuthHandler);
           }
           if (graphQLHandlerUpdatable != null) {
             graphQLHandlerUpdatable.updateGraphQL(graphQL);

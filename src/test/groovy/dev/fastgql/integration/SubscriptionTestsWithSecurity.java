@@ -1,7 +1,10 @@
 package dev.fastgql.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.WebSocketConnectOptions;
+import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.buffer.Buffer;
@@ -12,7 +15,6 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public interface SubscriptionTestsWithSecurity extends SetupTearDownForAll, WithSecurity {
@@ -67,7 +69,15 @@ public interface SubscriptionTestsWithSecurity extends SetupTearDownForAll, With
                     .flatMap(response -> httpClient.rxWebSocket(wsOptions))
                     .flatMapCompletable(
                         webSocket ->
-                            GraphQLTestUtils.startSubscription(query, context, webSocket)
+                            GraphQLTestUtils.startSubscription(
+                                    new JsonObject()
+                                        .put(
+                                            "headers",
+                                            new JsonObject()
+                                                .put("authorization", "Bearer " + jwtToken)),
+                                    query,
+                                    context,
+                                    webSocket)
                                 .andThen(
                                     GraphQLTestUtils.verifySubscription(
                                         expected, context, webSocket)))
@@ -85,6 +95,8 @@ public interface SubscriptionTestsWithSecurity extends SetupTearDownForAll, With
    */
   @Test
   default void shouldUnauthorized(Vertx vertx, VertxTestContext context) {
+    String directory = "subscriptions/simple/list";
+    String query = String.format("%s/query.graphql", directory);
     WebSocketConnectOptions wsOptions =
         new WebSocketConnectOptions()
             .setHost("localhost")
@@ -92,11 +104,22 @@ public interface SubscriptionTestsWithSecurity extends SetupTearDownForAll, With
             .setURI("/v1/graphql");
     vertx
         .createHttpClient()
-        .webSocket(
-            wsOptions,
-            websocketRes -> {
-              Assertions.assertTrue(websocketRes.failed());
-              context.completeNow();
-            });
+        .rxWebSocket(wsOptions)
+        .flatMapCompletable(
+            webSocket ->
+                GraphQLTestUtils.startSubscription(
+                    new JsonObject()
+                        .put("headers", new JsonObject().put("authorization", "Bearer dummy")),
+                    query,
+                    context,
+                    webSocket))
+        .subscribe(
+            () -> context.failNow(new RuntimeException("subscribed")),
+            error ->
+                context.verify(
+                    () -> {
+                      assertEquals("connection error", error.getMessage());
+                      context.completeNow();
+                    }));
   }
 }

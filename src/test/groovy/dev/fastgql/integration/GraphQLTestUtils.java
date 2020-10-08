@@ -144,14 +144,36 @@ public class GraphQLTestUtils {
    * @return completable which completes when data is written to web socket
    */
   public static Completable startSubscription(
-      String inputResource, VertxTestContext context, WebSocket webSocket) {
+      JsonObject connectionParams,
+      String inputResource,
+      VertxTestContext context,
+      WebSocket webSocket) {
     String graphQLQuery = ResourcesTestUtils.readResource(inputResource, context);
+    JsonObject connectionRequest =
+        new JsonObject()
+            .put("id", "1")
+            .put("type", ApolloWSMessageType.CONNECTION_INIT.getText())
+            .put("payload", connectionParams);
     JsonObject request =
         new JsonObject()
             .put("id", "1")
             .put("type", ApolloWSMessageType.START.getText())
             .put("payload", new JsonObject().put("query", graphQLQuery));
-    return webSocket.rxWrite(new Buffer(request.toBuffer()));
+    return AsyncResultCompletable.toCompletable(
+        handler -> {
+          webSocket.handler(
+              message -> {
+                JsonObject messageJson = message.toJsonObject();
+                String type = messageJson.getString("type");
+                if (type.equals(ApolloWSMessageType.CONNECTION_ACK.getText())) {
+                  webSocket.write(new Buffer(request.toBuffer()));
+                  handler.handle(Future.succeededFuture());
+                } else if (type.equals(ApolloWSMessageType.CONNECTION_ERROR.getText())) {
+                  handler.handle(Future.failedFuture("connection error"));
+                }
+              });
+          webSocket.write(new Buffer(connectionRequest.toBuffer()));
+        });
   }
 
   /**
@@ -178,19 +200,21 @@ public class GraphQLTestUtils {
         handler ->
             webSocket.handler(
                 message -> {
-                  handler.handle(Future.succeededFuture());
-                  System.out.println(message);
-                  if (atomicJsonObject.checkIfSameAsLastObjectAndUpdate(message.toJsonObject())) {
-                    return;
+                  JsonObject messageJson = message.toJsonObject();
+                  if (messageJson.getString("type").equals(ApolloWSMessageType.DATA.getText())) {
+                    handler.handle(Future.succeededFuture());
+                    if (atomicJsonObject.checkIfSameAsLastObjectAndUpdate(message.toJsonObject())) {
+                      return;
+                    }
+                    int currentResponse = currentResponseAtomic.getAndIncrement();
+                    if (currentResponse < expectedResponses.size()) {
+                      context.verify(
+                          () ->
+                              assertEquals(
+                                  expectedResponses.get(currentResponse), message.toJsonObject()));
+                    }
+                    checkpoints.flag();
                   }
-                  int currentResponse = currentResponseAtomic.getAndIncrement();
-                  if (currentResponse < expectedResponses.size()) {
-                    context.verify(
-                        () ->
-                            assertEquals(
-                                expectedResponses.get(currentResponse), message.toJsonObject()));
-                  }
-                  checkpoints.flag();
                 }));
   }
 

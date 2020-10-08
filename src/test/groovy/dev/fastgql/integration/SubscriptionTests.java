@@ -1,6 +1,7 @@
 package dev.fastgql.integration;
 
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.Timeout;
 import io.vertx.junit5.VertxTestContext;
 import io.vertx.reactivex.core.Vertx;
@@ -61,7 +62,8 @@ public interface SubscriptionTests extends SetupTearDownForEach {
                     .flatMap(response -> httpClient.rxWebSocket("/v1/graphql"))
                     .flatMapCompletable(
                         webSocket ->
-                            GraphQLTestUtils.startSubscription(query, context, webSocket)
+                            GraphQLTestUtils.startSubscription(
+                                    new JsonObject(), query, context, webSocket)
                                 .andThen(
                                     GraphQLTestUtils.verifySubscription(
                                         expected, context, webSocket)))
