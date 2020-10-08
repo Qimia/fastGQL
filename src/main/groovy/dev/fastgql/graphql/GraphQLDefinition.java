@@ -14,6 +14,7 @@ import dev.fastgql.dsl.PermissionsSpec;
 import dev.fastgql.dsl.RoleSpec;
 import dev.fastgql.events.DebeziumEngineSingleton;
 import dev.fastgql.events.EventFlowableFactory;
+import dev.fastgql.security.JWTConfig;
 import dev.fastgql.sql.*;
 import graphql.GraphQL;
 import graphql.language.Field;
@@ -31,6 +32,7 @@ import io.vertx.ext.auth.jwt.impl.JWTUser;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.ext.web.RoutingContext;
+import io.vertx.reactivex.ext.web.handler.graphql.ApolloWSMessage;
 import io.vertx.reactivex.sqlclient.Pool;
 import io.vertx.reactivex.sqlclient.Transaction;
 import java.io.IOException;
@@ -80,6 +82,7 @@ public class GraphQLDefinition {
     private final String unlockQuery;
     private final Supplier<PermissionsSpec> permissionsSpecSupplier;
     private final DatasourceConfig.DBType dbType;
+    private final boolean authActive;
     private boolean queryEnabled = false;
     private boolean mutationEnabled = false;
     private boolean subscriptionEnabled = false;
@@ -96,6 +99,7 @@ public class GraphQLDefinition {
         @Assisted DatabaseSchema databaseSchema,
         Pool sqlConnectionPool,
         DatasourceConfig datasourceConfig,
+        JWTConfig jwtConfig,
         Function<Transaction, QueryExecutor> transactionQueryExecutorFunction,
         Supplier<PermissionsSpec> permissionsSpecSupplier,
         DebeziumEngineSingleton debeziumEngineSingleton,
@@ -108,6 +112,7 @@ public class GraphQLDefinition {
       // if (datasourceConfig.getDbType().equals(DatasourceConfig.DBType.postgresql)) {
       //  returningStatementEnabled = true;
       // }
+      this.authActive = jwtConfig.isActive();
       this.transactionQueryExecutorFunction = transactionQueryExecutorFunction;
       this.debeziumEngineSingleton = debeziumEngineSingleton;
       this.eventFlowableFactory = eventFlowableFactory;
@@ -189,7 +194,10 @@ public class GraphQLDefinition {
     }
 
     private static Map<String, Object> createUserParamsSubscription(DataFetchingEnvironment env) {
-      return Map.of();
+      ApolloWSMessage messageRx = env.getContext();
+      io.vertx.ext.web.handler.graphql.ApolloWSMessage message = messageRx.getDelegate();
+      JWTUser jwtUser = message.connectionParams();
+      return jwtUser == null ? Map.of() : jwtUser.principal().getMap();
     }
 
     private <T> Maybe<T> executeTransaction(
@@ -338,8 +346,12 @@ public class GraphQLDefinition {
 
       DataFetcher<Flowable<List<Map<String, Object>>>> subscriptionDataFetcher =
           env -> {
+            Map<String, Object> userParams = createUserParamsSubscription(env);
+            if (authActive && userParams.isEmpty()) {
+              throw new RuntimeException("user not authenticated");
+            }
             ExecutionDefinition<List<Map<String, Object>>> executionDefinition =
-                createQueryExecutionDefinition(env, createUserParamsSubscription(env));
+                createQueryExecutionDefinition(env, userParams);
             return eventFlowableFactory
                 .create(executionDefinition.getQueriedTables())
                 .flatMapSingle(record -> sqlConnectionPool.rxBegin())
